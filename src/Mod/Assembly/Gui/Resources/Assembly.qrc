@@ -41,8 +41,6 @@
         <file>icons/Assembly_JointGroup.svg</file>
         <file>icons/Assembly_ExplodedView.svg</file>
         <file>panels/TaskAssemblyCreateView.ui</file>
-        <file>panels/TaskAssemblySelectIsolateMode.ui</file>
-        <file>panels/TaskAssemblyIsolateMode.ui</file>
         <file>icons/Assembly_ExplodedViewGroup.svg</file>
     </qresource>
 </RCC>
