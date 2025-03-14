@@ -422,15 +422,6 @@ class Joint:
                 ),
             )
 
-        if not hasattr(joint, "ReferenceMoved"):
-            joint.addProperty(
-                "App::PropertyBool",
-                "ReferenceMoved",
-                "Joint"
-            )
-            joint.setEditorMode("ReferenceMoved", 3)
-        joint.ReferenceMoved = True
-
         if not hasattr(joint, "MissingReference"):
             self.addMissingRefProperty(joint)
 
@@ -675,36 +666,11 @@ class Joint:
             self.undoPreSolve(joint)
 
     def updateJCSPlacements(self, joint):
-        oldPlacement1 = joint.Placement1
-        oldPlacement2 = joint.Placement2
-
-        newPlacement1 = self.findPlacement(joint, joint.Reference1, 0)
-        newPlacement2 = self.findPlacement(joint, joint.Reference2, 1)
-
-        # print(str(oldPlacement1))
-        # print(str(oldPlacement2))
-        # print(str(newPlacement1))
-        # print(str(newPlacement2))
-        # print(oldPlacement1.isSame(newPlacement1, .1))
-        # print(oldPlacement2.isSame(newPlacement2, .1))
-        # print("")
-
         if not joint.Detach1:
-            joint.Placement1 = newPlacement1
+            joint.Placement1 = self.findPlacement(joint, joint.Reference1, 0)
 
         if not joint.Detach2:
-            joint.Placement2 = newPlacement2
-
-        # if hasattr(joint, "ReferenceMoved"):
-        #     if not newPlacement1.isSame(oldPlacement1, 1e20) or not newPlacement2.isSame(oldPlacement2, 1e20):
-        #         if joint.ReferenceMoved == False:
-        #             joint.ReferenceMoved = True
-        #     else:
-        #         if joint.ReferenceMoved == True:
-        #             joint.ReferenceMoved = False
-        
-        #     print(joint.ReferenceMoved)
-        #     print("")
+            joint.Placement2 = self.findPlacement(joint, joint.Reference2, 1)
 
     """
     So here we want to find a placement that corresponds to a local coordinate system that would be placed at the selected vertex.

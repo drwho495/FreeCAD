@@ -147,7 +147,7 @@ int AssemblyObject::solve(bool enableRedo, bool updateJCS)
         return -6;
     }
 
-    std::vector<App::DocumentObject*> joints = getJoints(updateJCS); // slow and causing hasher mismath
+    std::vector<App::DocumentObject*> joints = getJoints(updateJCS);
 
     removeUnconnectedJoints(joints, groundedObjs);
 
@@ -652,10 +652,8 @@ AssemblyObject::getJoints(bool updateJCS, bool delBadJoints, bool subJoints)
         }
 
         auto* prop = dynamic_cast<App::PropertyBool*>(joint->getPropertyByName("Activated"));
-        bool referenceMoved = joint->getPropertyByName<App::PropertyBool>("ReferenceMoved")->getValue();
-        bool missingReference = joint->getPropertyByName<App::PropertyBool>("MissingReference")->getValue();
-
-        if ((!prop || !prop->getValue()) || !referenceMoved || missingReference) {
+        auto missingRef = joint->getPropertyByName<App::PropertyBool>("MissingReference");
+        if (!prop || !prop->getValue() || (missingRef != NULL && missingRef->getValue() == true)) {
             // Filter grounded joints and deactivated joints.
             continue;
         }
@@ -689,7 +687,7 @@ AssemblyObject::getJoints(bool updateJCS, bool delBadJoints, bool subJoints)
 
     // Make sure the joints are up to date.
     if (updateJCS) {
-        recomputeJointPlacements(joints); //Causing mismatching and slowness, is this needed?
+        recomputeJointPlacements(joints);
     }
 
     return joints;
