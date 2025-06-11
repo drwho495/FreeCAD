@@ -31,6 +31,11 @@
 
 #include <Mod/Part/Gui/ViewProviderAttachExtension.h>
 
+namespace Gui
+{
+    class LinearGizmo;
+}
+
 namespace PartDesignGui {
 
 class TaskDlgFeatureParameters;
@@ -77,10 +82,14 @@ public:
 
     QIcon mergeColorfulOverlayIcons (const QIcon & orig) const override;
 
+    void attachGizmo(Gui::LinearGizmo* gizmo);
+    void detachGizmo(Gui::LinearGizmo* gizmo);
+
 protected:
     void setupContextMenu(QMenu* menu, QObject* receiver, const char* member) override;
     bool setEdit(int ModNum) override;
     void unsetEdit(int ModNum) override;
+    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum) override;
 
     bool onDelete(const std::vector<std::string> &) override;
 
@@ -93,6 +102,9 @@ protected:
     std::string oldWb;
     App::DocumentObject* oldTip{nullptr};
     bool isSetTipIcon{false};
+
+private:
+    std::vector<Gui::LinearGizmo*> gizmos;
 };
 
 using ViewProviderPython = Gui::ViewProviderFeaturePythonT<ViewProvider>;

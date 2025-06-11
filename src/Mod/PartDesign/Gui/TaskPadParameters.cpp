@@ -60,9 +60,24 @@ TaskPadParameters::TaskPadParameters(ViewProviderPad *PadView, QWidget *parent, 
     if (newObj) {
         readValuesFromHistory();
     }
+
+    connect(ui->lengthEdit, qOverload<double>(&Gui::PrefQuantitySpinBox::valueChanged), [this](double value) { gizmo.setDragLength(value); });
+    gizmo.setProperty(ui->lengthEdit);
+    gizmo.initDragger();
+
+    auto extrude = PadView->getObject<PartDesign::FeatureExtrude>();
+    auto shape = extrude->getProfileShape();
+    Base::Vector3d center;
+    shape.getCenterOfGravity(center);
+    gizmo.setDraggerPlacement(center, extrude->getProfileNormal());
+
+    PadView->attachGizmo(&gizmo);
 }
 
-TaskPadParameters::~TaskPadParameters() = default;
+TaskPadParameters::~TaskPadParameters() {
+    vp->detachGizmo(&gizmo);
+    gizmo.uninitDragger();
+}
 
 void TaskPadParameters::translateModeList(int index)
 {

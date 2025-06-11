@@ -23,6 +23,8 @@
 #ifndef GUI_TASKVIEW_TaskPadParameters_H
 #define GUI_TASKVIEW_TaskPadParameters_H
 
+#include <Gui/Inventor/Draggers/Gizmo.h>
+
 #include "TaskExtrudeParameters.h"
 #include "ViewProviderPad.h"
 
@@ -49,6 +51,8 @@ public:
     void apply() override;
 
 private:
+    Gui::LinearGizmo gizmo;
+
     void onModeChanged(int index) override;
     void translateModeList(int index) override;
     void updateUI(int index) override;

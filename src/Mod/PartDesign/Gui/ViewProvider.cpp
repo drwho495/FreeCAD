@@ -41,6 +41,8 @@
 #include <Mod/PartDesign/App/Body.h>
 #include <Mod/PartDesign/App/Feature.h>
 
+#include <Gui/Inventor/Draggers/Gizmo.h>
+
 #include "TaskFeatureParameters.h"
 
 #include "ViewProvider.h"
@@ -166,6 +168,17 @@ void ViewProvider::unsetEdit(int ModNum)
     else {
         PartGui::ViewProviderPart::unsetEdit(ModNum);
         oldTip = nullptr;
+    }
+}
+
+void ViewProvider::setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum)
+{
+    PartGui::ViewProviderPart::setEditViewer(viewer, ModNum);
+
+    for (auto gizmo: gizmos) {
+        auto originPlacement = App::GeoFeature::getGlobalPlacement(getObject())
+            * getObjectPlacement().inverse();
+        gizmo->attachViewer(viewer, originPlacement);
     }
 }
 
@@ -319,7 +332,8 @@ PyObject* ViewProvider::getPyObject()
     return pyViewObject;
 }
 
-ViewProviderBody* ViewProvider::getBodyViewProvider() {
+ViewProviderBody* ViewProvider::getBodyViewProvider()
+{
 
     auto body = PartDesign::Body::findBodyOf(getObject());
     auto doc = getDocument();
@@ -332,6 +346,17 @@ ViewProviderBody* ViewProvider::getBodyViewProvider() {
     return nullptr;
 }
 
+void ViewProvider::attachGizmo(Gui::LinearGizmo* gizmo)
+{
+    assert(gizmo);
+    gizmos.push_back(gizmo);
+}
+
+void ViewProvider::detachGizmo(Gui::LinearGizmo* gizmo)
+{
+    std::erase_if(gizmos, [gizmo](Gui::LinearGizmo* elem) {return elem == gizmo; });
+}
+
 
 
 namespace Gui {
@@ -342,4 +367,3 @@ PROPERTY_SOURCE_TEMPLATE(PartDesignGui::ViewProviderPython, PartDesignGui::ViewP
 // explicit template instantiation
 template class PartDesignGuiExport ViewProviderFeaturePythonT<PartDesignGui::ViewProvider>;
 }
-
