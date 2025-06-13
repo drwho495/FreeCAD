@@ -1,11 +1,15 @@
 #ifndef GUI_GIZMO_H
 #define GUI_GIZMO_H
 
+#include <Inventor/SbMatrix.h>
+#include <Inventor/sensors/SoFieldSensor.h>
+
 #include <Base/Placement.h>
 #include <Gui/ViewProvider.h>
 #include <Gui/Inventor/So3DAnnotation.h>
 
 class SoDragger;
+class SoCamera;
 
 namespace Gui
 {
@@ -30,6 +34,7 @@ public:
 
     void setProperty(PrefQuantitySpinBox* property);
     void attachViewer(Gui::View3DInventorViewer* viewer, Base::Placement &origin);
+    void setUpAutoScale(SoCamera* cameraIn);
 
 private:
     SoLinearDragger* dragger = nullptr;
@@ -37,10 +42,13 @@ private:
     CoinPtr<So3DAnnotation> annotation;
     PrefQuantitySpinBox* property = nullptr;
     double initialValue;
+    SoFieldSensor cameraSensor;
+    float prevScale = 1;
 
     static void dragStartCallback(void *data, SoDragger *d);
     static void dragFinishCallback(void *data, SoDragger *d);
     static void dragMotionCallback(void *data, SoDragger *d);
+    static void cameraChangeCallback(void* data, SoSensor*);
 };
 
 }
