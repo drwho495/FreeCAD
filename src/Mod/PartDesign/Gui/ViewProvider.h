@@ -33,7 +33,7 @@
 
 namespace Gui
 {
-    class LinearGizmo;
+    class Gizmos;
 }
 
 namespace PartDesignGui {
@@ -82,8 +82,8 @@ public:
 
     QIcon mergeColorfulOverlayIcons (const QIcon & orig) const override;
 
-    void attachGizmo(Gui::LinearGizmo* gizmo);
-    void detachGizmo(Gui::LinearGizmo* gizmo);
+    void attachGizmos(Gui::Gizmos* gizmos);
+    void detachGizmos();
 
 protected:
     void setupContextMenu(QMenu* menu, QObject* receiver, const char* member) override;
@@ -104,7 +104,7 @@ protected:
     bool isSetTipIcon{false};
 
 private:
-    std::vector<Gui::LinearGizmo*> gizmos;
+    Gui::Gizmos* gizmos = nullptr;
 };
 
 using ViewProviderPython = Gui::ViewProviderFeaturePythonT<ViewProvider>;

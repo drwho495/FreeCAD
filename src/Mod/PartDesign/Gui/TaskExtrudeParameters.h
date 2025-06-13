@@ -23,6 +23,8 @@
 #ifndef GUI_TASKVIEW_TaskExtrudeParameters_H
 #define GUI_TASKVIEW_TaskExtrudeParameters_H
 
+#include <Gui/Inventor/Draggers/Gizmo.h>
+
 #include "TaskSketchBasedParameters.h"
 #include "ViewProviderExtrude.h"
 
@@ -67,7 +69,7 @@ public:
         ToShape,
     };
 
-    enum SelectionMode { 
+    enum SelectionMode {
         None,
         SelectFace,
         SelectShape,
@@ -139,6 +141,8 @@ protected:
     void handleLineFaceNameNo();
 
 private:
+    Gui::Gizmos gizmos;
+
     void selectedReferenceAxis(const Gui::SelectionChanges& msg);
     void selectedFace(const Gui::SelectionChanges& msg);
     void selectedShape(const Gui::SelectionChanges& msg);
@@ -154,6 +158,8 @@ private:
     void updateShapeFaces();
 
     std::vector<std::string> getShapeFaces();
+
+    void setupGizmos();
 
 protected:
     QWidget* proxy;

@@ -160,6 +160,7 @@ public:
     SoSFVec3f translation;
     SoSFBool visible;
 
+    Base::Vector3d getPointerDirection();
     void setPointerDirection(const Base::Vector3d& dir);
 
     SoRotationDragger* getDragger();

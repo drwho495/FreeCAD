@@ -435,6 +435,16 @@ SoRotationDragger* SoRotationDraggerContainer::getDragger()
     return SO_GET_PART(this, "dragger", SoRotationDragger);
 }
 
+Base::Vector3d Gui::SoRotationDraggerContainer::getPointerDirection()
+{
+    // This is the direction along which the SoLinearDragger points in it local space
+    SbVec3f draggerDir = SO_GET_ANY_PART(this, "rotator", SoRotatorGeometryKit)->pivotPosition.getValue();
+    rotation.getValue().multVec(draggerDir, draggerDir);
+
+    return Base::convertTo<Base::Vector3d>(draggerDir);
+}
+
+
 void Gui::SoRotationDraggerContainer::setPointerDirection(const Base::Vector3d& dir)
 {
     // This is the direction from the origin to the spherical pivot of the rotator

@@ -454,6 +454,15 @@ SoLinearDragger* SoLinearDraggerContainer::getDragger()
     return SO_GET_PART(this, "dragger", SoLinearDragger);
 }
 
+Base::Vector3d Gui::SoLinearDraggerContainer::getPointerDirection()
+{
+    // This is the direction along which the SoLinearDragger points in it local space
+    SbVec3f draggerDir{0, 1, 0};
+    rotation.getValue().multVec(draggerDir, draggerDir);
+
+    return Base::convertTo<Base::Vector3d>(draggerDir);
+}
+
 void Gui::SoLinearDraggerContainer::setPointerDirection(const Base::Vector3d& dir)
 {
     // This is the direction along which the SoLinearDragger points in it local space

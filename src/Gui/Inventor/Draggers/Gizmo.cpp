@@ -3,6 +3,8 @@
 #include <Inventor/draggers/SoDragger.h>
 #include <Inventor/nodes/SoOrthographicCamera.h>
 #include <Inventor/nodes/SoPerspectiveCamera.h>
+#include <Inventor/nodes/SoScale.h>
+#include <Inventor/nodes/SoPickStyle.h>
 #include <Inventor/So3DAnnotation.h>
 #include <Base/Converter.h>
 #include <Base/Console.h>
@@ -13,54 +15,50 @@
 
 #include "PrefWidgets.h"
 #include "SoLinearDragger.h"
+#include "SoRotationDragger.h"
 #include "View3DInventorViewer.h"
 
 using namespace Gui;
 
-LinearGizmo::LinearGizmo()
+void Gizmo::setDraggerPlacement(const Base::Vector3d& pos, const Base::Vector3d& dir)
 {
+    setDraggerPlacement(
+        Base::convertTo<SbVec3f>(pos),
+        Base::convertTo<SbVec3f>(dir)
+    );
 }
 
-void LinearGizmo::initDragger()
+SoInteractionKit* LinearGizmo::initDragger()
 {
-    assert(!annotation && "Forgot to call LinearGizmo::uninitDragger?");
-    annotation = new So3DAnnotation;
-
     draggerContainer = new SoLinearDraggerContainer;
-    annotation->addChild(draggerContainer);
-
     draggerContainer->color.setValue(1, 0, 0);
     dragger = draggerContainer->getDragger();
 
     dragger->addStartCallback(dragStartCallback, this);
     dragger->addFinishCallback(dragFinishCallback, this);
     dragger->addMotionCallback(dragMotionCallback, this);
-    dragger->setLabelVisibility(false);
+    dragger->labelVisible = false;
 
     setDragLength(property->value().getValue());
 
-    cameraSensor.setFunction(&LinearGizmo::cameraChangeCallback);
-    cameraSensor.setData(this);
+    return draggerContainer;
 }
 
 void LinearGizmo::uninitDragger()
 {
-    annotation.reset();
     dragger = nullptr;
     draggerContainer = nullptr;
 }
 
-Base::Placement LinearGizmo::getDraggerPlacement()
+GizmoPlacement LinearGizmo::getDraggerPlacement()
 {
-    return {
-        Base::convertTo<Base::Vector3d>(draggerContainer->translation.getValue()),
-        Base::convertTo<Base::Rotation>(draggerContainer->rotation.getValue())
-    };
+    assert(draggerContainer);
+    return {draggerContainer->translation.getValue(), draggerContainer->getPointerDirection()};
 }
 
-void LinearGizmo::setDraggerPlacement(Base::Vector3d pos, Base::Vector3d dir)
+void LinearGizmo::setDraggerPlacement(const SbVec3f& pos, const SbVec3f& dir)
 {
-    draggerContainer->translation = Base::convertTo<SbVec3f>(pos);
+    draggerContainer->translation = pos;
     draggerContainer->setPointerDirection(dir);
 }
 
@@ -69,26 +67,24 @@ double LinearGizmo::getDragLength()
     double dragLength = dragger->translationIncrementCount.getValue()
         * dragger->translationIncrement.getValue();
 
-    return dragLength;
+    return (dragLength - addFactor) / multFactor;
 }
 
 void LinearGizmo::setDragLength(double dragLength)
 {
+    dragLength = dragLength * multFactor + addFactor;
     dragger->translation = {0, static_cast<float>(dragLength), 0};
 }
 
-void LinearGizmo::setProperty(PrefQuantitySpinBox* property)
+void LinearGizmo::setGeometryScale(float scale)
 {
-    this->property = property;
+    dragger->geometryScale = SbVec3f(scale, scale, scale);
 }
 
-void LinearGizmo::attachViewer(Gui::View3DInventorViewer* viewer, Base::Placement &origin) {
-    if (draggerContainer && viewer) {
-        auto mat = origin.toMatrix();
-
-        viewer->getDocument()->setEditingTransform(mat);
-        viewer->setupEditingRoot(annotation.get(), &mat);
-    }
+SoLinearDraggerContainer* LinearGizmo::getDraggerContainer()
+{
+    assert(draggerContainer);
+    return draggerContainer;
 }
 
 void LinearGizmo::dragStartCallback(void *data, [[maybe_unused]] SoDragger *d)
@@ -110,7 +106,9 @@ void LinearGizmo::dragMotionCallback(void *data, [[maybe_unused]] SoDragger *d)
     auto sudoThis = static_cast<LinearGizmo*>(data);
 
     double value = sudoThis->initialValue + sudoThis->getDragLength();
-    value = std::max(value, sudoThis->dragger->translationIncrement.getValue());
+    // TODO: Need to change the lower limit to sudoThis->property->minimum() once the
+    // two direction extrude work gets merged
+    value = std::clamp(value, sudoThis->dragger->translationIncrement.getValue(), sudoThis->property->maximum());
 
     sudoThis->property->setValue(value);
     sudoThis->setDragLength(value);
@@ -118,38 +116,289 @@ void LinearGizmo::dragMotionCallback(void *data, [[maybe_unused]] SoDragger *d)
     Base::Console().message("Continuing dragging, value: %lf\n", value);
 }
 
-void LinearGizmo::setUpAutoScale(SoCamera* cameraIn)
+
+RotationGizmo::~RotationGizmo()
+{
+    translationSensor.detach();
+    translationSensor.setData(nullptr);
+    translationSensor.setFunction(nullptr);
+}
+
+SoInteractionKit* RotationGizmo::initDragger()
+{
+    multFactor = std::numbers::pi_v<float> / 180.0;
+    draggerContainer = new SoRotationDraggerContainer;
+
+    draggerContainer->color.setValue(1, 0, 0);
+    dragger = draggerContainer->getDragger();
+    dragger->rotationIncrement = std::numbers::pi / 90.0;
+
+    auto rotator = new SoRotatorGeometry;
+    rotator->arcAngle = std::numbers::pi_v<float> / 6.0f;
+    rotator->arcRadius = 16.0f;
+    dragger->setPart("rotator", rotator);
+
+    dragger->addStartCallback(dragStartCallback, this);
+    dragger->addFinishCallback(dragFinishCallback, this);
+    dragger->addMotionCallback(dragMotionCallback, this);
+
+    setRotAngle(property->value().getValue());
+
+    return draggerContainer;
+}
+
+void RotationGizmo::uninitDragger()
+{
+    dragger = nullptr;
+    draggerContainer = nullptr;
+
+    translationSensor.detach();
+    translationSensor.setData(nullptr);
+    translationSensor.setFunction(nullptr);
+}
+
+GizmoPlacement RotationGizmo::getDraggerPlacement()
+{
+    assert(draggerContainer);
+    return {draggerContainer->translation.getValue(), draggerContainer->getPointerDirection()};
+}
+
+void RotationGizmo::setDraggerPlacement(const SbVec3f& pos, const SbVec3f& dir)
+{
+    draggerContainer->translation = pos;
+    draggerContainer->setPointerDirection(dir);
+}
+
+void RotationGizmo::placeOverLinearGizmo(LinearGizmo* gizmo)
+{
+    linearGizmo = gizmo;
+
+    GizmoPlacement placement = gizmo->getDraggerPlacement();
+
+    draggerContainer->translation = Base::convertTo<SbVec3f>(placement.pos);
+    draggerContainer->setPointerDirection(placement.dir);
+
+    translationSensor.setData(this);
+    translationSensor.setFunction(translationSensorCB);
+    translationSensor.setPriority(0);
+    SoSFVec3f& translation = gizmo->getDraggerContainer()->getDragger()->translation;
+    translationSensor.attach(&translation);
+    translation.touch();
+}
+
+double RotationGizmo::getRotAngle()
+{
+    double rotAngle = dragger->rotationIncrementCount.getValue()
+        * dragger->rotationIncrement.getValue();
+
+    return (rotAngle - addFactor) / multFactor;
+}
+
+void RotationGizmo::setRotAngle(double angle)
+{
+    angle = multFactor * angle + addFactor;
+    dragger->rotation = SbRotation({0, 0, 1.0f}, static_cast<float>(angle));
+}
+
+void RotationGizmo::setGeometryScale(float scale)
+{
+    dragger->geometryScale = SbVec3f(scale, scale, scale);
+}
+
+SoRotationDraggerContainer* RotationGizmo::getDraggerContainer()
+{
+    assert(draggerContainer);
+    return draggerContainer;
+}
+
+void RotationGizmo::dragStartCallback(void *data, [[maybe_unused]] SoDragger *d)
+{
+    Base::Console().message("Started rotating\n");
+
+    auto sudoThis = static_cast<RotationGizmo*>(data);
+    sudoThis->initialValue = sudoThis->property->value().getValue();
+    sudoThis->dragger->rotationIncrementCount.setValue(0);
+}
+
+void RotationGizmo::dragFinishCallback(void *data, [[maybe_unused]] SoDragger *d)
+{
+    Base::Console().message("Finished rotating\n");
+}
+
+void RotationGizmo::dragMotionCallback(void *data, [[maybe_unused]] SoDragger *d)
+{
+    auto sudoThis = static_cast<RotationGizmo*>(data);
+
+    double value = sudoThis->initialValue + sudoThis->getRotAngle();
+    value = std::clamp(value, sudoThis->property->minimum(), sudoThis->property->maximum());
+
+    sudoThis->property->setValue(value);
+    sudoThis->setRotAngle(value);
+
+    Base::Console().message("Continuing rotating, value: %lf\n", value);
+}
+
+void RotationGizmo::translationSensorCB(void* data, SoSensor* sensor)
+{
+    assert(data);
+    auto sudoThis = static_cast<RotationGizmo*>(data);
+    assert(sensor);
+    auto translationSensor = static_cast<SoFieldSensor*>(sensor);
+
+    GizmoPlacement placement = sudoThis->linearGizmo->getDraggerPlacement();
+
+    SbVec3f translation = static_cast<SoSFVec3f*>(translationSensor->getAttachedField())->getValue();
+    float yComp = translation.getValue()[1];
+    SbVec3f dir = placement.dir;
+    dir.normalize();
+    sudoThis->draggerContainer->translation = placement.pos + dir * (yComp + sudoThis->sepDistance);
+}
+
+void RotationGizmo::orientAlongCamera(SoCamera* camera)
+{
+    assert(camera);
+    SbVec3f cameraDir{0, 0, 1};
+    camera->orientation.getValue().multVec(cameraDir, cameraDir);
+    SbVec3f pointerDir = linearGizmo->getDraggerContainer()->getPointerDirection();
+
+    pointerDir.normalize();
+    auto proj = cameraDir - cameraDir.dot(pointerDir) * pointerDir;
+    if (proj.equals(SbVec3f{0, 0, 0}, 0.001)) {
+        return;
+    }
+
+    assert(draggerContainer);
+    SbVec3f currentNormal = {0, 0, 1};
+    auto currentRot = draggerContainer->rotation.getValue();
+    currentRot.multVec(currentNormal, currentNormal);
+
+    SbRotation rot{currentNormal, proj};
+    draggerContainer->rotation = currentRot * rot; 
+}
+
+SO_KIT_SOURCE(Gizmos)
+
+void Gizmos::initClass()
+{
+    SO_KIT_INIT_CLASS(Gizmos, SoBaseKit, "BaseKit");
+}
+
+Gizmos::Gizmos()
+{
+    SO_KIT_CONSTRUCTOR(Gizmos);
+
+#if defined(Q_OS_MACOS) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
+    this->ref();
+#endif
+
+    FC_ADD_CATALOG_ENTRY(annotation, So3DAnnotation, this);
+    FC_ADD_CATALOG_ENTRY(pickStyle, SoPickStyle, annotation);
+    FC_ADD_CATALOG_ENTRY(geometry, SoSeparator, annotation);
+
+    SO_KIT_INIT_INSTANCE();
+
+    auto pickStyle = SO_GET_ANY_PART(this, "pickStyle", SoPickStyle);
+    pickStyle->style = SoPickStyle::SHAPE_ON_TOP;
+
+    setPart("geometry", new SoSeparator);
+
+    cameraSensor.setFunction(&Gizmos::cameraChangeCallback);
+    cameraSensor.setData(this);
+
+    cameraPositionSensor.setData(this);
+    cameraPositionSensor.setFunction(cameraPositionChangeCallback);
+}
+
+Gizmos::~Gizmos()
+{
+    cameraSensor.setData(nullptr);
+    cameraSensor.detach();
+
+    cameraPositionSensor.setData(nullptr);
+    cameraPositionSensor.detach();
+}
+
+void Gizmos::initGizmos()
+{
+    auto geometry = SO_GET_ANY_PART(this, "geometry", SoSeparator);
+    for (auto gizmo: gizmos) {
+        geometry->addChild(gizmo->initDragger());
+    }
+}
+
+void Gizmos::uninitGizmos()
+{
+    for (auto gizmo: gizmos) {
+        gizmo->uninitDragger();
+        delete gizmo;
+    }
+}
+
+void Gizmos::addGizmo(Gizmo* gizmo)
+{
+    assert(std::ranges::find(gizmos, gizmo) == gizmos.end() && "this gizmo is already added!");
+    gizmos.push_back(gizmo);
+}
+
+void Gizmos::attachViewer(Gui::View3DInventorViewer* viewer, Base::Placement &origin)
+{
+    if (viewer) {
+        auto mat = origin.toMatrix();
+
+        viewer->getDocument()->setEditingTransform(mat);
+        So3DAnnotation* annotation = SO_GET_ANY_PART(this, "annotation", So3DAnnotation);
+        viewer->setupEditingRoot(annotation, &mat);
+    }
+}
+
+void Gizmos::setUpAutoScale(SoCamera* cameraIn)
 {
     if (cameraIn->getTypeId() == SoOrthographicCamera::getClassTypeId()) {
         auto localCamera = dynamic_cast<SoOrthographicCamera*>(cameraIn);
         assert(localCamera);
         cameraSensor.attach(&localCamera->height);
         cameraChangeCallback(this, nullptr);
+        cameraPositionSensor.attach(&localCamera->orientation);
+        cameraPositionChangeCallback(this, nullptr);
     }
     else if (cameraIn->getTypeId() == SoPerspectiveCamera::getClassTypeId()) {
         auto localCamera = dynamic_cast<SoPerspectiveCamera*>(cameraIn);
         assert(localCamera);
         cameraSensor.attach(&localCamera->position);
         cameraChangeCallback(this, nullptr);
+        cameraPositionSensor.attach(&localCamera->orientation);
+        cameraPositionChangeCallback(this, nullptr);
     }
 }
 
-void LinearGizmo::cameraChangeCallback(void* data, SoSensor*)
+void Gizmos::cameraChangeCallback(void* data, SoSensor*)
 {
     assert(data);
-    auto sudoThis = static_cast<LinearGizmo*>(data);
+    auto sudoThis = static_cast<Gizmos*>(data);
 
     SoField* field = sudoThis->cameraSensor.getAttachedField();
     if (field) {
         auto camera = static_cast<SoCamera*>(field->getContainer());
 
         SbViewVolume viewVolume = camera->getViewVolume();
-        float localScale = viewVolume.getWorldToScreenScale(sudoThis->draggerContainer->translation.getValue(), 0.015);
-        float scale = localScale / sudoThis->prevScale;
-        sudoThis->dragger->coneBottomRadius = sudoThis->dragger->coneBottomRadius.getValue() * scale;
-        sudoThis->dragger->coneHeight = sudoThis->dragger->coneHeight.getValue() * scale;
-        sudoThis->dragger->cylinderHeight = sudoThis->dragger->cylinderHeight.getValue() * scale;
-        sudoThis->dragger->cylinderRadius = sudoThis->dragger->cylinderRadius.getValue() * scale;
-        sudoThis->prevScale = localScale;
+        for (auto gizmo: sudoThis->gizmos) {
+            float localScale = viewVolume.getWorldToScreenScale(gizmo->getDraggerPlacement().pos, 0.015);
+            gizmo->setGeometryScale(localScale);
+        }
+    }
+}
+
+void Gizmos::cameraPositionChangeCallback(void* data, SoSensor*)
+{
+    assert(data);
+    auto sudoThis = static_cast<Gizmos*>(data);
+
+    SoField* field = sudoThis->cameraSensor.getAttachedField();
+    if (field) {
+        auto camera = static_cast<SoCamera*>(field->getContainer());
+
+        for (auto gizmo: sudoThis->gizmos) {
+            gizmo->orientAlongCamera(camera);
+        }
     }
 }
