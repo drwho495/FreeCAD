@@ -36,15 +36,24 @@ set(FemGui_LIBS
 generate_from_xml(ViewProviderFemConstraintPy)
 generate_from_xml(ViewProviderFemMeshPy)
 generate_from_xml(ViewProviderFemPostPipelinePy)
+generate_from_xml(ViewProviderFemPostFilterPy)
 
 SET(Python_SRCS
     ViewProviderFemConstraintPy.xml
     ViewProviderFemConstraintPyImp.cpp
     ViewProviderFemMeshPy.xml
     ViewProviderFemMeshPyImp.cpp
-    ViewProviderFemPostPipelinePy.xml
-    ViewProviderFemPostPipelinePyImp.cpp
 )
+if(BUILD_FEM_VTK)
+    set(Python_SRCS
+        ${Python_SRCS}
+        ViewProviderFemPostPipelinePy.xml
+        ViewProviderFemPostPipelinePyImp.cpp
+        ViewProviderFemPostFilterPy.xml
+        ViewProviderFemPostFilterPyImp.cpp
+    )
+endif(BUILD_FEM_VTK)
+
 SOURCE_GROUP("Python" FILES ${Python_SRCS})
 
 
@@ -87,6 +96,7 @@ if(BUILD_FEM_VTK)
         CylinderWidget.ui
         PlaneWidget.ui
         SphereWidget.ui
+        TaskPostCalculator.ui
         TaskPostClip.ui
         TaskPostContours.ui
         TaskPostCut.ui
@@ -281,6 +291,7 @@ if(BUILD_FEM_VTK)
         SphereWidget.ui
         TaskPostBoxes.h
         TaskPostBoxes.cpp
+        TaskPostCalculator.ui
         TaskPostClip.ui
         TaskPostContours.ui
         TaskPostCut.ui
@@ -369,6 +380,7 @@ SET(FemGuiIcon_SVG
 SET(FemGuiSymbol_IV
     Resources/symbols/ConstraintContact.iv
     Resources/symbols/ConstraintDisplacement.iv
+    Resources/symbols/ConstraintElectricChargeDensity.iv
     Resources/symbols/ConstraintElectrostaticPotential.iv
     Resources/symbols/ConstraintCurrentDensity.iv
     Resources/symbols/ConstraintFixed.iv
@@ -405,6 +417,7 @@ SET(FemGuiPythonUI_SRCS
     Resources/ui/ConstraintSectionPrint.ui
     Resources/ui/CurrentDensity.ui
     Resources/ui/DlgSettingsNetgen.ui
+    Resources/ui/ElectricChargeDensity.ui
     Resources/ui/ElectrostaticPotential.ui
     Resources/ui/ElementFluid1D.ui
     Resources/ui/ElementGeometry1D.ui
@@ -424,7 +437,9 @@ SET(FemGuiPythonUI_SRCS
     Resources/ui/MeshRegion.ui
     Resources/ui/ResultHints.ui
     Resources/ui/ResultShow.ui
-    Resources/ui/SolverCalculix.ui
+    Resources/ui/SolverCalculiX.ui
+    Resources/ui/SolverCcxTools.ui
+    Resources/ui/TaskPostGlyph.ui
 )
 
 ADD_CUSTOM_TARGET(FemPythonUi ALL

@@ -386,12 +386,12 @@ void ViewProviderMesh::setOpenEdgeColorFrom(const Base::Color& c)
 
 const Mesh::PropertyMeshKernel& ViewProviderMesh::getMeshProperty() const
 {
-    return Base::freecad_dynamic_cast<Mesh::Feature>(getObject())->Mesh;
+    return freecad_cast<Mesh::Feature*>(getObject())->Mesh;
 }
 
 Mesh::PropertyMeshKernel& ViewProviderMesh::getMeshProperty()
 {
-    return Base::freecad_dynamic_cast<Mesh::Feature>(getObject())->Mesh;
+    return freecad_cast<Mesh::Feature*>(getObject())->Mesh;
 }
 
 const Mesh::MeshObject& ViewProviderMesh::getMeshObject() const
@@ -1159,7 +1159,7 @@ void ViewProviderMesh::partMeshCallback(void* ud, SoEventCallback* cb)
     // create a tool shape from these points
     std::vector<MeshCore::MeshGeomFacet> aFaces;
     if (!ViewProviderMesh::createToolMesh(clPoly, vol, cNormal, aFaces)) {
-        Base::Console().Message("The picked polygon seems to have self-overlappings. This could "
+        Base::Console().message("The picked polygon seems to have self-overlappings. This could "
                                 "lead to strange results.");
     }
 
@@ -1232,7 +1232,7 @@ void ViewProviderMesh::segmMeshCallback(void* ud, SoEventCallback* cb)
     // create a tool shape from these points
     std::vector<MeshCore::MeshGeomFacet> aFaces;
     if (!ViewProviderMesh::createToolMesh(clPoly, vol, cNormal, aFaces)) {
-        Base::Console().Message("The picked polygon seems to have self-overlappings. This could "
+        Base::Console().message("The picked polygon seems to have self-overlappings. This could "
                                 "lead to strange results.");
     }
 
@@ -1366,7 +1366,7 @@ void ViewProviderMesh::getFacetsFromPolygon(const std::vector<SbVec2f>& picked,
     }
 
     if (!ok) {  // note: the mouse grabbing needs to be released
-        Base::Console().Message("The picked polygon seems to have self-overlappings. This could "
+        Base::Console().message("The picked polygon seems to have self-overlappings. This could "
                                 "lead to strange results.");
     }
 }
@@ -1701,7 +1701,7 @@ void ViewProviderMesh::faceInfoCallback(void* ud, SoEventCallback* cb)
              && mbe->getState() == SoButtonEvent::DOWN) {
         const SoPickedPoint* point = cb->getPickedPoint();
         if (!point) {
-            Base::Console().Message("No facet picked.\n");
+            Base::Console().message("No facet picked.\n");
             return;
         }
 
@@ -1784,7 +1784,7 @@ void ViewProviderMesh::fillHoleCallback(void* ud, SoEventCallback* cb)
              && mbe->getState() == SoButtonEvent::DOWN) {
         const SoPickedPoint* point = cb->getPickedPoint();
         if (!point) {
-            Base::Console().Message("No facet picked.\n");
+            Base::Console().message("No facet picked.\n");
             return;
         }
 
@@ -1793,7 +1793,7 @@ void ViewProviderMesh::fillHoleCallback(void* ud, SoEventCallback* cb)
         // By specifying the indexed mesh node 'pcFaceSet' we make sure that the picked point is
         // really from the mesh we render and not from any other geometry
         Gui::ViewProvider* vp = view->getViewProviderByPathFromTail(point->getPath());
-        if (auto that = dynamic_cast<ViewProviderMesh*>(vp)) {
+        if (auto that = freecad_cast<ViewProviderMesh*>(vp)) {
             const SoDetail* detail = point->getDetail(that->getShapeNode());
             if (detail && detail->getTypeId() == SoFaceDetail::getClassTypeId()) {
                 // get the boundary to the picked facet
@@ -1859,7 +1859,7 @@ void ViewProviderMesh::markPartCallback(void* ud, SoEventCallback* cb)
                  && mbe->getState() == SoButtonEvent::DOWN) {
             const SoPickedPoint* point = cb->getPickedPoint();
             if (!point) {
-                Base::Console().Message("No facet picked.\n");
+                Base::Console().message("No facet picked.\n");
                 return;
             }
 
@@ -1868,7 +1868,7 @@ void ViewProviderMesh::markPartCallback(void* ud, SoEventCallback* cb)
             // By specifying the indexed mesh node 'pcFaceSet' we make sure that the picked point is
             // really from the mesh we render and not from any other geometry
             Gui::ViewProvider* vp = view->getViewProviderByPathFromTail(point->getPath());
-            if (auto that = dynamic_cast<ViewProviderMesh*>(vp)) {
+            if (auto that = freecad_cast<ViewProviderMesh*>(vp)) {
                 const SoDetail* detail = point->getDetail(that->getShapeNode());
                 if (detail && detail->getTypeId() == SoFaceDetail::getClassTypeId()) {
                     // get the boundary to the picked facet
@@ -1888,7 +1888,7 @@ void ViewProviderMesh::faceInfo(Mesh::FacetIndex uFacet)
     if (uFacet < facets.size()) {
         MeshCore::MeshFacet face = facets[uFacet];
         MeshCore::MeshGeomFacet tria = rKernel.GetFacet(face);
-        Base::Console().Message(
+        Base::Console().message(
             "Mesh: %s Facet %lu: Points: <%lu, %lu, %lu>, Neighbours: <%lu, %lu, %lu>\n"
             "Triangle: <[%.6f, %.6f, %.6f], [%.6f, %.6f, %.6f], [%.6f, %.6f, %.6f]>\n",
             getObject()->getNameInDocument(),
@@ -2420,15 +2420,15 @@ void ViewProviderMesh::highlightColors()
 {
     const Mesh::MeshObject& rMesh = getMeshObject();
     {
-        auto prop = Base::freecad_dynamic_cast<App::PropertyColorList>(
-            pcObject->getPropertyByName("FaceColors"));
+        auto prop =
+            freecad_cast<App::PropertyColorList*>(pcObject->getPropertyByName("FaceColors"));
         if (prop && prop->getSize() == int(rMesh.countFacets())) {
             setColorPerFace(prop);
         }
     }
     {
-        auto prop = Base::freecad_dynamic_cast<App::PropertyColorList>(
-            pcObject->getPropertyByName("VertexColors"));
+        auto prop =
+            freecad_cast<App::PropertyColorList*>(pcObject->getPropertyByName("VertexColors"));
         if (prop && prop->getSize() == int(rMesh.countPoints())) {
             setColorPerVertex(prop);
         }
@@ -2439,15 +2439,15 @@ bool ViewProviderMesh::canHighlightColors() const
 {
     const Mesh::MeshObject& rMesh = getMeshObject();
     {
-        auto prop = Base::freecad_dynamic_cast<App::PropertyColorList>(
-            pcObject->getPropertyByName("FaceColors"));
+        auto prop =
+            freecad_cast<App::PropertyColorList*>(pcObject->getPropertyByName("FaceColors"));
         if (prop && prop->getSize() == int(rMesh.countFacets())) {
             return true;
         }
     }
     {
-        auto prop = Base::freecad_dynamic_cast<App::PropertyColorList>(
-            pcObject->getPropertyByName("VertexColors"));
+        auto prop =
+            freecad_cast<App::PropertyColorList*>(pcObject->getPropertyByName("VertexColors"));
         if (prop && prop->getSize() == int(rMesh.countPoints())) {
             return true;
         }

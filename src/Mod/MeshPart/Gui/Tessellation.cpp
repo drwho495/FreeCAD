@@ -71,11 +71,11 @@ Tessellation::Tessellation(QWidget* parent)
     relative = handle->GetBool("RelativeLinearDeflection", relative);
     ui->relativeDeviation->setChecked(relative);
 
-    ui->spinSurfaceDeviation->setMaximum(INT_MAX);
+    ui->spinSurfaceDeviation->setMaximum(std::numeric_limits<int>::max());
     ui->spinSurfaceDeviation->setValue(value);
     ui->spinAngularDeviation->setValue(angle);
 
-    ui->spinMaximumEdgeLength->setRange(0, INT_MAX);
+    ui->spinMaximumEdgeLength->setRange(0, std::numeric_limits<int>::max());
 
     ui->comboFineness->setCurrentIndex(2);
     onComboFinenessCurrentIndexChanged(2);
@@ -217,7 +217,10 @@ void Tessellation::onEstimateMaximumEdgeLengthClicked()
 
     double edgeLen = 0;
     for (auto& sel : Gui::Selection().getSelection("*", Gui::ResolveMode::NoResolve)) {
-        auto shape = Part::Feature::getTopoShape(sel.pObject, sel.SubName);
+        auto shape = Part::Feature::getTopoShape(sel.pObject,
+                                                 Part::ShapeOption::ResolveLink
+                                                     | Part::ShapeOption::Transform,
+                                                 sel.SubName);
         if (shape.hasSubShape(TopAbs_FACE)) {
             Base::BoundBox3d bbox = shape.getBoundBox();
             edgeLen = std::max<double>(edgeLen, bbox.LengthX());
@@ -249,7 +252,10 @@ bool Tessellation::accept()
     bool bodyWithNoTip = false;
     bool partWithNoFace = false;
     for (auto& sel : Gui::Selection().getSelection("*", Gui::ResolveMode::NoResolve)) {
-        auto shape = Part::Feature::getTopoShape(sel.pObject, sel.SubName);
+        auto shape = Part::Feature::getTopoShape(sel.pObject,
+                                                 Part::ShapeOption::ResolveLink
+                                                     | Part::ShapeOption::Transform,
+                                                 sel.SubName);
         if (shape.hasSubShape(TopAbs_FACE)) {
             shapeObjects.emplace_back(sel.pObject, sel.SubName);
         }
@@ -347,7 +353,7 @@ void Tessellation::process(int method,
     }
     catch (const Base::Exception& e) {
         doc->abortTransaction();
-        Base::Console().Error(e.what());
+        Base::Console().error(e.what());
     }
 }
 
@@ -374,7 +380,7 @@ void Tessellation::setFaceColors(int method, App::Document* doc, App::DocumentOb
                 Gui::Application::Instance->getViewProvider(doc->getActiveObject());
             auto vpmesh = dynamic_cast<MeshGui::ViewProviderMesh*>(vpm);
 
-            auto svp = Base::freecad_dynamic_cast<PartGui::ViewProviderPartExt>(
+            auto svp = freecad_cast<PartGui::ViewProviderPartExt*>(
                 Gui::Application::Instance->getViewProvider(obj));
             if (vpmesh && svp) {
                 std::vector<Base::Color> diff_col = svp->ShapeAppearance.getDiffuseColors();
@@ -463,7 +469,7 @@ QString Tessellation::getStandardParameters(App::DocumentObject* obj) const
         param += QStringLiteral(",Segments=True");
     }
 
-    auto svp = Base::freecad_dynamic_cast<PartGui::ViewProviderPartExt>(
+    auto svp = freecad_cast<PartGui::ViewProviderPartExt*>(
         Gui::Application::Instance->getViewProvider(obj));
     if (ui->groupsFaceColors->isChecked() && svp) {
         // TODO: currently, we can only retrieve part feature
@@ -568,7 +574,10 @@ bool Mesh2ShapeGmsh::writeProject(QString& inpFile, QString& outFile)
 
         App::DocumentObject* part = sub.getObject();
         if (part) {
-            Part::TopoShape shape = Part::Feature::getTopoShape(part, sub.getSubName().c_str());
+            Part::TopoShape shape = Part::Feature::getTopoShape(part,
+                                                                Part::ShapeOption::ResolveLink
+                                                                    | Part::ShapeOption::Transform,
+                                                                sub.getSubName().c_str());
             shape.exportBrep(d->cadFile.c_str());
             d->label = part->Label.getStrValue() + " (Meshed)";
 

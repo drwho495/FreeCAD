@@ -123,7 +123,7 @@ QPainterPath PathBuilder::geomToPainterPath(BaseGeomPtr baseGeom, double rot) co
                                  Rez::guiX(geom->pnts[0].x), Rez::guiX(geom->pnts[0].y));
                 }
                 else {//can only handle lines, quads, cubes
-                    Base::Console().Error("Bad pole count (%d) for BezierSegment\n", geom->poles);
+                    Base::Console().error("Bad pole count (%d) for BezierSegment\n", geom->poles);
                     auto itBez = geom->pnts.begin() + 1;
                     for (; itBez != geom->pnts.end(); itBez++) {
                         path.lineTo(Rez::guiX((*itBez).x),
@@ -149,7 +149,7 @@ QPainterPath PathBuilder::geomToPainterPath(BaseGeomPtr baseGeom, double rot) co
                                  Rez::guiX(geom->pnts[3].x), Rez::guiX(geom->pnts[3].y));
                 }
                 else {//can only handle lines, quads, cubes
-                    Base::Console().Error("Bad pole count (%d) for BezierSegment\n", geom->poles);
+                    Base::Console().error("Bad pole count (%d) for BezierSegment\n", geom->poles);
                     auto itBez = geom->pnts.begin() + 1;
                     for (; itBez != geom->pnts.end(); itBez++) {
                         path.lineTo(Rez::guiX((*itBez).x),
@@ -184,7 +184,7 @@ QPainterPath PathBuilder::geomToPainterPath(BaseGeomPtr baseGeom, double rot) co
                                      Rez::guiX(it->pnts[0].x), Rez::guiX(it->pnts[0].y));
                     }
                     else {//can only handle lines, quads, cubes
-                        Base::Console().Error(
+                        Base::Console().error(
                             "Bad pole count (%d) for BezierSegment of B-spline geometry\n",
                             it->poles);
                         path.lineTo(it->pnts[1].x, it->pnts[1].y);//show something for debugging
@@ -213,7 +213,7 @@ QPainterPath PathBuilder::geomToPainterPath(BaseGeomPtr baseGeom, double rot) co
                                      Rez::guiX(it->pnts[3].x), Rez::guiX(it->pnts[3].y));
                     }
                     else {
-                        Base::Console().Error(
+                        Base::Console().error(
                             "Bad pole count (%d) for BezierSegment of B-spline geometry\n",
                             it->poles);
                         path.lineTo(it->pnts[1].x, it->pnts[1].y);//show something for debugging
@@ -242,7 +242,7 @@ QPainterPath PathBuilder::geomToPainterPath(BaseGeomPtr baseGeom, double rot) co
             }
         } break;
         default: {
-            Base::Console().Error("Error - geomToPainterPath - UNKNOWN geomType: %d\n",
+            Base::Console().error("Error - geomToPainterPath - UNKNOWN geomType: %d\n",
                                   static_cast<int>(baseGeom->getGeomType()));
         } break;
     }//sb end of switch
@@ -327,11 +327,11 @@ void PathBuilder::pathArc(QPainterPath& path, double rx, double ry, double x_axi
 
     th_arc = th1 - th0;
     if (th_arc < 0 && sweep_flag)
-        th_arc += 2 * M_PI;
+        th_arc += 2 * std::numbers::pi;
     else if (th_arc > 0 && !sweep_flag)
-        th_arc -= 2 * M_PI;
+        th_arc -= 2 * std::numbers::pi;
 
-    n_segs = qCeil(qAbs(th_arc / (M_PI * 0.5 + 0.001)));
+    n_segs = qCeil(qAbs(th_arc / (std::numbers::pi * 0.5 + 0.001)));
 
     path.moveTo(curx, cury);
 

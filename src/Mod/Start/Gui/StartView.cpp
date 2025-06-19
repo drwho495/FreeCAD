@@ -330,6 +330,11 @@ void StartView::newArchFile() const
     catch (...) {
         Gui::Application::Instance->activateWorkbench("ArchWorkbench");
     }
+
+    // Set the camera zoom level to 10 m, which is more appropriate for architectural projects
+    Gui::Command::doCommand(
+        Gui::Command::Gui,
+        "Gui.activeDocument().activeView().viewDefaultOrientation(None, 10000.0)");
     postStart(PostStartBehavior::doNotSwitchWorkbench);
 }
 
@@ -373,13 +378,13 @@ void StartView::fileCardSelected(const QModelIndex& index)
         Gui::ModuleIO::verifyAndOpenFile(filename);
     }
     catch (Base::PyException& e) {
-        Base::Console().Error(e.getMessage().c_str());
+        Base::Console().error(e.getMessage().c_str());
     }
     catch (Base::Exception& e) {
-        Base::Console().Error(e.getMessage().c_str());
+        Base::Console().error(e.getMessage().c_str());
     }
     catch (...) {
-        Base::Console().Error("An unknown error occurred");
+        Base::Console().error("An unknown error occurred");
     }
 }
 
@@ -412,8 +417,7 @@ void StartView::changeEvent(QEvent* event)
     _openFirstStart->setEnabled(true);
     Gui::Document* doc = Gui::Application::Instance->activeDocument();
     if (doc) {
-        Gui::View3DInventor* view = static_cast<Gui::View3DInventor*>(doc->getActiveView());
-        if (view) {
+        if (auto view = dynamic_cast<Gui::View3DInventor*>(doc->getActiveView())) {
             Gui::View3DInventorViewer* viewer = view->getViewer();
             if (viewer->isEditing()) {
                 _openFirstStart->setEnabled(false);
@@ -437,7 +441,18 @@ void StartView::retranslateUi()
     _newFileLabel->setText(h1Start + tr("New File") + h1End);
     _examplesLabel->setText(h1Start + tr("Examples") + h1End);
     _recentFilesLabel->setText(h1Start + tr("Recent Files") + h1End);
-    _customFolderLabel->setText(h1Start + tr("Custom Folder") + h1End);
+
+    auto hGrp = App::GetApplication().GetParameterGroupByPath(
+        "User parameter:BaseApp/Preferences/Mod/Start");
+    std::string customFolder(hGrp->GetASCII("CustomFolder", ""));
+    bool shortCustomFolder = hGrp->GetBool("ShortCustomFolder", true);  // false shows full path
+    if (!customFolder.empty()) {
+        if (shortCustomFolder) {
+            _customFolderLabel->setToolTip(QString::fromUtf8(customFolder.c_str()));
+            customFolder = customFolder.substr(customFolder.find_last_of("/\\") + 1);
+        }
+        _customFolderLabel->setText(h1Start + QString::fromUtf8(customFolder.c_str()) + h1End);
+    }
 
     QString application = QString::fromUtf8(App::Application::Config()["ExeName"].c_str());
     _openFirstStart->setText(tr("Open first start setup"));

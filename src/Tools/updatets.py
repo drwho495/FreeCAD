@@ -58,11 +58,6 @@ directories = [
     {"tsname": "Base", "workingdir": "./src/Base", "tsdir": "Resources/translations"},
     {"tsname": "FreeCAD", "workingdir": "./src/Gui", "tsdir": "Language"},
     {
-        "tsname": "AddonManager",
-        "workingdir": "./src/Mod/AddonManager/",
-        "tsdir": "Resources/translations",
-    },
-    {
         "tsname": "Arch",
         "workingdir": "./src/Mod/BIM/",
         "tsdir": "Resources/translations",
@@ -76,11 +71,6 @@ directories = [
         "tsname": "Draft",
         "workingdir": "./src/Mod/Draft/",
         "tsdir": "Resources/translations",
-    },
-    {
-        "tsname": "Drawing",
-        "workingdir": "./src/Mod/Drawing/",
-        "tsdir": "Gui/Resources/translations",
     },
     {
         "tsname": "Fem",

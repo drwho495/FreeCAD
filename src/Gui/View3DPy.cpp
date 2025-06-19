@@ -553,7 +553,7 @@ Py::Object View3DInventorPy::viewDefaultOrientation(const Py::Tuple& args)
 {
     char* view = nullptr;
     double scale = -1.0;
-    if (!PyArg_ParseTuple(args.ptr(), "|sd", &view, &scale))
+    if (!PyArg_ParseTuple(args.ptr(), "|zd", &view, &scale))
         throw Py::Exception();
 
     try {
@@ -658,7 +658,7 @@ Py::Object View3DInventorPy::viewRotateLeft()
       SbRotation rot = cam->orientation.getValue();
       SbVec3f vdir(0, 0, -1);
       rot.multVec(vdir, vdir);
-      SbRotation nrot(vdir, (float)M_PI/2);
+      SbRotation nrot(vdir, (float)std::numbers::pi/2);
       cam->orientation.setValue(rot*nrot);
     }
     catch (const Base::Exception& e) {
@@ -681,7 +681,7 @@ Py::Object View3DInventorPy::viewRotateRight()
       SbRotation rot = cam->orientation.getValue();
       SbVec3f vdir(0, 0, -1);
       rot.multVec(vdir, vdir);
-      SbRotation nrot(vdir, (float)-M_PI/2);
+      SbRotation nrot(vdir, (float)-std::numbers::pi/2);
       cam->orientation.setValue(rot*nrot);
     }
     catch (const Base::Exception& e) {
@@ -2026,11 +2026,11 @@ void View3DInventorPy::eventCallback(void * ud, SoEventCallback * n)
         Py::Object o = Py::type(e);
         if (o.isString()) {
             Py::String s(o);
-            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+            Base::Console().warning("%s\n", s.as_std_string("utf-8").c_str());
         }
         else {
             Py::String s(o.repr());
-            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+            Base::Console().warning("%s\n", s.as_std_string("utf-8").c_str());
         }
         // Prints message to console window if we are in interactive mode
         PyErr_Print();
@@ -2135,6 +2135,9 @@ Py::Object View3DInventorPy::getSceneGraph()
 {
     try {
         SoNode* scene = getView3DInventorPtr()->getViewer()->getSceneGraph();
+        if (scene == nullptr) {
+            return Py::None();
+        }
         PyObject* proxy = nullptr;
         proxy = Base::Interpreter().createSWIGPointerObj("pivy.coin", "SoSeparator *", static_cast<void*>(scene), 1);
         scene->ref();
@@ -2175,11 +2178,11 @@ void View3DInventorPy::eventCallbackPivy(void * ud, SoEventCallback * n)
         Py::Object o = Py::type(e);
         if (o.isString()) {
             Py::String s(o);
-            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+            Base::Console().warning("%s\n", s.as_std_string("utf-8").c_str());
         }
         else {
             Py::String s(o.repr());
-            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+            Base::Console().warning("%s\n", s.as_std_string("utf-8").c_str());
         }
         // Prints message to console window if we are in interactive mode
         PyErr_Print();
@@ -2208,11 +2211,11 @@ void View3DInventorPy::eventCallbackPivyEx(void * ud, SoEventCallback * n)
         Py::Object o = Py::type(e);
         if (o.isString()) {
             Py::String s(o);
-            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+            Base::Console().warning("%s\n", s.as_std_string("utf-8").c_str());
         }
         else {
             Py::String s(o.repr());
-            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+            Base::Console().warning("%s\n", s.as_std_string("utf-8").c_str());
         }
         // Prints message to console window if we are in interactive mode
         PyErr_Print();
@@ -2344,11 +2347,11 @@ void View3DInventorPy::draggerCallback(void * ud, SoDragger* n)
         Py::Object o = Py::type(e);
         if (o.isString()) {
             Py::String s(o);
-            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+            Base::Console().warning("%s\n", s.as_std_string("utf-8").c_str());
         }
         else {
             Py::String s(o.repr());
-            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+            Base::Console().warning("%s\n", s.as_std_string("utf-8").c_str());
         }
         // Prints message to console window if we are in interactive mode
         PyErr_Print();

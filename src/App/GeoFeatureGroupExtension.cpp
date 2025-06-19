@@ -134,7 +134,7 @@ Base::Placement GeoFeatureGroupExtension::recursiveGroupPlacement(
         auto parent = link->getExtensionByType<GeoFeatureGroupExtension>(true);
         if (parent && parent->hasObject(group->getExtendedObject())) {
             // Cyclic dependencies detected
-            if (history.count(parent) > 0) {
+            if (history.contains(parent)) {
                 break;
             }
             return recursiveGroupPlacement(parent, history) * group->placement().getValue();
@@ -285,7 +285,7 @@ std::vector<DocumentObject*> GeoFeatureGroupExtension::getScopedObjectsFromLink(
     }
 
     std::vector<App::DocumentObject*> result;
-    auto link = Base::freecad_dynamic_cast<PropertyLinkBase>(prop);
+    auto link = freecad_cast<PropertyLinkBase*>(prop);
     if (link && link->getScope() == scope) {
         link->getLinks(result);
     }

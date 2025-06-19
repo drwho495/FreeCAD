@@ -68,6 +68,7 @@
 #include "QGIRichAnno.h"
 #include "QGISVGTemplate.h"
 #include "QGITemplate.h"
+#include "QGIUserTypes.h"
 #include "QGIViewAnnotation.h"
 #include "QGIViewBalloon.h"
 #include "QGIViewClip.h"
@@ -136,10 +137,12 @@ bool QGSPage::itemClearsSelection(int itemTypeIn)
     // type 13 is the itemUnderMouse on a page outside of any views. It is not
     // the template or background or foreground.  QGraphicsItem type = 13 is not
     // documented and not found in QGraphicsItem.h.
-    const std::vector<int> ClearingTypes { 13,                        // MysteryType
-                                     QGraphicsItem::UserType + 150,   // QGITemplateType
-                                     QGraphicsItem::UserType + 151,   // QGIDrawingTemplateType
-                                     QGraphicsItem::UserType + 153 }; // QGISVGTemplateType
+    const std::vector<int> ClearingTypes {
+        13,  // MysteryType
+        UserType::QGITemplate,
+        UserType::QGIDrawingTemplate,
+        UserType::QGISVGTemplate
+    };
 
     for (auto& type : ClearingTypes) {
         if (itemTypeIn == type) {
@@ -205,7 +208,7 @@ void QGSPage::addChildrenToPage()
 
 void QGSPage::attachTemplate(TechDraw::DrawTemplate* obj)
 {
-    //    Base::Console().Message("QGSP::attachTemplate()\n");
+    //    Base::Console().message("QGSP::attachTemplate()\n");
     setPageTemplate(obj);
 }
 
@@ -324,7 +327,7 @@ int QGSPage::addQView(QGIView* view)
 
         view->updateView(true);
     } else {
-        Base::Console().Message("QGSP::addQView - qview already exists\n");
+        Base::Console().message("QGSP::addQView - qview already exists\n");
     }
     return 0;
 }
@@ -353,8 +356,7 @@ int QGSPage::removeQViewByName(const char* name)
     }
 
     if (found) {
-        int balloonItemType = QGraphicsItem::UserType + 140;
-        if (ourItem->type() == balloonItemType) {
+        if (ourItem->type() == UserType::QGIViewBalloon) {
             QGIViewBalloon* balloon = dynamic_cast<QGIViewBalloon*>(ourItem);
             balloon->disconnect();
         }
@@ -390,51 +392,50 @@ bool QGSPage::attachView(App::DocumentObject* obj)
 
     QGIView* qview(nullptr);
 
-    using Base::freecad_dynamic_cast;
-
-    if (auto o = freecad_dynamic_cast<TechDraw::DrawViewSection>(obj)) {
+    if (auto o = freecad_cast<TechDraw::DrawViewSection*>(obj)) {
         qview = addViewSection(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewPart>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawViewPart*>(obj)) {
         qview = addViewPart(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawProjGroup>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawProjGroup*>(obj)) {
         qview = addProjectionGroup(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewCollection>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawViewCollection*>(obj)) {
         qview = addDrawView(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewDimension>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawViewDimension*>(obj)) {
         qview = addViewDimension(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewBalloon>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawViewBalloon*>(obj)) {
         qview = addViewBalloon(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewAnnotation>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawViewAnnotation*>(obj)) {
         qview = addAnnotation(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewSymbol>(obj)) {
-        qview = addDrawViewSymbol(o);
-    }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewClip>(obj)) {
-        qview = addDrawViewClip(o);
-    }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewSpreadsheet>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawViewSpreadsheet*>(obj)) {
+        // has to be before DrawViewSymbol since it's a subclass of it.
         qview = addDrawViewSpreadsheet(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawViewImage>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawViewSymbol*>(obj)) {
+        qview = addDrawViewSymbol(o);
+    }
+    else if (auto o = freecad_cast<TechDraw::DrawViewClip*>(obj)) {
+        qview = addDrawViewClip(o);
+    }
+    else if (auto o = freecad_cast<TechDraw::DrawViewImage*>(obj)) {
         qview = addDrawViewImage(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawLeaderLine>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawLeaderLine*>(obj)) {
         qview = addViewLeader(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawRichAnno>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawRichAnno*>(obj)) {
         qview = addRichAnno(o);
     }
-    else if (auto o = freecad_dynamic_cast<TechDraw::DrawWeldSymbol>(obj)) {
+    else if (auto o = freecad_cast<TechDraw::DrawWeldSymbol*>(obj)) {
         qview = addWeldSymbol(o);
     }
-    else if (freecad_dynamic_cast<TechDraw::DrawHatch>(obj)) {
+    else if (freecad_cast<TechDraw::DrawHatch*>(obj)) {
         //Hatch is not attached like other Views (since it isn't really a View)
         return true;
     }
@@ -464,20 +465,16 @@ void QGSPage::addItemToParent(QGIView* item, QGIView* parent)
     // defined relative to the Page should not use the dimension/balloon mapping.
     assert(item);
     assert(parent);
-    // TODO: make custom user types retrievable by name (see QGIUserTypes.h)
-    constexpr int QGIVDimensionType {QGraphicsItem::UserType + 106};
-    constexpr int QGIVBalloonType {QGraphicsItem::UserType + 140};
-    constexpr int QGIWeldSymbolType {QGraphicsItem::UserType + 340};
-    // constexpr int QGIViewAnnotationType {QGraphicsItem::UserType + 120};
 
-    if (item->type() == QGIWeldSymbolType) {
+    if (item->type() == UserType::QGIWeldSymbol) {
         // don't touch these
         return;
     }
 
     // original parenting logic here
     QPointF posRef(0., 0.);
-    if (item->type() == QGIVDimensionType || item->type() == QGIVBalloonType) {
+    if (item->type() == UserType::QGIViewDimension ||
+        item->type() == UserType::QGIViewBalloon) {
         QPointF mapPos = item->mapToItem(parent, posRef);
         item->moveBy(-mapPos.x(), -mapPos.y());
         parent->addToGroup(item);
@@ -669,7 +666,7 @@ QGIView* QGSPage::addViewDimension(TechDraw::DrawViewDimension* dimFeat)
 
 void QGSPage::addDimToParent(QGIViewDimension* dim, QGIView* parent)
 {
-    //    Base::Console().Message("QGSP::addDimToParent()\n");
+    //    Base::Console().message("QGSP::addDimToParent()\n");
     assert(dim);
     assert(parent);//blow up if we don't have Dimension or Parent
     QPointF posRef(0., 0.);
@@ -893,7 +890,7 @@ void QGSPage::findMissingViews(const std::vector<App::DocumentObject*>& list,
 
         if (obj->isDerivedFrom<TechDraw::DrawViewCollection>()) {
             std::vector<App::DocumentObject*> missingChildViews;
-            auto* collection = dynamic_cast<TechDraw::DrawViewCollection*>(obj);
+            auto* collection = static_cast<TechDraw::DrawViewCollection*>(obj);
             // Find Child Views recursively
             findMissingViews(collection->getViews(), missingChildViews);
 
@@ -1000,7 +997,7 @@ bool QGSPage::orphanExists(const char* viewName, const std::vector<App::Document
 
         //Check child objects too recursively
         if (obj->isDerivedFrom<TechDraw::DrawViewCollection>()) {
-            auto* collection = dynamic_cast<TechDraw::DrawViewCollection*>(obj);
+            auto* collection = static_cast<TechDraw::DrawViewCollection*>(obj);
             if (orphanExists(viewName, collection->getViews()))
                 return true;
         }
@@ -1143,11 +1140,11 @@ void QGSPage::postProcessXml(QTemporaryFile& temporaryFile, QString fileName, QS
     QDomDocument exportDoc(QStringLiteral("SvgDoc"));
     QFile file(temporaryFile.fileName());
     if (!file.open(QIODevice::ReadOnly)) {
-        Base::Console().Error("QGSPage::ppsvg - tempfile open error\n");
+        Base::Console().error("QGSPage::ppsvg - tempfile open error\n");
         return;
     }
     if (!exportDoc.setContent(&file)) {
-        Base::Console().Error("QGSPage::ppsvg - xml error\n");
+        Base::Console().error("QGSPage::ppsvg - xml error\n");
         file.close();
         return;
     }
@@ -1222,7 +1219,7 @@ void QGSPage::postProcessXml(QTemporaryFile& temporaryFile, QString fileName, QS
     // Time to save our product
     QFile outFile(fileName);
     if (!outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        Base::Console().Error("QGSP::ppxml - failed to open file for writing: %s\n",
+        Base::Console().error("QGSP::ppxml - failed to open file for writing: %s\n",
                               qPrintable(fileName));
     }
 

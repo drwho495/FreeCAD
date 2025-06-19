@@ -24,6 +24,8 @@
 #ifndef SKETCHERGUI_DrawSketchHandlerOffset_H
 #define SKETCHERGUI_DrawSketchHandlerOffset_H
 
+#include <limits>
+
 #include <QApplication>
 
 #include <BRep_Tool.hxx>
@@ -511,7 +513,7 @@ private:
                                   stream.str().c_str());
         }
         catch (const Base::Exception& e) {
-            Base::Console().Error("%s\n", e.what());
+            Base::Console().error("%s\n", e.what());
         }
     }
 
@@ -932,7 +934,7 @@ private:
 
     void findOffsetLength()
     {
-        double newOffsetLength = DBL_MAX;
+        double newOffsetLength = std::numeric_limits<double>::max();
 
         BRepBuilderAPI_MakeVertex mkVertex({endpoint.x, endpoint.y, 0.0});
         TopoDS_Vertex vertex = mkVertex.Vertex();
@@ -960,7 +962,7 @@ private:
             }
         }
 
-        if (newOffsetLength != DBL_MAX) {
+        if (newOffsetLength != std::numeric_limits<double>::max()) {
             offsetLength = newOffsetLength;
         }
     }
@@ -1068,11 +1070,11 @@ private:
     /*void printCCeVec()
     {
         for (size_t j = 0; j < vCC.size(); j++) {
-            Base::Console().Warning("curve %d{", j);
+            Base::Console().warning("curve %d{", j);
             for (size_t k = 0; k < vCC[j].size(); k++) {
-                Base::Console().Warning("%d, ", vCC[j][k]);
+                Base::Console().warning("%d, ", vCC[j][k]);
             }
-            Base::Console().Warning("}\n");
+            Base::Console().warning("}\n");
         }
     }*/
 };
@@ -1178,11 +1180,13 @@ void DSHOffsetController::adaptParameters(Base::Vector2d onSketchPos)
 
     switch (handler->state()) {
         case SelectMode::SeekFirst: {
-            if (!onViewParameters[OnViewParameter::First]->isSet) {
+            auto& firstParam = onViewParameters[OnViewParameter::First];
+
+            if (!firstParam->isSet) {
                 setOnViewParameterValue(OnViewParameter::First, handler->offsetLength);
             }
 
-            onViewParameters[OnViewParameter::First]->setPoints(
+            firstParam->setPoints(
                 Base::Vector3d(handler->endpoint.x, handler->endpoint.y, 0.),
                 Base::Vector3d(handler->pointOnSourceWire.x, handler->pointOnSourceWire.y, 0.));
         } break;
@@ -1196,7 +1200,9 @@ void DSHOffsetController::doChangeDrawSketchHandlerMode()
 {
     switch (handler->state()) {
         case SelectMode::SeekFirst: {
-            if (onViewParameters[OnViewParameter::First]->isSet) {
+            auto& firstParam = onViewParameters[OnViewParameter::First];
+
+            if (firstParam->hasFinishedEditing) {
                 handler->setState(SelectMode::End);
             }
         } break;

@@ -68,16 +68,10 @@ bool CompassWidget::eventFilter(QObject* target, QEvent* event)
     if (target == dsbAngle) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-            if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
-                dsbAngle->interpretText();
-                slotSpinBoxEnter(dsbAngle->rawValue());
+            const auto isEnter = keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter;
+            if (isEnter && dsbAngle->isNormalized()) {
                 return true;
             }
-        }
-        else if (event->type() == QEvent::FocusOut) {
-            dsbAngle->interpretText();
-            slotSpinBoxEnter(dsbAngle->rawValue());
-            return true;
         }
     }
     return QWidget::eventFilter(target, event);
@@ -133,15 +127,8 @@ void CompassWidget::buildWidget()
     dsbAngle = new Gui::QuantitySpinBox(this);
     dsbAngle->setObjectName(QStringLiteral("dsbAngle"));
     dsbAngle->setUnit(Base::Unit::Angle);
-    sizePolicy2.setHeightForWidth(dsbAngle->sizePolicy().hasHeightForWidth());
-    dsbAngle->setSizePolicy(sizePolicy2);
-    dsbAngle->setMinimumSize(QSize(75, 26));
-    dsbAngle->setMouseTracking(true);
-    dsbAngle->setFocusPolicy(Qt::ClickFocus);
-    dsbAngle->setAlignment(Qt::AlignRight | Qt::AlignTrailing | Qt::AlignVCenter);
-    dsbAngle->setKeyboardTracking(false);
-    dsbAngle->setMaximum(360.000000000000000);
-    dsbAngle->setMinimum(-360.000000000000000);
+    connect(dsbAngle, QOverload<double>::of(&Gui::QuantitySpinBox::valueChanged),
+        this, &CompassWidget::slotSpinBoxEnter);
 
     compassControlLayout->addWidget(dsbAngle);
 
@@ -183,7 +170,7 @@ void CompassWidget::paintEvent(QPaintEvent* event)
 // set the compass dial and spinbox to a new angle
 void CompassWidget::setDialAngle(double newAngle)
 {
-    //    Base::Console().Message("CW::setDialAngle(%.3f)\n", newAngle);
+    //    Base::Console().message("CW::setDialAngle(%.3f)\n", newAngle);
     m_angle = newAngle;
     if (compassDial) {
         compassDial->setAngle(m_angle);
@@ -196,7 +183,7 @@ void CompassWidget::setDialAngle(double newAngle)
 //slot for updates from spinbox on Enter/Return press.
 void CompassWidget::slotSpinBoxEnter(double newAngle)
 {
-    //    Base::Console().Message("CW::slotSpinBoxEnter(%.3f)\n", newAngle);
+    //    Base::Console().message("CW::slotSpinBoxEnter(%.3f)\n", newAngle);
     if (dsbAngle) {
         m_angle = newAngle;
         Q_EMIT angleChanged(m_angle);

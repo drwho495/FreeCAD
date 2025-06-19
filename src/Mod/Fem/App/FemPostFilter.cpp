@@ -31,10 +31,13 @@
 #include <vtkUnstructuredGrid.h>
 #endif
 
+#include <App/FeaturePythonPyImp.h>
 #include <App/Document.h>
 #include <Base/Console.h>
 
 #include "FemPostFilter.h"
+#include "FemPostFilterPy.h"
+
 #include "FemPostPipeline.h"
 #include "FemPostBranchFilter.h"
 
@@ -52,22 +55,42 @@ FemPostFilter::FemPostFilter()
                       "Data",
                       App::Prop_ReadOnly,
                       "The step used to calculate the data");
+
+    // the default pipeline: just a passthrough
+    // this is used to simplify the python filter handling,
+    // as those do not have filter pipelines setup till later
+    // in the document loading process.
+    auto filter = vtkPassThrough::New();
+    auto pipeline = FemPostFilter::FilterPipeline();
+    pipeline.algorithmStorage.push_back(filter);
+    pipeline.source = filter;
+    pipeline.target = filter;
+    addFilterPipeline(pipeline, "__passthrough__");
 }
 
 FemPostFilter::~FemPostFilter() = default;
 
+
 void FemPostFilter::addFilterPipeline(const FemPostFilter::FilterPipeline& p, std::string name)
 {
     m_pipelines[name] = p;
+
+    if (m_activePipeline.empty()) {
+        m_activePipeline = name;
+    }
 }
 
 FemPostFilter::FilterPipeline& FemPostFilter::getFilterPipeline(std::string name)
 {
-    return m_pipelines[name];
+    return m_pipelines.at(name);
 }
 
 void FemPostFilter::setActiveFilterPipeline(std::string name)
 {
+    if (m_pipelines.count(name) == 0) {
+        throw Base::ValueError("Not a filter pipeline name");
+    }
+
     if (m_activePipeline != name && isValid()) {
 
         // disable all inputs of current pipeline
@@ -129,6 +152,7 @@ void FemPostFilter::onChanged(const App::Property* prop)
 {
 
     if (prop == &Placement) {
+
         if (Placement.getValue().isIdentity() && m_use_transform) {
             // remove transform from pipeline
             if (m_transform_location == TransformLocation::output) {
@@ -191,7 +215,6 @@ DocumentObjectExecReturn* FemPostFilter::execute()
 
         Data.setValue(output->GetOutputDataObject(0));
     }
-
     return StdReturn;
 }
 
@@ -203,8 +226,19 @@ vtkSmartPointer<vtkDataSet> FemPostFilter::getInputData()
     }
 
     vtkAlgorithmOutput* output = active.source->GetInputConnection(0, 0);
+    if (!output) {
+        return nullptr;
+    }
     vtkAlgorithm* algo = output->GetProducer();
-    algo->Update();
+    if (!algo) {
+        return nullptr;
+    }
+    if (Frame.getValue() > 0) {
+        algo->UpdateTimeStep(Frame.getValue());
+    }
+    else {
+        algo->Update();
+    }
     return vtkDataSet::SafeDownCast(algo->GetOutputDataObject(0));
 }
 
@@ -250,6 +284,45 @@ void FemPostFilter::setTransformLocation(TransformLocation loc)
 {
     m_transform_location = loc;
 }
+
+PyObject* FemPostFilter::getPyObject()
+{
+    if (PythonObject.is(Py::_None())) {
+        // ref counter is set to 1
+        PythonObject = Py::Object(new FemPostFilterPy(this), true);
+    }
+
+    return Py::new_reference_to(PythonObject);
+}
+
+
+// Python Filter feature ---------------------------------------------------------
+
+namespace App
+{
+/// @cond DOXERR
+PROPERTY_SOURCE_TEMPLATE(Fem::PostFilterPython, Fem::FemPostFilter)
+template<>
+const char* Fem::PostFilterPython::getViewProviderName(void) const
+{
+    return "FemGui::ViewProviderPostFilterPython";
+}
+template<>
+PyObject* Fem::PostFilterPython::getPyObject()
+{
+    if (PythonObject.is(Py::_None())) {
+        // ref counter is set to 1
+        PythonObject = Py::Object(new App::FeaturePythonPyT<FemPostFilterPy>(this), true);
+    }
+    return Py::new_reference_to(PythonObject);
+}
+
+/// @endcond
+
+// explicit template instantiation
+template class FemExport FeaturePythonT<Fem::FemPostFilter>;
+}  // namespace App
+
 
 // ***************************************************************************
 // in the following, the different filters sorted alphabetically
@@ -317,11 +390,8 @@ FemPostDataAlongLineFilter::FemPostDataAlongLineFilter()
     m_probe->SetValidPointMaskArrayName("ValidPointArray");
     m_probe->SetPassPointArrays(1);
     m_probe->SetPassCellArrays(1);
-    // needs vtk > 6.1
-#if (VTK_MAJOR_VERSION > 6) && (VTK_MINOR_VERSION > 1)
     m_probe->ComputeToleranceOff();
     m_probe->SetTolerance(0.01);
-#endif
 
     clip.source = passthrough;
     clip.target = m_probe;
@@ -490,11 +560,8 @@ FemPostDataAtPointFilter::FemPostDataAtPointFilter()
     m_probe->SetValidPointMaskArrayName("ValidPointArray");
     m_probe->SetPassPointArrays(1);
     m_probe->SetPassCellArrays(1);
-    // needs vtk > 6.1
-#if (VTK_MAJOR_VERSION > 6) && (VTK_MINOR_VERSION > 1)
     m_probe->ComputeToleranceOff();
     m_probe->SetTolerance(0.01);
-#endif
 
     clip.source = passthrough;
     clip.target = m_probe;
@@ -616,7 +683,7 @@ void FemPostClipFilter::onChanged(const Property* prop)
 {
     if (prop == &Function) {
 
-        if (auto* value = Base::freecad_dynamic_cast<FemPostFunction>(Function.getValue())) {
+        if (auto* value = freecad_cast<FemPostFunction*>(Function.getValue())) {
             m_clipper->SetClipFunction(value->getImplicitFunction());
             m_extractor->SetImplicitFunction(value->getImplicitFunction());
         }
@@ -1078,7 +1145,7 @@ FemPostCutFilter::~FemPostCutFilter() = default;
 void FemPostCutFilter::onChanged(const Property* prop)
 {
     if (prop == &Function) {
-        if (auto* value = Base::freecad_dynamic_cast<FemPostFunction>(Function.getValue())) {
+        if (auto* value = freecad_cast<FemPostFunction*>(Function.getValue())) {
             m_cutter->SetCutFunction(value->getImplicitFunction());
         }
         else {
@@ -1296,4 +1363,146 @@ short int FemPostWarpVectorFilter::mustExecute() const
     else {
         return App::DocumentObject::mustExecute();
     }
+}
+
+
+// ***************************************************************************
+// calculator filter
+PROPERTY_SOURCE(Fem::FemPostCalculatorFilter, Fem::FemPostFilter)
+
+FemPostCalculatorFilter::FemPostCalculatorFilter()
+    : FemPostFilter()
+{
+    ADD_PROPERTY_TYPE(FieldName,
+                      ("Calculator"),
+                      "Calculator",
+                      App::Prop_None,
+                      "Name of the calculated field");
+    ADD_PROPERTY_TYPE(Function,
+                      (""),
+                      "Calculator",
+                      App::Prop_None,
+                      "Expression of the unction to evaluate");
+    ADD_PROPERTY_TYPE(ReplacementValue,
+                      (0.0f),
+                      "Calculator",
+                      App::Prop_None,
+                      "Value used to replace invalid operations");
+    ADD_PROPERTY_TYPE(ReplaceInvalid,
+                      (false),
+                      "Calculator",
+                      App::Prop_None,
+                      "Replace invalid values");
+
+    FilterPipeline calculator;
+    m_calculator = vtkSmartPointer<vtkArrayCalculator>::New();
+    m_calculator->SetResultArrayName(FieldName.getValue());
+    calculator.source = m_calculator;
+    calculator.target = m_calculator;
+    addFilterPipeline(calculator, "calculator");
+    setActiveFilterPipeline("calculator");
+}
+
+FemPostCalculatorFilter::~FemPostCalculatorFilter() = default;
+
+DocumentObjectExecReturn* FemPostCalculatorFilter::execute()
+{
+    updateAvailableFields();
+
+    return FemPostFilter::execute();
+}
+
+void FemPostCalculatorFilter::onChanged(const Property* prop)
+{
+    if (prop == &Function) {
+        m_calculator->SetFunction(Function.getValue());
+    }
+    else if (prop == &FieldName) {
+        m_calculator->SetResultArrayName(FieldName.getValue());
+    }
+    else if (prop == &ReplaceInvalid) {
+        m_calculator->SetReplaceInvalidValues(ReplaceInvalid.getValue());
+    }
+    else if (prop == &ReplacementValue) {
+        m_calculator->SetReplacementValue(ReplacementValue.getValue());
+    }
+    else if (prop == &Data) {
+        updateAvailableFields();
+    }
+    Fem::FemPostFilter::onChanged(prop);
+}
+
+short int FemPostCalculatorFilter::mustExecute() const
+{
+    if (Function.isTouched() || FieldName.isTouched()) {
+        return 1;
+    }
+    else {
+        return FemPostFilter::mustExecute();
+    }
+}
+
+void FemPostCalculatorFilter::updateAvailableFields()
+{
+    // clear all variables
+    m_calculator->RemoveAllVariables();
+    m_calculator->AddCoordinateScalarVariable("coordsX", 0);
+    m_calculator->AddCoordinateScalarVariable("coordsY", 1);
+    m_calculator->AddCoordinateScalarVariable("coordsZ", 2);
+    m_calculator->AddCoordinateVectorVariable("coords");
+
+    std::vector<std::string> scalars;
+    std::vector<std::string> vectors;
+
+    vtkSmartPointer<vtkDataObject> data = getInputData();
+    vtkDataSet* dset = vtkDataSet::SafeDownCast(data);
+    if (!dset) {
+        return;
+    }
+    vtkPointData* pd = dset->GetPointData();
+
+    // get all vector fields
+    for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
+        std::string name1 = pd->GetArrayName(i);
+        std::string name2 = name1;
+        std::replace(name2.begin(), name2.end(), ' ', '_');
+        if (pd->GetArray(i)->GetNumberOfComponents() == 3) {
+            m_calculator->AddVectorVariable(name2.c_str(), name1.c_str());
+            // add components as scalar variable
+            m_calculator->AddScalarVariable((name2 + "_X").c_str(), name1.c_str(), 0);
+            m_calculator->AddScalarVariable((name2 + "_Y").c_str(), name1.c_str(), 1);
+            m_calculator->AddScalarVariable((name2 + "_Z").c_str(), name1.c_str(), 2);
+        }
+        else if (pd->GetArray(i)->GetNumberOfComponents() == 1) {
+            m_calculator->AddScalarVariable(name2.c_str(), name1.c_str());
+        }
+    }
+}
+
+const std::vector<std::string> FemPostCalculatorFilter::getScalarVariables()
+{
+#if (VTK_MAJOR_VERSION >= 9) && (VTK_MINOR_VERSION > 0)
+    std::vector<std::string> scalars = m_calculator->GetScalarVariableNames();
+#else
+    std::vector<std::string> scalars(m_calculator->GetScalarVariableNames(),
+                                     m_calculator->GetScalarVariableNames()
+                                         + m_calculator->GetNumberOfScalarArrays());
+#endif
+
+    scalars.insert(scalars.begin(), {"coordsX", "coordsY", "coordsZ"});
+    return scalars;
+}
+
+const std::vector<std::string> FemPostCalculatorFilter::getVectorVariables()
+{
+#if (VTK_MAJOR_VERSION >= 9) && (VTK_MINOR_VERSION > 0)
+    std::vector<std::string> vectors = m_calculator->GetVectorVariableNames();
+#else
+    std::vector<std::string> vectors(m_calculator->GetVectorVariableNames(),
+                                     m_calculator->GetVectorVariableNames()
+                                         + m_calculator->GetNumberOfVectorArrays());
+#endif
+
+    vectors.insert(vectors.begin(), "coords");
+    return vectors;
 }

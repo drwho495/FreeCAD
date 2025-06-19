@@ -101,7 +101,10 @@ public:
 };
 
 
-/** Base class of all Classes handled in the Document
+/**
+ * @brief %Base class of all objects handled in the @ref App::Document "Document".
+ * @ingroup DocObject
+ * @details For a more high-level overview see topic @ref DocObject "Document Object".
  */
 class AppExport DocumentObject: public App::TransactionalObject
 {
@@ -749,6 +752,8 @@ protected:
     void onEarlyChange(const Property* prop) override;
     /// get called after a document has been fully restored
     virtual void onDocumentRestored();
+    /// get called after an object finishes restoreContent.
+    void restoreFinished() override;
     /// get called after an undo/redo transaction is finished
     virtual void onUndoRedoFinished();
     /// get called after setting the document

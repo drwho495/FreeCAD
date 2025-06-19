@@ -27,6 +27,7 @@
 #include <QAction>
 #include <QMessageBox>
 #include <TopoDS.hxx>
+#include <limits>
 #include <sstream>
 #endif
 
@@ -75,7 +76,7 @@ TaskFemConstraintForce::TaskFemConstraintForce(ViewProviderFemConstraintForce* C
     // Fill data into dialog elements
     ui->spinForce->setUnit(pcConstraint->Force.getUnit());
     ui->spinForce->setMinimum(0);
-    ui->spinForce->setMaximum(FLOAT_MAX);
+    ui->spinForce->setMaximum(std::numeric_limits<float>::max());
     ui->spinForce->setValue(force);
     ui->listReferences->clear();
     for (std::size_t i = 0; i < Objects.size(); i++) {
@@ -88,7 +89,7 @@ TaskFemConstraintForce::TaskFemConstraintForce(ViewProviderFemConstraintForce* C
     ui->checkReverse->setChecked(reversed);
 
     // create a context menu for the listview of the references
-    createDeleteAction(ui->listReferences);
+    createActions(ui->listReferences);
     connect(deleteAction, &QAction::triggered, this, &TaskFemConstraintForce::onReferenceDeleted);
     connect(ui->buttonDirection,
             &QToolButton::clicked,

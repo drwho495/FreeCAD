@@ -23,12 +23,15 @@
 import FreeCAD
 import FreeCADGui
 import Path
+import Path.Op.Base as PathOp
 import PathScripts
 import PathScripts.PathUtils as PathUtils
 from Path.Dressup.Utils import toolController
 from PySide import QtCore
-import math
+from PySide import QtGui
+
 import random
+
 from PySide.QtCore import QT_TRANSLATE_NOOP
 
 __doc__ = """CAM Array object and FreeCAD command"""
@@ -137,12 +140,21 @@ class ObjectArray:
             "Path",
             QT_TRANSLATE_NOOP("PathOp", "Make False, to prevent operation from generating code"),
         )
+        obj.addProperty(
+            "App::PropertyString",
+            "CycleTime",
+            "Path",
+            QT_TRANSLATE_NOOP("App::Property", "Operations Cycle Time Estimation"),
+        )
 
+        obj.setEditorMode("CycleTime", 1)  # read-only
         obj.Active = True
         obj.Type = ["Linear1D", "Linear2D", "Polar"]
 
         self.setEditorModes(obj)
         obj.Proxy = self
+
+        self.FirstRun = True
 
     def dumps(self):
         return None
@@ -160,15 +172,6 @@ class ObjectArray:
         elif obj.Type == "Polar":
             angleMode = copiesMode = centreMode = 0
             copiesXMode = copiesYMode = offsetMode = swapDirectionMode = 2
-
-        if not hasattr(obj, "JitterSeed"):
-            obj.addProperty(
-                "App::PropertyInteger",
-                "JitterSeed",
-                "Path",
-                QtCore.QT_TRANSLATE_NOOP("App::Property", "Seed value for jitter randomness"),
-            )
-            obj.JitterSeed = 0
 
         obj.setEditorMode("Angle", angleMode)
         obj.setEditorMode("Copies", copiesMode)
@@ -200,9 +203,45 @@ class ObjectArray:
             )
             obj.Active = True
 
+        if not hasattr(obj, "JitterSeed"):
+            obj.addProperty(
+                "App::PropertyInteger",
+                "JitterSeed",
+                "Path",
+                QtCore.QT_TRANSLATE_NOOP("App::Property", "Seed value for jitter randomness"),
+            )
+            obj.JitterSeed = 0
+
+        if not hasattr(obj, "CycleTime"):
+            obj.addProperty(
+                "App::PropertyString",
+                "CycleTime",
+                "Path",
+                QT_TRANSLATE_NOOP("App::Property", "Operations Cycle Time Estimation"),
+            )
+            obj.CycleTime = self.getCycleTimeEstimate(obj)
+
         self.setEditorModes(obj)
 
+        self.FirstRun = True
+
     def execute(self, obj):
+        if FreeCAD.GuiUp and self.FirstRun:
+            self.FirstRun = False
+            QtGui.QMessageBox.warning(
+                None,
+                QT_TRANSLATE_NOOP("CAM_ArrayOp", "Operation is deprecated"),
+                QT_TRANSLATE_NOOP(
+                    "CAM_ArrayOp",
+                    (
+                        "CAM -> Path Modification -> Array operation is deprecated "
+                        "and will be removed in future FreeCAD versions.\n\n"
+                        "Please use CAM -> Path Dressup -> Array instead.\n\n"
+                        "DO NOT USE CURRENT ARRAY OPERATION WHEN MACHINING WITH COOLANT!\n"
+                        "Due to a bug - coolant will not be enabled for array paths."
+                    ),
+                ),
+            )
         # backwards compatibility for PathArrays created before support for multiple bases
         if isinstance(obj.Base, list):
             base = obj.Base
@@ -239,6 +278,7 @@ class ObjectArray:
         )
 
         obj.Path = pa.getPath()
+        obj.CycleTime = PathOp.getCycleTimeEstimate(obj)
 
 
 class PathArray:

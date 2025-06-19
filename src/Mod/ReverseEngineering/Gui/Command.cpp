@@ -24,6 +24,7 @@
 #ifndef _PreComp_
 #include <QApplication>
 #include <QMessageBox>
+#include <limits>
 #include <sstream>
 
 #include <BRepBuilderAPI_MakePolygon.hxx>
@@ -207,11 +208,11 @@ void CmdApproxPlane::activated(int)
             double q0, q1, q2, q3;
             pm.getRotation().getValue(q0, q1, q2, q3);
 
-            Base::Console().Log("RMS value for plane fit with %lu points: %.4f\n",
+            Base::Console().log("RMS value for plane fit with %lu points: %.4f\n",
                                 aData.size(),
                                 sigma);
-            Base::Console().Log("  Plane base(%.4f, %.4f, %.4f)\n", base.x, base.y, base.z);
-            Base::Console().Log("  Plane normal(%.4f, %.4f, %.4f)\n", norm.x, norm.y, norm.z);
+            Base::Console().log("  Plane base(%.4f, %.4f, %.4f)\n", base.x, base.y, base.z);
+            Base::Console().log("  Plane normal(%.4f, %.4f, %.4f)\n", norm.x, norm.y, norm.z);
 
             std::stringstream str;
             str << "from FreeCAD import Base" << std::endl;
@@ -272,7 +273,7 @@ void CmdApproxCylinder::activated(int)
             fit.SetInitialValues(base, axis);
         }
 
-        if (fit.Fit() < FLOAT_MAX) {
+        if (fit.Fit() < std::numeric_limits<float>::max()) {
             Base::Vector3f base, top;
             fit.GetBounding(base, top);
             float height = Base::Distance(base, top);
@@ -329,7 +330,7 @@ void CmdApproxSphere::activated(int)
         const MeshCore::MeshKernel& kernel = mesh.getKernel();
         MeshCore::SphereFit fit;
         fit.AddPoints(kernel.GetPoints());
-        if (fit.Fit() < FLOAT_MAX) {
+        if (fit.Fit() < std::numeric_limits<float>::max()) {
             Base::Vector3f base = fit.GetCenter();
 
             std::stringstream str;
@@ -378,7 +379,7 @@ void CmdApproxPolynomial::activated(int)
         const MeshCore::MeshKernel& kernel = mesh.getKernel();
         MeshCore::SurfaceFit fit;
         fit.AddPoints(kernel.GetPoints());
-        if (fit.Fit() < FLOAT_MAX) {
+        if (fit.Fit() < std::numeric_limits<float>::max()) {
             Base::BoundBox3f bbox = fit.GetBoundings();
             std::vector<Base::Vector3d> poles =
                 fit.toBezier(bbox.MinX, bbox.MaxX, bbox.MinY, bbox.MaxY);

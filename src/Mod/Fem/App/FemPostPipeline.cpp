@@ -23,10 +23,12 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+#include <cmath>
 #include <Python.h>
 #include <vtkAppendFilter.h>
 #include <vtkDataSetReader.h>
 #include <vtkImageData.h>
+#include <vtkPointData.h>
 #include <vtkRectilinearGrid.h>
 #include <vtkStructuredGrid.h>
 #include <vtkUnstructuredGrid.h>
@@ -46,8 +48,6 @@
 #endif
 
 #include <Base/Console.h>
-#include <cmath>
-#include <QString>
 
 #include "FemMesh.h"
 #include "FemMeshObject.h"
@@ -77,6 +77,7 @@ FemFrameSourceAlgorithm::FemFrameSourceAlgorithm::~FemFrameSourceAlgorithm()
 void FemFrameSourceAlgorithm::setDataObject(vtkSmartPointer<vtkDataObject> data)
 {
     m_data = data;
+    Modified();
     Update();
 }
 
@@ -158,7 +159,6 @@ int FemFrameSourceAlgorithm::RequestData(vtkInformation*,
                                          vtkInformationVector**,
                                          vtkInformationVector* outVector)
 {
-
     vtkInformation* outInfo = outVector->GetInformationObject(0);
     vtkUnstructuredGrid* output =
         vtkUnstructuredGrid::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
@@ -185,8 +185,8 @@ int FemFrameSourceAlgorithm::RequestData(vtkInformation*,
         auto time = outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP());
         auto frames = getFrameValues();
 
-        // we have float values, so be aware of roundign erros. lets subtract the searched time and
-        // then use the smalles value
+        // we have float values, so be aware of rounding errors. lets subtract the searched time and
+        // then use the smallest value
         for (auto& frame : frames) {
             frame = std::abs(frame - time);
         }
@@ -221,7 +221,6 @@ FemPostPipeline::FemPostPipeline()
 
 vtkDataSet* FemPostPipeline::getDataSet()
 {
-
     if (!m_source_algorithm->isValid()) {
         return nullptr;
     }
@@ -257,7 +256,7 @@ bool FemPostPipeline::allowObject(App::DocumentObject* obj)
         return true;
     }
 
-    // and all standart Post objects the group can handle
+    // and all standard Post objects the group can handle
     return FemPostGroupExtension::allowObject(obj);
 }
 
@@ -315,9 +314,22 @@ void FemPostPipeline::read(std::vector<Base::FileInfo>& files,
                            std::string& frame_type)
 {
     if (files.size() != values.size()) {
-        Base::Console().Error("Result files and frame values have different length.\n");
-        return;
+        throw Base::ValueError("Result files and frame values have different length");
     }
+
+    // make sure we do not have invalid values
+    for (auto& value : values) {
+        if (!std::isfinite(value)) {
+            throw Base::ValueError("Values need to be finite");
+        }
+    }
+
+    // ensure no double values for frames
+    std::set<double> value_set(values.begin(), values.end());
+    if (value_set.size() != values.size()) {
+        throw Base::ValueError("Values need to be unique");
+    }
+
 
     // setup the time information for the multiblock
     vtkStringArray* TimeInfo = vtkStringArray::New();
@@ -360,7 +372,7 @@ void FemPostPipeline::scale(double s)
 
 App::DocumentObjectExecReturn* FemPostPipeline::execute()
 {
-    // we fake a recalculated data oject, so that the viewprovider updates
+    // we fake a recalculated data object, so that the viewprovider updates
     // the visualization. We do not want to do this in onChange, as it
     // could theoretically be long running
     if (m_data_updated) {
@@ -448,6 +460,7 @@ void FemPostPipeline::onChanged(const Property* prop)
             Frame.setValue(long(0));
         }
 
+        updateData();
         recomputeChildren();
     }
 
@@ -460,7 +473,7 @@ void FemPostPipeline::onChanged(const Property* prop)
             value = frames[Frame.getValue()];
         }
         for (const auto& obj : Group.getValues()) {
-            if (auto* postFilter = Base::freecad_dynamic_cast<FemPostFilter>(obj)) {
+            if (auto* postFilter = freecad_cast<FemPostFilter*>(obj)) {
                 postFilter->Frame.setValue(value);
             }
         }
@@ -487,7 +500,7 @@ void FemPostPipeline::onChanged(const Property* prop)
             FemPostFilter* nextFilter = obj;
             nextFilter->getFilterInput()->RemoveAllInputConnections(0);
 
-            // handle input modes (Parallel is seperated, alll other settings are serial, just in
+            // handle input modes (Parallel is separated, all other settings are serial, just in
             // case an old document is loaded with "custom" mode, idx 2)
             if (Mode.getValue() == Fem::PostGroupMode::Parallel) {
                 // parallel: all filters get out input
@@ -598,12 +611,11 @@ Base::Unit FemPostPipeline::getFrameUnit()
 
     vtkAbstractArray* TimeInfo = multiblock->GetFieldData()->GetAbstractArray("TimeInfo");
     if (!TimeInfo->IsA("vtkStringArray") || TimeInfo->GetNumberOfTuples() < 2) {
-
         // units cannot be undefined, so use time
         return Base::Unit::TimeSpan;
     }
-
-    return Base::Unit(vtkStringArray::SafeDownCast(TimeInfo)->GetValue(1));
+    auto qty = Base::Quantity(0, vtkStringArray::SafeDownCast(TimeInfo)->GetValue(1));
+    return qty.getUnit();
 }
 
 std::vector<double> FemPostPipeline::getFrameValues()
@@ -620,11 +632,11 @@ unsigned int FemPostPipeline::getFrameNumber()
 void FemPostPipeline::load(FemResultObject* res)
 {
     if (!res->Mesh.getValue()) {
-        Base::Console().Log("Result mesh object is empty.\n");
+        Base::Console().log("Result mesh object is empty.\n");
         return;
     }
     if (!res->Mesh.getValue()->isDerivedFrom<Fem::FemMeshObject>()) {
-        Base::Console().Log("Result mesh object is not derived from Fem::FemMeshObject.\n");
+        Base::Console().log("Result mesh object is not derived from Fem::FemMeshObject.\n");
         return;
     }
 
@@ -651,8 +663,20 @@ void FemPostPipeline::load(std::vector<FemResultObject*>& res,
 {
 
     if (res.size() != values.size()) {
-        Base::Console().Error("Result values and frame values have different length.\n");
-        return;
+        throw Base::ValueError("Result values and frame values have different length");
+    }
+
+    // make sure we do not have invalid values
+    for (auto& value : values) {
+        if (!std::isfinite(value)) {
+            throw Base::ValueError("Values need to be finite");
+        }
+    }
+
+    // ensure no double values for frames
+    std::set<double> value_set(values.begin(), values.end());
+    if (value_set.size() != values.size()) {
+        throw Base::ValueError("Values need to be unique");
     }
 
     // setup the time information for the multiblock
@@ -665,8 +689,7 @@ void FemPostPipeline::load(std::vector<FemResultObject*>& res,
     for (ulong i = 0; i < res.size(); i++) {
 
         if (!res[i]->Mesh.getValue()->isDerivedFrom<FemMeshObject>()) {
-            Base::Console().Error("Result mesh object is not derived from Fem::FemMeshObject.\n");
-            return;
+            throw Base::ValueError("Result mesh object is not derived from Fem::FemMeshObject");
         }
 
         // first copy the mesh over
@@ -735,6 +758,38 @@ void FemPostPipeline::onDocumentRestored()
         || Mode.getValue() < Fem::PostGroupMode::Serial) {
         Mode.setValue(Fem::PostGroupMode::Serial);
     }
+}
+
+void FemPostPipeline::renameArrays(const std::map<std::string, std::string>& names)
+{
+    std::vector<vtkSmartPointer<vtkDataSet>> fields;
+    auto data = Data.getValue();
+    if (!data) {
+        return;
+    }
+
+    if (auto dataSet = vtkDataSet::SafeDownCast(data)) {
+        fields.emplace_back(dataSet);
+    }
+    else if (auto blocks = vtkMultiBlockDataSet::SafeDownCast(data)) {
+        for (unsigned int i = 0; i < blocks->GetNumberOfBlocks(); ++i) {
+            if (auto dataSet = vtkDataSet::SafeDownCast(blocks->GetBlock(i))) {
+                fields.emplace_back(dataSet);
+            }
+        }
+    }
+
+    for (auto f : fields) {
+        auto pointData = f->GetPointData();
+        for (const auto& name : names) {
+            auto array = pointData->GetAbstractArray(name.first.c_str());
+            if (array) {
+                array->SetName(name.second.c_str());
+            }
+        }
+    }
+
+    Data.touch();
 }
 
 PyObject* FemPostPipeline::getPyObject()

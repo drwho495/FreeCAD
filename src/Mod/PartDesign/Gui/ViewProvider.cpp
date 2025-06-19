@@ -34,7 +34,7 @@
 #include <App/Document.h>
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
-#include <Gui/Command.h>
+#include <Gui/CommandT.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
 #include <Gui/MainWindow.h>
@@ -63,7 +63,7 @@ bool ViewProvider::doubleClicked()
     try {
         QString text = QObject::tr("Edit %1").arg(QString::fromUtf8(getObject()->Label.getValue()));
         Gui::Command::openCommand(text.toUtf8());
-        FCMD_SET_EDIT(pcObject);
+        Gui::cmdSetEdit(pcObject);
     }
     catch (const Base::Exception&) {
         Gui::Command::abortCommand();
@@ -192,7 +192,7 @@ void ViewProvider::onChanged(const App::Property* prop) {
             for(App::DocumentObject* obj : body->Group.getValues()) {
 
                 if(obj->isDerivedFrom<PartDesign::Feature>() && obj != getObject()) {
-                   auto vpd = Base::freecad_dynamic_cast<Gui::ViewProviderDocumentObject>(
+                   auto vpd = freecad_cast<Gui::ViewProviderDocumentObject*>(
                            Gui::Application::Instance->getViewProvider(obj));
                    if(vpd && vpd->Visibility.getValue())
                        vpd->Visibility.setValue(false);
@@ -238,7 +238,7 @@ QIcon ViewProvider::mergeColorfulOverlayIcons (const QIcon & orig) const
     return Gui::ViewProvider::mergeColorfulOverlayIcons (mergedicon);
 }
 
-bool ViewProvider::onDelete(const std::vector<std::string> &)
+bool ViewProvider::onDelete(const std::vector<std::string>&)
 {
     PartDesign::Feature* feature = getObject<PartDesign::Feature>();
 

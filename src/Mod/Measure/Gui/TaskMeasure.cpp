@@ -85,8 +85,11 @@ TaskMeasure::TaskMeasure()
     showDelta = new QCheckBox();
     showDelta->setChecked(delta);
     showDeltaLabel = new QLabel(tr("Show Delta:"));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    connect(showDelta, &QCheckBox::checkStateChanged, this, &TaskMeasure::showDeltaChanged);
+#else
     connect(showDelta, &QCheckBox::stateChanged, this, &TaskMeasure::showDeltaChanged);
-
+#endif
     autoSaveAction = new QAction(tr("Auto Save"));
     autoSaveAction->setCheckable(true);
     autoSaveAction->setChecked(mAutoSave);
@@ -249,13 +252,13 @@ void TaskMeasure::update()
         App::DocumentObject* sub = ob->getSubObject(sel.SubName);
 
         // Resolve App::Link
-        if (auto link = Base::freecad_dynamic_cast<App::Link>(sub)) {
+        if (auto link = freecad_cast<App::Link*>(sub)) {
             sub = link->getLinkedObject(true);
         }
 
         std::string mod = Base::Type::getModuleName(sub->getTypeId().getName());
         if (!App::MeasureManager::hasMeasureHandler(mod.c_str())) {
-            Base::Console().Message("No measure handler available for geometry of module: %s\n",
+            Base::Console().message("No measure handler available for geometry of module: %s\n",
                                     mod);
             clearSelection();
             return;

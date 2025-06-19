@@ -42,7 +42,6 @@
 #include <TopoDS_Iterator.hxx>
 #include <XCAFDoc_DocumentTool.hxx>
 #include <XCAFDoc_Location.hxx>
-#include <climits>
 #include <gp_Pln.hxx>  // for Precision::Confusion()
 #include <gp_Trsf.hxx>
 #endif
@@ -102,7 +101,7 @@ void ImportOCAF::tryPlacementFromMatrix(App::GeoFeature* part, const Base::Matri
         part->Placement.setValue(pl);
     }
     catch (const Base::ValueError& e) {
-        e.ReportException();
+        e.reportException();
     }
 }
 
@@ -176,7 +175,7 @@ void ImportOCAF::loadShapes(const TDF_Label& label,
     }
 
 #ifdef FC_DEBUG
-    Base::Console().Log("H:%d, N:%s, T:%d, A:%d, S:%d, C:%d, SS:%d, F:%d, R:%d, C:%d, SS:%d\n",
+    Base::Console().log("H:%d, N:%s, T:%d, A:%d, S:%d, C:%d, SS:%d, F:%d, R:%d, C:%d, SS:%d\n",
                         hash,
                         part_name.c_str(),
                         aShapeTool->IsTopLevel(label),

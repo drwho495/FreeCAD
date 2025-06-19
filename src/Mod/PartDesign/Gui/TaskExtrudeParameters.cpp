@@ -30,6 +30,7 @@
 #include <Base/Tools.h>
 #include <Base/UnitsApi.h>
 #include <Gui/Command.h>
+#include <Gui/Tools.h>
 #include <Mod/PartDesign/App/FeatureExtrude.h>
 #include <Mod/Part/Gui/ReferenceHighlighter.h>
 
@@ -174,11 +175,8 @@ void TaskExtrudeParameters::setupDialog()
     translateModeList(index);
 
     unselectShapeFaceAction = new QAction(tr("Remove"), this);
-    {
-        auto& rcCmdMgr = Gui::Application::Instance->commandManager();
-        auto shortcut = rcCmdMgr.getCommandByName("Std_Delete")->getShortcut();
-        unselectShapeFaceAction->setShortcut(QKeySequence(shortcut));
-    }
+    unselectShapeFaceAction->setShortcut(Gui::QtTools::deleteKeySequence());
+
     // display shortcut behind the context menu entry
     unselectShapeFaceAction->setShortcutVisibleInContextMenu(true);
 
@@ -334,7 +332,7 @@ void TaskExtrudeParameters::tryRecomputeFeature()
         recomputeFeature();
     }
     catch (const Base::Exception& e) {
-        e.ReportException();
+        e.reportException();
     }
 }
 
@@ -800,7 +798,7 @@ void TaskExtrudeParameters::onDirectionCBChanged(int num)
     else if (auto extrude = getObject<PartDesign::FeatureExtrude>()) {
         if (lnk.getValue()) {
             if (!extrude->getDocument()->isIn(lnk.getValue())) {
-                Base::Console().Error("Object was deleted\n");
+                Base::Console().error("Object was deleted\n");
                 return;
             }
             propReferenceAxis->Paste(lnk);

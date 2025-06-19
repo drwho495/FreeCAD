@@ -384,7 +384,7 @@ void ViewProviderSubShapeBinder::updatePlacement(bool transaction) {
             self->update(PartDesign::SubShapeBinder::UpdateForced);
         }
         catch (Base::Exception& e) {
-            e.ReportException();
+            e.reportException();
         }
         return;
     }
@@ -398,7 +398,7 @@ void ViewProviderSubShapeBinder::updatePlacement(bool transaction) {
         return;
     }
     catch (Base::Exception& e) {
-        e.ReportException();
+        e.reportException();
     }
     catch (Standard_Failure& e) {
         std::ostringstream str;
@@ -413,7 +413,7 @@ void ViewProviderSubShapeBinder::updatePlacement(bool transaction) {
 
 std::vector<App::DocumentObject*> ViewProviderSubShapeBinder::claimChildren() const {
     std::vector<App::DocumentObject*> ret;
-    auto self = Base::freecad_dynamic_cast<PartDesign::SubShapeBinder>(getObject());
+    auto self = freecad_cast<PartDesign::SubShapeBinder*>(getObject());
     if (self && self->ClaimChildren.getValue() && self->Support.getValue()) {
         std::set<App::DocumentObject*> objSet;
         for (auto& l : self->Support.getSubListValues()) {

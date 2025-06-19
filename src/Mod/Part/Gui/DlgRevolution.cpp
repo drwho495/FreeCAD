@@ -22,6 +22,7 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
+# include <limits>
 # include <QMessageBox>
 # include <BRep_Tool.hxx>
 # include <BRepAdaptor_Curve.hxx>
@@ -73,7 +74,7 @@ public:
         std::string element(sSubName);
         if (element.substr(0,4) != "Edge")
             return false;
-        Part::TopoShape part = Part::Feature::getTopoShape(pObj);
+        Part::TopoShape part = Part::Feature::getTopoShape(pObj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform);
         if (part.isNull()) {
             return false;
         }
@@ -103,16 +104,17 @@ DlgRevolution::DlgRevolution(QWidget* parent, Qt::WindowFlags fl)
     ui->setupUi(this);
     setupConnections();
 
-    ui->xPos->setRange(-DBL_MAX,DBL_MAX);
-    ui->yPos->setRange(-DBL_MAX,DBL_MAX);
-    ui->zPos->setRange(-DBL_MAX,DBL_MAX);
+    constexpr double max = std::numeric_limits<double>::max();
+    ui->xPos->setRange(-max, max);
+    ui->yPos->setRange(-max, max);
+    ui->zPos->setRange(-max, max);
     ui->xPos->setUnit(Base::Unit::Length);
     ui->yPos->setUnit(Base::Unit::Length);
     ui->zPos->setUnit(Base::Unit::Length);
 
-    ui->xDir->setRange(-DBL_MAX,DBL_MAX);
-    ui->yDir->setRange(-DBL_MAX,DBL_MAX);
-    ui->zDir->setRange(-DBL_MAX,DBL_MAX);
+    ui->xDir->setRange(-max, max);
+    ui->yDir->setRange(-max, max);
+    ui->zDir->setRange(-max, max);
     ui->xDir->setUnit(Base::Unit());
     ui->yDir->setUnit(Base::Unit());
     ui->zDir->setUnit(Base::Unit());
@@ -307,7 +309,7 @@ bool DlgRevolution::validate()
 
     //check angle
     if (!axisLinkHasAngle){
-        if (fabs(this->getAngle() / 180.0 * M_PI) < Precision::Angular()) {
+        if (fabs(Base::toRadians(this->getAngle())) < Precision::Angular()) {
             QMessageBox::critical(this, windowTitle(),
                 tr("Revolution angle span is zero. It must be non-zero."));
             ui->angle->setFocus();
@@ -345,7 +347,7 @@ void DlgRevolution::findShapes()
     std::vector<App::DocumentObject*> objs = activeDoc->getObjectsOfType<App::DocumentObject>();
 
     for (auto obj : objs) {
-        Part::TopoShape topoShape = Part::Feature::getTopoShape(obj);
+        Part::TopoShape topoShape = Part::Feature::getTopoShape(obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform);
         if (topoShape.isNull()) {
             continue;
         }
@@ -540,7 +542,7 @@ void DlgRevolution::autoSolid()
 {
     try{
         App::DocumentObject &dobj = this->getShapeToRevolve();
-        Part::TopoShape topoShape = Part::Feature::getTopoShape(&dobj);
+        Part::TopoShape topoShape = Part::Feature::getTopoShape(&dobj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform);
         if (topoShape.isNull()) {
             return;
         } else {

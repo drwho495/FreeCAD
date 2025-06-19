@@ -1,22 +1,24 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 # ***************************************************************************
 # *                                                                         *
 # *   Copyright (c) 2022 Yorik van Havre <yorik@uncreated.net>              *
 # *                                                                         *
-# *   This program is free software; you can redistribute it and/or modify  *
-# *   it under the terms of the GNU Lesser General Public License (LGPL)    *
-# *   as published by the Free Software Foundation; either version 2 of     *
-# *   the License, or (at your option) any later version.                   *
-# *   for detail see the LICENCE text file.                                 *
+# *   This file is part of FreeCAD.                                         *
 # *                                                                         *
-# *   This program is distributed in the hope that it will be useful,       *
-# *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-# *   GNU Library General Public License for more details.                  *
+# *   FreeCAD is free software: you can redistribute it and/or modify it    *
+# *   under the terms of the GNU Lesser General Public License as           *
+# *   published by the Free Software Foundation, either version 2.1 of the  *
+# *   License, or (at your option) any later version.                       *
 # *                                                                         *
-#*   You should have received a copy of the GNU Library General Public     *
-#*   License along with this program; if not, write to the Free Software   *
-#*   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
-#*   USA                                                                   *
+# *   FreeCAD is distributed in the hope that it will be useful, but        *
+# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
+# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
+# *   Lesser General Public License for more details.                       *
+# *                                                                         *
+# *   You should have received a copy of the GNU Lesser General Public      *
+# *   License along with FreeCAD. If not, see                               *
+# *   <https://www.gnu.org/licenses/>.                                      *
 # *                                                                         *
 # ***************************************************************************
 
@@ -24,11 +26,14 @@
 
 import FreeCAD
 import FreeCADGui
+
 translate = FreeCAD.Qt.translate
+
 
 # the property groups below should not be treated as psets
 NON_PSETS = ["Base", "IFC", "", "Geometry", "Dimension", "Linear/radial dimension",
              "SectionPlane", "Axis", "PhysicalProperties", "BuildingPart", "IFC Attributes"]
+
 
 class ifc_object:
     """Base class for all IFC-based objects"""
@@ -60,7 +65,8 @@ class ifc_object:
         elif prop == "Schema":
             self.edit_schema(obj, obj.Schema)
         elif prop == "Type":
-            self.Classification(obj)
+            self.edit_type(obj)
+            self.assign_classification(obj)
         elif prop == "Classification":
             self.edit_classification(obj)
         elif prop == "Group":
@@ -110,6 +116,31 @@ class ifc_object:
                 QtCore.QTimer.singleShot(100, obj.touch)
             QtCore.QTimer.singleShot(100, obj.Document.recompute)
             QtCore.QTimer.singleShot(100, self.fit_all)
+
+    def assign_classification(self, obj):
+        """
+        Assigns Classification to an IFC object in a case where
+        the object references a Type that has a Classification property,
+        so we move copy the Type's property to our actual object.
+        """
+        
+        if not getattr(obj, "Type", None):
+            return
+
+        type_obj = obj.Type
+        if getattr(type_obj, "Classification", None):
+            # Check if there is Classification already, since user can just change
+            # the IFC type, but there could be one previously assigned which had
+            # Classification
+            if getattr(obj, "Classification", None) is None:
+                obj.addProperty("App::PropertyString", "Classification", "IFC")
+            obj.Classification = type_obj.Classification
+            obj.recompute()
+        elif getattr(obj, "Classification", None):
+            # This means user has assigned type that has no classification, so clear
+            # the one that they have currently selected
+            obj.Classification = ""
+            obj.recompute()
 
     def fit_all(self):
         """Fits the view"""

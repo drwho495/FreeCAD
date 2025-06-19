@@ -5,18 +5,19 @@
 
 #include "PreCompiled.h"
 
-// required by windows for M_PI definition
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <exception>
+#include <string>
 
 #include "dxf.h"
 #include <App/Application.h>
 #include <Base/Color.h>
 #include <Base/Console.h>
+#include <Base/Exception.h>
 #include <Base/FileInfo.h>
 #include <Base/Interpreter.h>
 #include <Base/Stream.h>
@@ -436,7 +437,7 @@ std::string CDxfWrite::getPlateFile(std::string fileSpec)
     std::stringstream outString;
     Base::FileInfo fi(fileSpec);
     if (!fi.isReadable()) {
-        Base::Console().Message("dxf unable to open %s!\n", fileSpec.c_str());
+        Base::Console().message("dxf unable to open %s!\n", fileSpec.c_str());
     }
     else {
         string line;
@@ -1584,10 +1585,10 @@ void CDxfWrite::writeAngularDimBlock(const double* textMidPoint,
     double span = fabs(endAngle - startAngle);
     double offset = span * 0.10;
     if (startAngle < 0) {
-        startAngle += 2 * M_PI;
+        startAngle += 2 * std::numbers::pi;
     }
     if (endAngle < 0) {
-        endAngle += 2 * M_PI;
+        endAngle += 2 * std::numbers::pi;
     }
     Base::Vector3d startOff(cos(startAngle + offset), sin(startAngle + offset), 0.0);
     Base::Vector3d endOff(cos(endAngle - offset), sin(endAngle - offset), 0.0);
@@ -2130,7 +2131,7 @@ bool CDxfRead::ReadEllipse()
     Base::Vector3d majorAxisEnd;  //  relative to centre
     double eccentricity = 0;
     double startAngleRadians = 0;
-    double endAngleRadians = 2 * M_PI;
+    double endAngleRadians = 2 * std::numbers::pi;
 
     Setup3DVectorAttribute(ePrimaryPoint, centre);
     Setup3DVectorAttribute(ePoint2, majorAxisEnd);
@@ -2567,6 +2568,12 @@ bool CDxfRead::ResolveEncoding()
         // Also some DXF files have the codepage name in uppercase so we lowercase it.
         m_encoding = m_CodePage;
         std::transform(m_encoding.begin(), m_encoding.end(), m_encoding.begin(), ::tolower);
+
+        // Add mapping for common non-standard encoding names.
+        if (m_encoding == "8859_1") {
+            m_encoding = "iso-8859-1";  // Replace with a name Python understands
+        }
+
         // NOLINTNEXTLINE(readability/nolint)
 #define ANSI_ENCODING_PREFIX "ansi_"  // NOLINT(cppcoreguidelines-macro-usage)
         if (m_encoding.rfind(ANSI_ENCODING_PREFIX, 0) == 0 && m_encoding.rfind("ansi_x3", 0) != 0) {
@@ -2582,7 +2589,11 @@ bool CDxfRead::ResolveEncoding()
         Base::PyGILStateLocker lock;
         PyObject* pyDecoder = PyCodec_Decoder(m_encoding.c_str());
         if (pyDecoder == nullptr) {
-            return false;  // A key error exception will have been placed.
+            // PyCodec_Decoder failed, which means Python could not find the encoding.
+            // This sets a Python LookupError. We clear this low-level error because
+            // our caller will throw a more informative, high-level exception.
+            PyErr_Clear();
+            return false;
         }
         PyObject* pyUTF8Decoder = PyCodec_Decoder("utf_8");
         assert(pyUTF8Decoder != nullptr);
@@ -2631,67 +2642,100 @@ void CDxfRead::DoRead(const bool ignore_errors /* = false */)
         return;
     }
 
-    StartImport();
-    // Loop reading the sections.
-    while (get_next_record()) {
-        if (m_record_type != eObjectType) {
-            ImportError("Found type %d record when expecting start of a SECTION or EOF\n",
-                        (int)m_record_type);
-            continue;
+    try {
+        StartImport();
+        // Loop reading the sections.
+        while (get_next_record()) {
+            if (m_record_type != eObjectType) {
+                ImportError("Found type %d record when expecting start of a SECTION or EOF\n",
+                            (int)m_record_type);
+                continue;
+            }
+            if (IsObjectName("EOF")) {  // TODO: Check for drivel beyond EOF record
+                break;
+            }
+            if (!IsObjectName("SECTION")) {
+                ImportError("Found %s record when expecting start of a SECTION\n",
+                            m_record_data.c_str());
+                continue;
+            }
+            if (!ReadSection()) {
+                throw Base::Exception("Failed to read DXF section (returned false).");
+            }
         }
-        if (IsObjectName("EOF")) {  // TODO: Check for drivel beyond EOF record
-            break;
-        }
-        if (!IsObjectName("SECTION")) {
-            ImportError("Found %s record when expecting start of a SECTION\n",
-                        m_record_data.c_str());
-            continue;
-        }
-        if (!ReadSection()) {
-            return;
+        FinishImport();
+
+        // Flush out any unsupported features messages
+        if (!m_unsupportedFeaturesNoted.empty()) {
+            ImportError("Unsupported DXF features:\n");
+            for (auto& featureInfo : m_unsupportedFeaturesNoted) {
+                ImportError("%s: %d time(s) first at line %d\n",
+                            featureInfo.first,
+                            featureInfo.second.first,
+                            featureInfo.second.second);
+            }
         }
     }
-    FinishImport();
-
-    // FLush out any unsupported features messages
-    if (!m_unsupportedFeaturesNoted.empty()) {
-        ImportError("Unsupported DXF features:\n");
-        for (auto& featureInfo : m_unsupportedFeaturesNoted) {
-            ImportError("%s: %d time(s) first at line %d\n",
-                        featureInfo.first,
-                        featureInfo.second.first,
-                        featureInfo.second.second);
-        }
+    catch (const Base::Exception& e) {
+        // This catches specific FreeCAD exceptions and re-throws them.
+        throw;
+    }
+    catch (const std::exception& e) {
+        // This catches all standard C++ exceptions and converts them
+        // to a FreeCAD exception, which the binding layer can handle.
+        throw Base::Exception(e.what());
+    }
+    catch (...) {
+        // This is a catch-all for any other non-standard C++ exceptions.
+        throw Base::Exception("An unknown, non-standard C++ exception occurred during DXF import.");
     }
 }
 
 bool CDxfRead::ReadSection()
 {
     if (!get_next_record()) {
-        ImportError("Unclosed SECTION at end of file\n");
-        return false;
+        throw Base::Exception("Unexpected end of file after SECTION tag.");
     }
     if (m_record_type != eName) {
         ImportError("Ignored SECTION with no name record\n");
         return ReadIgnoredSection();
     }
+
     if (IsObjectName("HEADER")) {
-        return ReadHeaderSection();
+        if (!ReadHeaderSection()) {
+            throw Base::Exception("Failed while reading HEADER section.");
+        }
+        return true;
     }
     if (IsObjectName("TABLES")) {
-        return ReadTablesSection();
+        if (!ReadTablesSection()) {
+            throw Base::Exception("Failed while reading TABLES section.");
+        }
+        return true;
     }
     if (IsObjectName("BLOCKS")) {
-        return ReadBlocksSection();
+        if (!ReadBlocksSection()) {
+            throw Base::Exception("Failed while reading BLOCKS section.");
+        }
+        return true;
     }
     if (IsObjectName("ENTITIES")) {
-        return ReadEntitiesSection();
+        if (!ReadEntitiesSection()) {
+            throw Base::Exception("Failed while reading ENTITIES section.");
+        }
+        return true;
     }
-    return ReadIgnoredSection();
+
+    if (!ReadIgnoredSection()) {
+        throw Base::Exception("Failed while reading an unknown/ignored section.");
+    }
+
+    return true;
 }
+
 void CDxfRead::ProcessLayerReference(CDxfRead* object, void* target)
 {
-    if (object->Layers.count(object->m_record_data) == 0) {
+    if (!object->Layers.contains(object->m_record_data)) {
         object->ImportError("First reference to missing Layer '%s'", object->m_record_data);
         // Synthesize the Layer so we don't get the same error again.
         // We need to take copies of the string arguments because MakeLayer uses them as move
@@ -2777,11 +2821,18 @@ bool CDxfRead::ReadHeaderSection()
         if (m_record_type != eVariableName) {
             continue;  // Quietly ignore unknown record types
         }
+
+        // Store the variable name before we try to read its value.
+        std::string currentVarName = m_record_data;
         if (!ReadVariable()) {
-            return false;
+            // If ReadVariable returns false, throw an exception with the variable name.
+            throw Base::Exception("Failed while reading value for HEADER variable: "
+                                  + currentVarName);
         }
     }
-    return false;
+
+    // If the loop finishes without finding ENDSEC, it's an error.
+    throw Base::Exception("Unexpected end of file inside HEADER section.");
 }
 
 bool CDxfRead::ReadVariable()
@@ -2914,7 +2965,7 @@ bool CDxfRead::ReadEntitiesSection()
                 }
             }
             catch (const Base::Exception& e) {
-                e.ReportException();
+                e.reportException();
             }
             catch (...) {
                 ImportError("CDxfRead::ReadEntity raised unknown exception\n");
@@ -2951,9 +3002,6 @@ bool CDxfRead::ReadLayer()
         // Frozen layers are implicitly hidden which we don't do yet.
         // TODO: Should have an import option to omit frozen layers.
         UnsupportedFeature("Frozen layers");
-    }
-    if (layerColor < 0) {
-        UnsupportedFeature("Hidden layers");
     }
     Layers[layername] = MakeLayer(layername, layerColor, std::move(lineTypeName));
     return true;

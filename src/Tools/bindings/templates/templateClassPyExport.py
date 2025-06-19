@@ -37,7 +37,15 @@ def compareFiles(file1, file2):
 class TemplateClassPyExport(template.ModelTemplate):
     # TODO: This is temporary, once all XML files are migrated, this can be removed.
     def getPath(self, path):
-        if self.is_python and not self.export.ModuleName in ["Base", "App"]:
+        if self.is_python and not self.export.ModuleName in [
+            "Base",
+            "App",
+            "Gui",
+            "Part",
+            "PartDesign",
+            "Material",
+            "Sketcher",
+        ]:
             root, ext = os.path.splitext(path)
             return f"{root}_{ext}"
         return path
@@ -115,6 +123,7 @@ class TemplateClassPyExport(template.ModelTemplate):
 #ifndef @self.export.Namespace.upper().replace("::", "_")@_@self.export.Name.upper()@_H
 #define @self.export.Namespace.upper().replace("::", "_")@_@self.export.Name.upper()@_H
 
+#include <CXX/Objects.hxx>
 #include <@self.export.FatherInclude@>
 #include <@self.export.Include@>
 #include <string>
@@ -158,7 +167,7 @@ public:
     static int descriptorSetter(PyObject* self, PyObject* obj, PyObject* value);
 -
     static PyGetSetDef    GetterSetter[];
-    PyTypeObject *GetType() override {return &Type;}
+    PyTypeObject *GetType() const override {return &Type;}
 
 public:
     @self.export.Name@(@self.export.TwinPointer@ *pcObject, PyTypeObject *T = &Type);
@@ -187,6 +196,9 @@ public:
 = elif i.Class:
     /// implementer for the @i.Name@() method
     static PyObject*  @i.Name@(PyObject *self, PyObject *args, PyObject *kwd);
+= elif i.Const:
+    /// implementer for the @i.Name@() method
+    PyObject*  @i.Name@(PyObject *args, PyObject *kwd) const;
 = else:
     /// implementer for the @i.Name@() method
     PyObject*  @i.Name@(PyObject *args, PyObject *kwd);
@@ -200,6 +212,9 @@ public:
 = elif i.Class:
     /// implementer for the @i.Name@() method
     static PyObject*  @i.Name@(PyObject *self);
+= elif i.Const:
+    /// implementer for the @i.Name@() method
+    PyObject*  @i.Name@() const;
 = else:
     /// implementer for the @i.Name@() method
     PyObject*  @i.Name@();
@@ -213,6 +228,9 @@ public:
 = elif i.Class:
     /// implementer for the @i.Name@() method
     static PyObject*  @i.Name@(PyObject *self, PyObject *args);
+= elif i.Const:
+    /// implementer for the @i.Name@() method
+    PyObject*  @i.Name@(PyObject *args) const;
 = else:
     /// implementer for the @i.Name@() method
     PyObject*  @i.Name@(PyObject *args);
@@ -651,15 +669,12 @@ PyObject * @self.export.Name@::staticCallback_@i.Name@ (PyObject *self, PyObject
 -
         return ret;
     } // Please sync the following catch implementation with PY_CATCH
-    catch(Base::Exception &e)
+    catch(const Base::Exception& e)
     {
-        auto pye = e.getPyExceptionType();
-        if(!pye)
-            pye = Base::PyExc_FC_GeneralError;
-        PyErr_SetObject(pye, e.getPyObject());
+        e.setPyException();
         return nullptr;
     }
-    catch(const std::exception &e)
+    catch(const std::exception& e)
     {
         PyErr_SetString(Base::PyExc_FC_GeneralError, e.what());
         return nullptr;
@@ -814,15 +829,12 @@ PyObject *@self.export.Name@::_getattr(const char *attr)			// __getattr__ functi
         PyObject *r = getCustomAttributes(attr);
         if(r) return r;
     } // Please sync the following catch implementation with PY_CATCH
-    catch(Base::Exception &e)
+    catch(const Base::Exception& e)
     {
-        auto pye = e.getPyExceptionType();
-        if(!pye)
-            pye = Base::PyExc_FC_GeneralError;
-        PyErr_SetObject(pye, e.getPyObject());
+        e.setPyException();
         return nullptr;
     }
-    catch(const std::exception &e)
+    catch(const std::exception& e)
     {
         PyErr_SetString(Base::PyExc_FC_GeneralError, e.what());
         return nullptr;
@@ -864,15 +876,12 @@ int @self.export.Name@::_setattr(const char *attr, PyObject *value) // __setattr
         else if (r == -1)
             return -1;
     } // Please sync the following catch implementation with PY_CATCH
-    catch(Base::Exception &e)
+    catch(const Base::Exception& e)
     {
-        auto pye = e.getPyExceptionType();
-        if(!pye)
-            pye = Base::PyExc_FC_GeneralError;
-        PyErr_SetObject(pye, e.getPyObject());
+        e.setPyException();
         return -1;
     }
-    catch(const std::exception &e)
+    catch(const std::exception& e)
     {
         PyErr_SetString(Base::PyExc_FC_GeneralError, e.what());
         return -1;

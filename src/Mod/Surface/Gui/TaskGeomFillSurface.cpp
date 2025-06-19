@@ -338,6 +338,11 @@ void GeomFillSurface::open()
     checkOpenCommand();
     this->vp->highlightReferences(true);
     Gui::Selection().clearSelection();
+
+    // if the surface is not yet created then automatically start "AppendEdge" mode
+    if (editedObject->Shape.getShape().isNull()) {
+        ui->buttonEdgeAdd->setChecked(true);
+    }
 }
 
 void GeomFillSurface::clearSelection()
@@ -447,7 +452,7 @@ void GeomFillSurface::changeFillType(GeomFill_FillingStyle fillType)
         editedObject->FillType.setValue(static_cast<long>(fillType));
         editedObject->recomputeFeature();
         if (!editedObject->isValid()) {
-            Base::Console().Error("Surface filling: %s", editedObject->getStatusString());
+            Base::Console().error("Surface filling: %s", editedObject->getStatusString());
         }
     }
 }

@@ -87,7 +87,7 @@ PyMOD_INIT_FUNC(Fem)
         PyMOD_Return(nullptr);
     }
     PyObject* femModule = Fem::initModule();
-    Base::Console().Log("Loading Fem module... done\n");
+    Base::Console().log("Loading Fem module... done\n");
 
     // clang-format off
     Fem::StdMeshers_Arithmetic1DPy              ::init_type(femModule);
@@ -189,6 +189,7 @@ PyMOD_INIT_FUNC(Fem)
     Fem::FemPostPipeline                      ::init();
     Fem::FemPostFilter                        ::init();
     Fem::FemPostBranchFilter                  ::init();
+    Fem::FemPostCalculatorFilter              ::init();
     Fem::FemPostClipFilter                    ::init();
     Fem::FemPostContoursFilter                ::init();
     Fem::FemPostCutFilter                     ::init();
@@ -205,6 +206,8 @@ PyMOD_INIT_FUNC(Fem)
     Fem::FemPostSphereFunction                ::init();
 
     Fem::PropertyPostDataObject               ::init();
+
+    Fem::PostFilterPython                     ::init();
 #endif
     // clang-format on
 

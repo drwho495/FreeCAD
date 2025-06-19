@@ -94,8 +94,8 @@ ViewProviderFemAnalysis* getAnalyzeView(App::DocumentObject* obj)
     ViewProviderFemAnalysis* analyzeView = nullptr;
     App::DocumentObject* grp = App::GroupExtension::getGroupOfObject(obj);
 
-    if (Fem::FemAnalysis* analyze = Base::freecad_dynamic_cast<Fem::FemAnalysis>(grp)) {
-        analyzeView = Base::freecad_dynamic_cast<ViewProviderFemAnalysis>(
+    if (Fem::FemAnalysis* analyze = freecad_cast<Fem::FemAnalysis*>(grp)) {
+        analyzeView = freecad_cast<ViewProviderFemAnalysis*>(
             Gui::Application::Instance->getViewProvider(analyze));
     }
 
@@ -221,7 +221,8 @@ void ViewProviderFemPostPipeline::setupTaskDialog(TaskDlgPost* dlg)
     // add the function box
     assert(dlg->getView() == this);
     ViewProviderFemPostObject::setupTaskDialog(dlg);
-    dlg->appendBox(new TaskPostFrames(this));
+    auto panel = new TaskPostFrames(this);
+    dlg->addTaskBox(panel->windowIcon().pixmap(32), panel);
 }
 
 

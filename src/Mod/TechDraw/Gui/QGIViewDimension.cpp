@@ -22,12 +22,9 @@
 
 #include "PreCompiled.h"
 
-#ifdef FC_OS_WIN32
-# define _USE_MATH_DEFINES //resolves Windows & M_PI issues
-#endif
-
 #ifndef _PreComp_
 # include <cmath>
+# include <limits>
 
 # include <QApplication>
 # include <QGraphicsRectItem>
@@ -42,6 +39,7 @@
 #include <App/Application.h>
 #include <Base/Console.h>
 #include <Base/Parameter.h>
+#include <Base/Tools.h>
 #include <Base/UnitsApi.h>
 #include <Gui/Command.h>
 #include <Mod/TechDraw/App/DrawUtil.h>
@@ -163,7 +161,7 @@ bool QGIViewDimension::getGroupSelection()
 //Set selection state for this and its children
 void QGIViewDimension::setGroupSelection(bool isSelected)
 {
-    //    Base::Console().Message("QGIVD::setGroupSelection(%d)\n", b);
+    //    Base::Console().message("QGIVD::setGroupSelection(%d)\n", b);
     setSelected(isSelected);
     datumLabel->setSelected(isSelected);
     dimLines->setSelected(isSelected);
@@ -186,19 +184,13 @@ void QGIViewDimension::hover(bool state)
 
 void QGIViewDimension::setViewPartFeature(TechDraw::DrawViewDimension* obj)
 {
-    //    Base::Console().Message("QGIVD::setViewPartFeature()\n");
+    //    Base::Console().message("QGIVD::setViewPartFeature()\n");
     if (!obj) {
         return;
     }
 
     setViewFeature(static_cast<TechDraw::DrawView*>(obj));
     dvDimension = obj;
-
-    // Set the QGIGroup Properties based on the DrawView
-    float x = Rez::guiX(obj->X.getValue());
-    float y = Rez::guiX(-obj->Y.getValue());
-
-    datumLabel->setPosFromCenter(x, y);
 
     setNormalColorAll();
     setPrettyNormal();
@@ -222,7 +214,7 @@ void QGIViewDimension::setNormalColorAll()
 //and so mouse events need to be ignored.  Only the QGIDatumLabel mouse events are relevant.
 void QGIViewDimension::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-    //    Base::Console().Message("QGIVD::mousePressEvent() - %s\n", getViewName());
+    //    Base::Console().message("QGIVD::mousePressEvent() - %s\n", getViewName());
     QGraphicsItem::mousePressEvent(event);
 }
 
@@ -233,7 +225,7 @@ void QGIViewDimension::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void QGIViewDimension::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    //    Base::Console().Message("QGIVDim::mouseReleaseEvent() - %s\n", getViewName());
+    //    Base::Console().message("QGIVDim::mouseReleaseEvent() - %s\n", getViewName());
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
@@ -250,22 +242,18 @@ void QGIViewDimension::updateView(bool update)
         return;
     }
 
+    updateDim();
+
     if (update || dim->X.isTouched() || dim->Y.isTouched()) {
         float x = Rez::guiX(dim->X.getValue());
         float y = Rez::guiX(dim->Y.getValue());
         datumLabel->setPosFromCenter(x, -y);
-        updateDim();
     }
-    else if (vp->Fontsize.isTouched() || vp->Font.isTouched()) {
-        updateDim();
+    if (vp->LineWidth.isTouched()) {
+        m_lineWidth = Rez::guiX(vp->LineWidth.getValue());
     }
-    else if (vp->LineWidth.isTouched()) {
-        m_lineWidth = vp->LineWidth.getValue();
-        updateDim();
-    }
-    else {
-        updateDim();
-    }
+
+    updateDim();
 
     // needs Phase 2 of autocorrect to be useful
     // if (dim->hasGoodReferences()) {
@@ -306,7 +294,6 @@ void QGIViewDimension::updateDim()
     prepareGeometryChange();
     datumLabel->setDimString(labelText);
     datumLabel->setToleranceString();
-    datumLabel->setPosFromCenter(datumLabel->X(), datumLabel->Y());
 
     datumLabel->setFramed(dim->TheoreticalExact.getValue());
     datumLabel->setLineWidth(m_lineWidth);
@@ -382,7 +369,6 @@ void QGIViewDimension::draw()
         return;
     }
 
-    m_lineWidth = Rez::guiX(vp->LineWidth.getValue());
     datumLabel->setRotation(0.0);
     datumLabel->show();
 
@@ -410,7 +396,7 @@ void QGIViewDimension::draw()
             drawArea(dim, vp);
         }
         else {
-            Base::Console().Error("QGIVD::draw - this DimensionType is unknown: %s\n", dimType);
+            Base::Console().error("QGIVD::draw - this DimensionType is unknown: %s\n", dimType);
         }
     }
     else {
@@ -440,25 +426,27 @@ void QGIViewDimension::draw()
 double QGIViewDimension::getAnglePlacementFactor(double testAngle, double endAngle,
                                                  double startRotation)
 {
+    using std::numbers::pi;
+
     if (startRotation > 0.0) {
         startRotation = -startRotation;
         endAngle -= startRotation;
-        if (endAngle > M_PI) {
-            endAngle -= M_2PI;
+        if (endAngle > pi) {
+            endAngle -= 2 * pi;
         }
     }
 
     if (testAngle > endAngle) {
-        testAngle -= M_2PI;
+        testAngle -= 2 * pi;
     }
 
     if (testAngle >= endAngle + startRotation) {
         return +1.0;
     }
 
-    testAngle += M_PI;
+    testAngle += pi;
     if (testAngle > endAngle) {
-        testAngle -= M_2PI;
+        testAngle -= 2 * pi;
     }
 
     if (testAngle >= endAngle + startRotation) {
@@ -472,7 +460,7 @@ int QGIViewDimension::compareAngleStraightness(double straightAngle, double left
                                                double rightAngle, double leftStrikeFactor,
                                                double rightStrikeFactor)
 {
-    double leftDelta = DrawUtil::angleComposition(M_PI, straightAngle - leftAngle);
+    double leftDelta = DrawUtil::angleComposition(std::numbers::pi, straightAngle - leftAngle);
     double rightDelta = DrawUtil::angleComposition(rightAngle, -straightAngle);
 
     if (fabs(leftDelta - rightDelta) <= Precision::Confusion()) {
@@ -492,7 +480,7 @@ int QGIViewDimension::compareAngleStraightness(double straightAngle, double left
 double QGIViewDimension::getIsoStandardLinePlacement(double labelAngle)
 {
     // According to ISO 129-1 Standard Figure 23, the bordering angle is 1/2 PI, resp. -1/2 PI
-    return labelAngle < -M_PI / 2.0 || labelAngle > +M_PI / 2.0 ? +1.0 : -1.0;
+    return labelAngle < -std::numbers::pi / 2.0 || labelAngle > +std::numbers::pi / 2.0 ? +1.0 : -1.0;
 }
 
 Base::Vector2d QGIViewDimension::getIsoRefOutsetPoint(const Base::BoundBox2d& labelRectangle,
@@ -599,7 +587,7 @@ double QGIViewDimension::computeLineAndLabelAngles(const Base::Vector2d& rotatio
     double devAngle = getIsoStandardLinePlacement(rawAngle) * asin(lineLabelDistance / rawDistance);
     lineAngle = DrawUtil::angleComposition(lineAngle, devAngle);
 
-    labelAngle = devAngle < 0.0 ? lineAngle : DrawUtil::angleComposition(lineAngle, M_PI);
+    labelAngle = devAngle < 0.0 ? lineAngle : DrawUtil::angleComposition(lineAngle, std::numbers::pi);
 
     return devAngle;
 }
@@ -669,7 +657,7 @@ QGIViewDimension::computeArcStrikeFactor(const Base::BoundBox2d& labelRectangle,
                     double arcAngle = drawMarking[startIndex].first;
                     double arcRotation = drawMarking[currentIndex].first - arcAngle;
                     if (arcRotation < 0.0) {
-                        arcRotation += M_2PI;
+                        arcRotation += 2 * std::numbers::pi;
                     }
 
                     DrawUtil::findCircularArcRectangleIntersections(arcCenter, arcRadius, arcAngle,
@@ -689,7 +677,7 @@ double QGIViewDimension::normalizeStartPosition(double& startPosition, double& l
 {
     if (startPosition > 0.0) {
         startPosition = -startPosition;
-        lineAngle += M_PI;
+        lineAngle += std::numbers::pi;
         return -1.0;
     }
 
@@ -713,7 +701,7 @@ bool QGIViewDimension::constructDimensionLine(
 {
     // The start position > 0 is not expected, the caller must handle this
     if (startPosition > 0.0) {
-        Base::Console().Error(
+        Base::Console().error(
             "QGIVD::constructDimLine - Start Position must not be positive! Received: %f\n",
             startPosition);
         return false;
@@ -785,7 +773,7 @@ bool QGIViewDimension::constructDimensionArc(
 {
     // The start rotation > 0 is not expected, the caller must handle this
     if (startRotation > 0.0) {
-        Base::Console().Error(
+        Base::Console().error(
             "QGIVD::constructDimArc - Start Rotation must not be positive! Received: %f\n",
             startRotation);
         return false;
@@ -872,7 +860,7 @@ bool QGIViewDimension::constructDimensionArc(
 
     // Add the arrow tails - these are drawn always
     double tailDelta =
-        arcRadius >= Precision::Confusion() ? getDefaultArrowTailLength() / arcRadius : M_PI_4;
+        arcRadius >= Precision::Confusion() ? getDefaultArrowTailLength() / arcRadius : std::numbers::pi / 4.0;
     double placementFactor = flipArrows ? +1.0 : -1.0;
 
     DrawUtil::intervalMarkCircular(outputMarking, endAngle,
@@ -993,7 +981,7 @@ void QGIViewDimension::drawSingleArc(QPainterPath& painterPath, const Base::Vect
         return;
     }
     if (endAngle < startAngle) {
-        endAngle += M_2PI;
+        endAngle += 2 * std::numbers::pi;
     }
 
     QRectF qtArcRectangle(
@@ -1001,8 +989,8 @@ void QGIViewDimension::drawSingleArc(QPainterPath& painterPath, const Base::Vect
                                  arcCenter.x + arcRadius, arcCenter.y + arcRadius)));
 
     // In arc drawing are for some reason Qt's angles counterclockwise as in our computations...
-    painterPath.arcMoveTo(qtArcRectangle, toDeg(startAngle));
-    painterPath.arcTo(qtArcRectangle, toDeg(startAngle), toDeg(endAngle - startAngle));
+    painterPath.arcMoveTo(qtArcRectangle, Base::toDegrees(startAngle));
+    painterPath.arcTo(qtArcRectangle, Base::toDegrees(startAngle), Base::toDegrees(endAngle - startAngle));
 }
 
 void QGIViewDimension::drawMultiArc(QPainterPath& painterPath, const Base::Vector2d& arcCenter,
@@ -1019,7 +1007,7 @@ void QGIViewDimension::drawMultiArc(QPainterPath& painterPath, const Base::Vecto
     }
 
     if (entryIndex >= drawMarking.size()) {
-        drawSingleArc(painterPath, arcCenter, arcRadius, 0, M_2PI);
+        drawSingleArc(painterPath, arcCenter, arcRadius, 0, 2 * std::numbers::pi);
         return;
     }
 
@@ -1067,7 +1055,7 @@ void QGIViewDimension::drawDimensionLine(QPainterPath& painterPath,
 
     double arrowAngles[2];
     arrowAngles[0] = lineAngle;
-    arrowAngles[1] = lineAngle + M_PI;
+    arrowAngles[1] = lineAngle + std::numbers::pi;
 
     drawArrows(arrowCount, arrowPositions, arrowAngles, flipArrows, forcePointStyle);
 }
@@ -1077,13 +1065,15 @@ void QGIViewDimension::drawDimensionArc(QPainterPath& painterPath, const Base::V
                                         double jointAngle, const Base::BoundBox2d& labelRectangle,
                                         int arrowCount, int standardStyle, bool flipArrows) const
 {
+    using std::numbers::pi;
+
     // Keep the convention start rotation <= 0
     double handednessFactor = normalizeStartRotation(startRotation);
 
     // Split the rest of 2PI minus the angle and assign joint offset so > 0 is closer to end arc side
     double jointRotation = handednessFactor * (jointAngle - endAngle);
-    if (fabs(jointRotation - startRotation * 0.5) > M_PI) {
-        jointRotation += jointRotation < 0.0 ? +M_2PI : -M_2PI;
+    if (fabs(jointRotation - startRotation * 0.5) > pi) {
+        jointRotation += jointRotation < 0.0 ? +2*pi : -2*pi;
     }
 
     std::vector<std::pair<double, bool>> drawMarks;
@@ -1099,8 +1089,8 @@ void QGIViewDimension::drawDimensionArc(QPainterPath& painterPath, const Base::V
         + Base::Vector2d::FromPolar(arcRadius, endAngle + handednessFactor * startRotation);
 
     double arrowAngles[2];
-    arrowAngles[0] = endAngle + handednessFactor * M_PI_2;
-    arrowAngles[1] = endAngle + handednessFactor * (startRotation - M_PI_2);
+    arrowAngles[0] = endAngle + handednessFactor * std::numbers::pi/2;
+    arrowAngles[1] = endAngle + handednessFactor * (startRotation - std::numbers::pi/2);
 
     drawArrows(arrowCount, arrowPositions, arrowAngles, flipArrows);
 }
@@ -1119,6 +1109,8 @@ void QGIViewDimension::drawDistanceExecutive(const Base::Vector2d& startPoint,
                                              int standardStyle, int renderExtent,
                                              bool flipArrows) const
 {
+    using std::numbers::pi;
+
     QPainterPath distancePath;
 
     Base::Vector2d labelCenter(labelRectangle.GetCenter());
@@ -1170,9 +1162,9 @@ void QGIViewDimension::drawDistanceExecutive(const Base::Vector2d& startPoint,
         // Orient the leader line angle correctly towards the target point
         double angles[2];
         angles[0] =
-            jointPositions[0] > 0.0 ? DrawUtil::angleComposition(lineAngle, M_PI) : lineAngle;
+            jointPositions[0] > 0.0 ? DrawUtil::angleComposition(lineAngle, pi) : lineAngle;
         angles[1] =
-            jointPositions[1] > 0.0 ? DrawUtil::angleComposition(lineAngle, M_PI) : lineAngle;
+            jointPositions[1] > 0.0 ? DrawUtil::angleComposition(lineAngle, pi) : lineAngle;
 
         // Select the placement, where the label is not obscured by the leader line
         // or (if both behave the same) the one that  bends the reference line less
@@ -1226,7 +1218,7 @@ void QGIViewDimension::drawDistanceExecutive(const Base::Vector2d& startPoint,
         // We may rotate the label so no leader and reference lines are needed
         double placementFactor = getIsoStandardLinePlacement(lineAngle);
         labelAngle =
-            placementFactor > 0.0 ? DrawUtil::angleComposition(lineAngle, M_PI) : lineAngle;
+            placementFactor > 0.0 ? DrawUtil::angleComposition(lineAngle, pi) : lineAngle;
 
         // Find out the projection of label center on the line with given angle
         Base::Vector2d labelProjection(
@@ -1234,7 +1226,7 @@ void QGIViewDimension::drawDistanceExecutive(const Base::Vector2d& startPoint,
             + Base::Vector2d::FromPolar(
                 placementFactor
                     * (labelRectangle.Height() * 0.5 + getIsoDimensionLineSpacing()),
-                lineAngle + M_PI_2));
+                lineAngle + pi/2));
 
         // Compute the dimensional line start and end crossings with (virtual) extension lines
         //check for isometric direction and if iso compute non-perpendicular intersection of dim line and ext lines
@@ -1264,7 +1256,7 @@ void QGIViewDimension::drawDistanceExecutive(const Base::Vector2d& startPoint,
                           labelRectangle, arrowCount, standardStyle, flipArrows);
     }
     else {
-        Base::Console().Error(
+        Base::Console().error(
             "QGIVD::drawDistanceExecutive - this Standard&Style is not supported: %d\n",
             standardStyle);
         arrowCount = 0;
@@ -1288,14 +1280,14 @@ void QGIViewDimension::drawDistanceExecutive(const Base::Vector2d& startPoint,
 
         Base::Vector2d extensionOrigin;
         Base::Vector2d extensionTarget(computeExtensionLinePoints(
-            endPoint, endCross, lineAngle + M_PI_2, getDefaultExtensionLineOverhang(), gapSize,
+            endPoint, endCross, lineAngle + std::numbers::pi/2, getDefaultExtensionLineOverhang(), gapSize,
             extensionOrigin));
         //draw 1st extension line
         distancePath.moveTo(toQtGui(extensionOrigin));
         distancePath.lineTo(toQtGui(extensionTarget));
 
         if (arrowCount > 1) {
-            extensionTarget = computeExtensionLinePoints(startPoint, startCross, lineAngle + M_PI_2,
+            extensionTarget = computeExtensionLinePoints(startPoint, startCross, lineAngle + std::numbers::pi/2,
                                                          getDefaultExtensionLineOverhang(), gapSize,
                                                          extensionOrigin);
             //draw second extension line
@@ -1304,7 +1296,6 @@ void QGIViewDimension::drawDistanceExecutive(const Base::Vector2d& startPoint,
         }
     }
 
-    datumLabel->setTransformOriginPoint(datumLabel->boundingRect().center());
     datumLabel->setRotation(toQtDeg(labelAngle));
 
     dimLines->setPath(distancePath);
@@ -1320,6 +1311,8 @@ void QGIViewDimension::drawDistanceOverride(const Base::Vector2d& startPoint,
                                             int standardStyle, int renderExtent, bool flipArrows,
                                             double extensionAngle) const
 {
+    using std::numbers::pi;
+
     QPainterPath distancePath;
 
     Base::Vector2d labelCenter(labelRectangle.GetCenter());
@@ -1377,9 +1370,9 @@ void QGIViewDimension::drawDistanceOverride(const Base::Vector2d& startPoint,
         // Orient the leader line angle correctly towards the target point
         double angles[2];
         angles[0] =
-            jointPositions[0] > 0.0 ? DrawUtil::angleComposition(lineAngle, M_PI) : lineAngle;
+            jointPositions[0] > 0.0 ? DrawUtil::angleComposition(lineAngle, pi) : lineAngle;
         angles[1] =
-            jointPositions[1] > 0.0 ? DrawUtil::angleComposition(lineAngle, M_PI) : lineAngle;
+            jointPositions[1] > 0.0 ? DrawUtil::angleComposition(lineAngle, pi) : lineAngle;
 
         // Select the placement, where the label is not obscured by the leader line
         // or (if both behave the same) the one that  bends the reference line less
@@ -1436,7 +1429,7 @@ void QGIViewDimension::drawDistanceOverride(const Base::Vector2d& startPoint,
         // We may rotate the label so no leader and reference lines are needed
         double placementFactor = getIsoStandardLinePlacement(lineAngle);
         labelAngle =
-            placementFactor > 0.0 ? DrawUtil::angleComposition(lineAngle, M_PI) : lineAngle;
+            placementFactor > 0.0 ? DrawUtil::angleComposition(lineAngle, pi) : lineAngle;
 
         // Find out the projection of label center on the line with given angle
         Base::Vector2d labelProjection(
@@ -1444,7 +1437,7 @@ void QGIViewDimension::drawDistanceOverride(const Base::Vector2d& startPoint,
             + Base::Vector2d::FromPolar(
                 placementFactor
                     * (labelRectangle.Height() * 0.5 + getIsoDimensionLineSpacing()),
-                lineAngle + M_PI_2));
+                lineAngle + std::numbers::pi/2));
 
         // Compute the dimensional line start and end crossings with (virtual) extension lines
         startCross =
@@ -1474,7 +1467,7 @@ void QGIViewDimension::drawDistanceOverride(const Base::Vector2d& startPoint,
                           labelRectangle, arrowCount, standardStyle, flipArrows);
     }
     else {
-        Base::Console().Error(
+        Base::Console().error(
             "QGIVD::drawDistanceExecutive - this Standard&Style is not supported: %d\n",
             standardStyle);
         arrowCount = 0;
@@ -1499,14 +1492,14 @@ void QGIViewDimension::drawDistanceOverride(const Base::Vector2d& startPoint,
 
         Base::Vector2d extensionOrigin;
         Base::Vector2d extensionTarget(computeExtensionLinePoints(
-            endPoint, endCross, lineAngle + M_PI_2, getDefaultExtensionLineOverhang(), gapSize,
+            endPoint, endCross, lineAngle + std::numbers::pi/2, getDefaultExtensionLineOverhang(), gapSize,
             extensionOrigin));
         //draw 1st extension line
         distancePath.moveTo(toQtGui(extensionOrigin));
         distancePath.lineTo(toQtGui(extensionTarget));
 
         if (arrowCount > 1) {
-            extensionTarget = computeExtensionLinePoints(startPoint, startCross, lineAngle + M_PI_2,
+            extensionTarget = computeExtensionLinePoints(startPoint, startCross, lineAngle + std::numbers::pi/2,
                                                          getDefaultExtensionLineOverhang(), gapSize,
                                                          extensionOrigin);
             //draw second extension line
@@ -1515,7 +1508,6 @@ void QGIViewDimension::drawDistanceOverride(const Base::Vector2d& startPoint,
         }
     }
 
-    datumLabel->setTransformOriginPoint(datumLabel->boundingRect().center());
     datumLabel->setRotation(toQtDeg(labelAngle));
 
     dimLines->setPath(distancePath);
@@ -1528,6 +1520,8 @@ void QGIViewDimension::drawRadiusExecutive(const Base::Vector2d& centerPoint,
                                            double centerOverhang, int standardStyle,
                                            int renderExtent, bool flipArrow) const
 {
+    using std::numbers::pi;
+
     QPainterPath radiusPath;
 
     Base::Vector2d labelCenter(labelRectangle.GetCenter());
@@ -1558,10 +1552,10 @@ void QGIViewDimension::drawRadiusExecutive(const Base::Vector2d& centerPoint,
 
         // Orient the leader line angle correctly towards the point on arc
         if (angleFactors[0] < 0.0) {
-            lineAngles[0] = DrawUtil::angleComposition(lineAngles[0], M_PI);
+            lineAngles[0] = DrawUtil::angleComposition(lineAngles[0], pi);
         }
         if (angleFactors[1] < 0.0) {
-            lineAngles[1] = DrawUtil::angleComposition(lineAngles[1], M_PI);
+            lineAngles[1] = DrawUtil::angleComposition(lineAngles[1], pi);
         }
 
         // Find the positions where the reference line attaches to the dimension line
@@ -1600,9 +1594,9 @@ void QGIViewDimension::drawRadiusExecutive(const Base::Vector2d& centerPoint,
 
                 if (compareAngleStraightness(
                         0.0,
-                        jointPositions[0] > 0.0 ? DrawUtil::angleComposition(lineAngles[0], M_PI)
+                        jointPositions[0] > 0.0 ? DrawUtil::angleComposition(lineAngles[0], pi)
                                                 : lineAngles[0],
-                        jointPositions[1] > 0.0 ? DrawUtil::angleComposition(lineAngles[1], M_PI)
+                        jointPositions[1] > 0.0 ? DrawUtil::angleComposition(lineAngles[1], pi)
                                                 : lineAngles[1],
                         strikeFactors[0], strikeFactors[1])
                     > 0) {
@@ -1653,7 +1647,7 @@ void QGIViewDimension::drawRadiusExecutive(const Base::Vector2d& centerPoint,
         // Is there point on the arc, where line from center intersects it perpendicularly?
         double angleFactor = getAnglePlacementFactor(lineAngle, endAngle, startRotation);
         if (angleFactor < 0.0) {
-            lineAngle = DrawUtil::angleComposition(lineAngle, M_PI);
+            lineAngle = DrawUtil::angleComposition(lineAngle, pi);
         }
 
         Base::Vector2d arcPoint;
@@ -1673,7 +1667,7 @@ void QGIViewDimension::drawRadiusExecutive(const Base::Vector2d& centerPoint,
                                                  labelRectangle.Height() * 0.5
                                                      + getIsoDimensionLineSpacing(),
                                                  lineAngle, labelAngle);
-            lineAngle = DrawUtil::angleComposition(lineAngle, M_PI);
+            lineAngle = DrawUtil::angleComposition(lineAngle, pi);
 
             labelPosition = -cos(devAngle) * ((labelCenter - arcPoint).Length());
         }
@@ -1693,7 +1687,7 @@ void QGIViewDimension::drawRadiusExecutive(const Base::Vector2d& centerPoint,
         // Is there point on the arc, where line from center intersects it perpendicularly?
         double angleFactor = getAnglePlacementFactor(lineAngle, endAngle, startRotation);
         if (angleFactor < 0) {
-            lineAngle = DrawUtil::angleComposition(lineAngle, M_PI);
+            lineAngle = DrawUtil::angleComposition(lineAngle, pi);
         }
 
         Base::Vector2d arcPoint;
@@ -1720,12 +1714,11 @@ void QGIViewDimension::drawRadiusExecutive(const Base::Vector2d& centerPoint,
                           labelPosition, labelRectangle, 1, standardStyle, flipArrow);
     }
     else {
-        Base::Console().Error(
+        Base::Console().error(
             "QGIVD::drawRadiusExecutive - this Standard&Style is not supported: %d\n",
             standardStyle);
     }
 
-    datumLabel->setTransformOriginPoint(datumLabel->boundingRect().center());
     datumLabel->setRotation(toQtDeg(labelAngle));
 
     dimLines->setPath(radiusPath);
@@ -1779,7 +1772,7 @@ void QGIViewDimension::drawAreaExecutive(const Base::Vector2d& centerPoint, doub
                                             labelRectangle.Height() * 0.5 + getIsoDimensionLineSpacing(),
                                             lineAngle, labelAngle);
 
-        lineAngle = lineAngle - M_PI;
+        lineAngle = lineAngle - std::numbers::pi;
         double labelPosition = -cos(devAngle) * ((labelCenter - centerPoint).Length());
 
         drawDimensionLine(areaPath, centerPoint, lineAngle, 0.0, labelPosition, labelRectangle, 1, standardStyle, flipArrow, forcePointStyle);
@@ -1793,12 +1786,11 @@ void QGIViewDimension::drawAreaExecutive(const Base::Vector2d& centerPoint, doub
         drawDimensionLine(areaPath, centerPoint, lineAngle, 0.0, labelPosition, labelRectangle, 1, standardStyle, flipArrow, forcePointStyle);
     }
     else {
-        Base::Console().Error(
+        Base::Console().error(
             "QGIVD::drawRadiusExecutive - this Standard&Style is not supported: %d\n",
             standardStyle);
     }
 
-    datumLabel->setTransformOriginPoint(datumLabel->boundingRect().center());
     datumLabel->setRotation(toQtDeg(labelAngle));
 
     dimLines->setPath(areaPath);
@@ -1818,7 +1810,7 @@ void QGIViewDimension::drawDistance(TechDraw::DrawViewDimension* dimension,
         lineAngle = 0.0;
     }
     else if (strcmp(dimensionType, "DistanceY") == 0) {
-        lineAngle = M_PI_2;
+        lineAngle = std::numbers::pi/2;
     }
     else {
         lineAngle = (fromQtApp(linePoints.second()) - fromQtApp(linePoints.first())).Angle();
@@ -1831,9 +1823,9 @@ void QGIViewDimension::drawDistance(TechDraw::DrawViewDimension* dimension,
 
     if (dimension->AngleOverride.getValue()) {
         drawDistanceOverride(fromQtApp(linePoints.first()), fromQtApp(linePoints.second()),
-                             dimension->LineAngle.getValue() * M_PI / 180.0, labelRectangle,
+                             Base::toRadians(dimension->LineAngle.getValue()), labelRectangle,
                              standardStyle, renderExtent, flipArrows,
-                             dimension->ExtensionAngle.getValue() * M_PI / 180.0);
+                             Base::toRadians(dimension->ExtensionAngle.getValue()));
     }
     else {
         drawDistanceExecutive(fromQtApp(linePoints.extensionLineFirst()), fromQtApp(linePoints.extensionLineSecond()),
@@ -1844,6 +1836,8 @@ void QGIViewDimension::drawDistance(TechDraw::DrawViewDimension* dimension,
 void QGIViewDimension::drawRadius(TechDraw::DrawViewDimension* dimension,
                                   ViewProviderDimension* viewProvider) const
 {
+    using std::numbers::pi;
+
     Base::BoundBox2d labelRectangle(
         fromQtGui(mapRectFromItem(datumLabel, datumLabel->tightBoundingRect())));
     arcPoints curvePoints = dimension->getArcPoints();
@@ -1858,12 +1852,12 @@ void QGIViewDimension::drawRadius(TechDraw::DrawViewDimension* dimension,
             - endAngle;
 
         if (startRotation != 0.0 && ((startRotation > 0.0) != curvePoints.arcCW)) {
-            startRotation += curvePoints.arcCW ? +M_2PI : -M_2PI;
+            startRotation += curvePoints.arcCW ? +2*pi : -2*pi;
         }
     }
     else {// A circle arc covers the whole plane
-        endAngle = M_PI;
-        startRotation = -M_2PI;
+        endAngle = pi;
+        startRotation = -2*pi;
     }
 
     drawRadiusExecutive(
@@ -1875,6 +1869,8 @@ void QGIViewDimension::drawRadius(TechDraw::DrawViewDimension* dimension,
 void QGIViewDimension::drawDiameter(TechDraw::DrawViewDimension* dimension,
                                     ViewProviderDimension* viewProvider) const
 {
+    using std::numbers::pi;
+
     Base::BoundBox2d labelRectangle(
         fromQtGui(mapRectFromItem(datumLabel, datumLabel->tightBoundingRect())));
     Base::Vector2d labelCenter(labelRectangle.GetCenter());
@@ -1941,9 +1937,9 @@ void QGIViewDimension::drawDiameter(TechDraw::DrawViewDimension* dimension,
             int selected = 0;
             if (compareAngleStraightness(
                     0.0,
-                    jointPositions[0] > 0.0 ? DrawUtil::angleComposition(lineAngles[0], M_PI)
+                    jointPositions[0] > 0.0 ? DrawUtil::angleComposition(lineAngles[0], pi)
                                             : lineAngles[0],
-                    jointPositions[1] > 0.0 ? DrawUtil::angleComposition(lineAngles[1], M_PI)
+                    jointPositions[1] > 0.0 ? DrawUtil::angleComposition(lineAngles[1], pi)
                                             : lineAngles[1],
                     strikeFactors[0], strikeFactors[1])
                 > 0) {
@@ -1992,11 +1988,10 @@ void QGIViewDimension::drawDiameter(TechDraw::DrawViewDimension* dimension,
                 labelRectangle, 2, standardStyle, flipArrows);
         }
         else {
-            Base::Console().Error("QGIVD::drawRadius - this Standard&Style is not supported: %d\n",
+            Base::Console().error("QGIVD::drawRadius - this Standard&Style is not supported: %d\n",
                                   standardStyle);
         }
 
-        datumLabel->setTransformOriginPoint(datumLabel->boundingRect().center());
         datumLabel->setRotation(toQtDeg(labelAngle));
 
         dimLines->setPath(diameterPath);
@@ -2006,8 +2001,8 @@ void QGIViewDimension::drawDiameter(TechDraw::DrawViewDimension* dimension,
         Base::Vector2d startPoint(curveCenter);
         Base::Vector2d endPoint(curveCenter);
 
-        if ((lineAngle >= M_PI_4 && lineAngle <= 3.0 * M_PI_4)
-            || (lineAngle <= -M_PI_4 && lineAngle >= -3.0 * M_PI_4)) {
+        if ((lineAngle >= pi/4 && lineAngle <= 3.0 * pi/4)
+            || (lineAngle <= -pi/4 && lineAngle >= -3.0 * pi/4)) {
             // Horizontal dimension line
             startPoint.x -= curveRadius;
             endPoint.x += curveRadius;
@@ -2016,10 +2011,10 @@ void QGIViewDimension::drawDiameter(TechDraw::DrawViewDimension* dimension,
         else {// Vertical dimension line
             startPoint.y -= curveRadius;
             endPoint.y += curveRadius;
-            lineAngle = M_PI_2;
+            lineAngle = pi/2;
         }
 
-        //        lineAngle = DrawUtil::angleComposition((labelCenter - curveCenter).Angle(), +M_PI_2);
+        //        lineAngle = DrawUtil::angleComposition((labelCenter - curveCenter).Angle(), +pi/2);
         //        startPoint = curveCenter - Base::Vector2d::FromPolar(curveRadius, lineAngle);
         //        endPoint = curveCenter + Base::Vector2d::FromPolar(curveRadius, lineAngle);
 
@@ -2031,8 +2026,8 @@ void QGIViewDimension::drawDiameter(TechDraw::DrawViewDimension* dimension,
             ? ViewProviderDimension::REND_EXTENT_REDUCED
             : ViewProviderDimension::REND_EXTENT_NORMAL;
 
-        drawRadiusExecutive(curveCenter, Rez::guiX(curvePoints.midArc, true), curveRadius, M_PI,
-                            -M_2PI, labelRectangle, getDefaultExtensionLineOverhang(),
+        drawRadiusExecutive(curveCenter, Rez::guiX(curvePoints.midArc, true), curveRadius, pi,
+                            -2*pi, labelRectangle, getDefaultExtensionLineOverhang(),
                             standardStyle, renderExtent, flipArrows);
     }
 }
@@ -2040,6 +2035,8 @@ void QGIViewDimension::drawDiameter(TechDraw::DrawViewDimension* dimension,
 void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
                                  ViewProviderDimension* viewProvider) const
 {
+    using std::numbers::pi;
+
     QPainterPath anglePath;
 
     Base::BoundBox2d labelRectangle(
@@ -2105,11 +2102,11 @@ void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
         jointRotations[1] = handednessFactor * (jointAngles[1] - endAngle);
 
         // Compare the offset with half of the rest of 2PI minus the angle and eventually fix the values
-        if (fabs(jointRotations[0] - startRotation * 0.5) > M_PI) {
-            jointRotations[0] += jointRotations[0] < 0.0 ? +M_2PI : -M_2PI;
+        if (fabs(jointRotations[0] - startRotation * 0.5) > pi) {
+            jointRotations[0] += jointRotations[0] < 0.0 ? +2*pi : -2*pi;
         }
-        if (fabs(jointRotations[1] - startRotation * 0.5) > M_PI) {
-            jointRotations[1] += jointRotations[1] < 0.0 ? +M_2PI : -M_2PI;
+        if (fabs(jointRotations[1] - startRotation * 0.5) > pi) {
+            jointRotations[1] += jointRotations[1] < 0.0 ? +2*pi : -2*pi;
         }
 
         // Compute the strike factors so we can choose the placement where value is not obscured by dimensional arc
@@ -2133,9 +2130,9 @@ void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
         if (compareAngleStraightness(
                 0.0,
                 DrawUtil::angleComposition(
-                    jointAngles[0], handednessFactor * jointRotations[0] > 0.0 ? -M_PI_2 : +M_PI_2),
+                    jointAngles[0], handednessFactor * jointRotations[0] > 0.0 ? -pi/2 : +pi/2),
                 DrawUtil::angleComposition(
-                    jointAngles[1], handednessFactor * jointRotations[1] > 0.0 ? -M_PI_2 : +M_PI_2),
+                    jointAngles[1], handednessFactor * jointRotations[1] > 0.0 ? -pi/2 : +pi/2),
                 strikeFactors[0], strikeFactors[1])
             > 0) {
             selected = 1;
@@ -2160,10 +2157,10 @@ void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
         Base::Vector2d labelDirection(labelCenter - angleVertex);
         double radiusAngle = labelDirection.Angle();
 
-        labelAngle = DrawUtil::angleComposition(radiusAngle, M_PI_2);
+        labelAngle = DrawUtil::angleComposition(radiusAngle, pi/2);
         double placementFactor = getIsoStandardLinePlacement(labelAngle);
         labelAngle =
-            placementFactor > 0.0 ? DrawUtil::angleComposition(labelAngle, M_PI) : labelAngle;
+            placementFactor > 0.0 ? DrawUtil::angleComposition(labelAngle, pi) : labelAngle;
 
         arcRadius = labelDirection.Length()
             - placementFactor
@@ -2185,7 +2182,7 @@ void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
                          flipArrows);
     }
     else {
-        Base::Console().Error("QGIVD::drawAngle - this Standard&Style is not supported: %d\n",
+        Base::Console().error("QGIVD::drawAngle - this Standard&Style is not supported: %d\n",
                               standardStyle);
         arrowCount = 0;
     }
@@ -2223,7 +2220,6 @@ void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
         }
     }
 
-    datumLabel->setTransformOriginPoint(datumLabel->boundingRect().center());
     datumLabel->setRotation(toQtDeg(labelAngle));
 
     dimLines->setPath(anglePath);
@@ -2247,7 +2243,7 @@ QColor QGIViewDimension::prefNormalColor()
     ViewProviderDimension* vpDim = nullptr;
     Gui::ViewProvider* vp = getViewProvider(getDimFeat());
     if (vp) {
-        vpDim = dynamic_cast<ViewProviderDimension*>(vp);
+        vpDim = freecad_cast<ViewProviderDimension*>(vp);
         if (vpDim) {
             Base::Color fcColor = vpDim->Color.getValue();
             fcColor = Preferences::getAccessibleColor(fcColor);
@@ -2290,34 +2286,35 @@ Base::Vector3d QGIViewDimension::findIsoExt(Base::Vector3d dir) const
     Base::Vector3d isoYr(0.866, -0.5, 0.0); //iso +Y?
     Base::Vector3d isoZ(0.0, 1.0, 0.0);     //iso Z
     Base::Vector3d isoZr(0.0, -1.0, 0.0);   //iso -Z
-    if (dir.IsEqual(isoX, FLT_EPSILON)) {
+    constexpr float floatEpsilon = std::numeric_limits<float>::epsilon();
+    if (dir.IsEqual(isoX, floatEpsilon)) {
         return isoY;
     }
-    else if (dir.IsEqual(-isoX, FLT_EPSILON)) {
+    else if (dir.IsEqual(-isoX, floatEpsilon)) {
         return -isoY;
     }
-    else if (dir.IsEqual(isoY, FLT_EPSILON)) {
+    else if (dir.IsEqual(isoY, floatEpsilon)) {
         return isoZ;
     }
-    else if (dir.IsEqual(-isoY, FLT_EPSILON)) {
+    else if (dir.IsEqual(-isoY, floatEpsilon)) {
         return -isoZ;
     }
-    else if (dir.IsEqual(isoZ, FLT_EPSILON)) {
+    else if (dir.IsEqual(isoZ, floatEpsilon)) {
         return isoX;
     }
-    else if (dir.IsEqual(-isoZ, FLT_EPSILON)) {
+    else if (dir.IsEqual(-isoZ, floatEpsilon)) {
         return -isoX;
     }
 
     //tarfu
-    Base::Console().Message("QGIVD::findIsoExt - %s - input is not iso axis\n",
+    Base::Console().message("QGIVD::findIsoExt - %s - input is not iso axis\n",
                             getViewObject()->getNameInDocument());
     return Base::Vector3d(1, 0, 0);
 }
 
 void QGIViewDimension::onPrettyChanged(int state)
 {
-    //    Base::Console().Message("QGIVD::onPrettyChange(%d)\n", state);
+    //    Base::Console().message("QGIVD::onPrettyChange(%d)\n", state);
     if (state == NORMAL) {
         setPrettyNormal();
     }
@@ -2353,7 +2350,7 @@ void QGIViewDimension::setPrettyNormal()
 void QGIViewDimension::drawBorder()
 {
     //Dimensions have no border!
-    //    Base::Console().Message("TRACE - QGIViewDimension::drawBorder - doing nothing!\n");
+    //    Base::Console().message("TRACE - QGIViewDimension::drawBorder - doing nothing!\n");
 }
 
 double QGIViewDimension::getDefaultExtensionLineOverhang() const
@@ -2454,11 +2451,11 @@ void QGIViewDimension::setPens()
     aHead2->setWidth(m_lineWidth);
 }
 
-double QGIViewDimension::toDeg(double angle) { return angle * 180 / M_PI; }
+double QGIViewDimension::toDeg(double angle) { return Base::toDegrees(angle); }
 
 double QGIViewDimension::toQtRad(double angle) { return -angle; }
 
-double QGIViewDimension::toQtDeg(double angle) { return -angle * 180.0 / M_PI; }
+double QGIViewDimension::toQtDeg(double angle) { return Base::toDegrees(-angle); }
 
 void QGIViewDimension::makeMarkC(double xPos, double yPos, QColor color) const
 {

@@ -63,6 +63,7 @@
 #include "MergeDocuments.h"
 #include "Navigation/NavigationStyle.h"
 #include "Placement.h"
+#include "Tools.h"
 #include "Transform.h"
 #include "View3DInventor.h"
 #include "View3DInventorViewer.h"
@@ -1320,11 +1321,7 @@ StdCmdDelete::StdCmdDelete()
   sWhatsThis    = "Std_Delete";
   sStatusTip    = QT_TR_NOOP("Deletes the selected objects");
   sPixmap       = "edit-delete";
-#ifdef FC_OS_MACOSX
-  sAccel        = "Backspace";
-#else
-  sAccel        = keySequenceToAccel(QKeySequence::Delete);
-#endif
+  sAccel        = keySequenceToAccel(QtTools::deleteKeySequence());
   eType         = ForEdit;
 }
 
@@ -1346,7 +1343,7 @@ void StdCmdDelete::activated(int iMsg)
         auto editDoc = Application::Instance->editDocument();
         ViewProviderDocumentObject *vpedit = nullptr;
         if(editDoc)
-            vpedit = dynamic_cast<ViewProviderDocumentObject*>(editDoc->getInEdit());
+            vpedit = freecad_cast<ViewProviderDocumentObject*>(editDoc->getInEdit());
         if(vpedit && !vpedit->acceptDeletionsInEdit()) {
             for(auto &sel : Selection().getSelectionEx(editDoc->getDocument()->getName())) {
                 if(sel.getObject() == vpedit->getObject()) {
@@ -1365,7 +1362,7 @@ void StdCmdDelete::activated(int iMsg)
             for(auto &sel : sels) {
                 auto obj = sel.getObject();
                 if (obj == nullptr){
-                    Base::Console().DeveloperWarning("StdCmdDelete::activated",
+                    Base::Console().developerWarning("StdCmdDelete::activated",
                                                      "App::DocumentObject pointer is nullptr\n");
                     continue;
                 }
@@ -1443,7 +1440,7 @@ void StdCmdDelete::activated(int iMsg)
     } catch (const Base::Exception& e) {
         QMessageBox::critical(getMainWindow(), QObject::tr("Delete failed"),
                 QString::fromLatin1(e.what()));
-        e.ReportException();
+        e.reportException();
     } catch (...) {
         QMessageBox::critical(getMainWindow(), QObject::tr("Delete failed"),
                 QStringLiteral("Unknown error"));
@@ -1752,12 +1749,14 @@ StdCmdProperties::StdCmdProperties()
 void StdCmdProperties::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    QWidget* propertyView = Gui::DockWindowManager::instance()->getDockWindow("Property view");
-    if (propertyView) {
-        QWidget* parent = propertyView->parentWidget();
-        if (parent && !parent->isVisible()) {
-            parent->show();
-        }
+    auto dw = Gui::DockWindowManager::instance();
+    if (auto propertyView = dw->getDockWindow("Property view")) {
+        dw->activate(propertyView);
+        return;
+    }
+    if (auto comboView = dw->getDockWindow("Model")) {
+        dw->activate(comboView);
+        return;
     }
 }
 
@@ -1954,7 +1953,7 @@ protected:
             abortCommand();
             QMessageBox::critical(getMainWindow(), QObject::tr("Failed to paste expressions"),
                 QString::fromLatin1(e.what()));
-            e.ReportException();
+            e.reportException();
         }
     }
 

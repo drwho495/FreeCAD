@@ -32,6 +32,7 @@
 # include <QImageReader>
 # include <QPainter>
 # include <QPalette>
+# include <QScreen>
 # include <QString>
 # include <QSvgRenderer>
 # include <QStyleOption>
@@ -270,13 +271,15 @@ QPixmap BitmapFactoryInst::pixmap(const char* name) const
         return icon;
     }
 
-    Base::Console().Warning("Cannot find icon: %s\n", name);
+    Base::Console().warning("Cannot find icon: %s\n", name);
     return QPixmap(Gui::BitmapFactory().pixmapFromSvg("help-browser", QSize(16, 16)));
 }
 
 QPixmap BitmapFactoryInst::pixmapFromSvg(const char* name, const QSizeF& size,
                                          const ColorMap& colorMapping) const
 {
+    static qreal dpr = getMaximumDPR();
+    
     // If an absolute path is given
     QPixmap icon;
     QString iconPath;
@@ -304,21 +307,15 @@ QPixmap BitmapFactoryInst::pixmapFromSvg(const char* name, const QSizeF& size,
         QFile file(iconPath);
         if (file.open(QFile::ReadOnly | QFile::Text)) {
             QByteArray content = file.readAll();
-            icon = pixmapFromSvg(content, size, colorMapping);
+            icon = pixmapFromSvg(content, size * dpr, colorMapping);
         }
     }
 
-    return icon;
-}
+    if (!icon.isNull()) {
+        icon.setDevicePixelRatio(dpr);
+    }
 
-QPixmap BitmapFactoryInst::pixmapFromSvg(const char* name, const QSizeF& size, qreal dpr,
-                                         const ColorMap& colorMapping) const
-{
-    qreal width = size.width() * dpr;
-    qreal height = size.height() * dpr;
-    QPixmap px(pixmapFromSvg(name, QSizeF(width, height), colorMapping));
-    px.setDevicePixelRatio(dpr);
-    return px;
+    return icon;
 }
 
 QPixmap BitmapFactoryInst::pixmapFromSvg(const QByteArray& originalContents, const QSizeF& size,
@@ -328,8 +325,8 @@ QPixmap BitmapFactoryInst::pixmapFromSvg(const QByteArray& originalContents, con
     for ( const auto &colorToColor : colorMapping ) {
         ulong fromColor = colorToColor.first;
         ulong toColor = colorToColor.second;
-        QString fromColorString = QStringLiteral(":#%1;").arg(fromColor, 6, 16,  QChar::fromLatin1('0'));
-        QString toColorString = QStringLiteral(":#%1;").arg(toColor, 6, 16,  QChar::fromLatin1('0'));
+        QString fromColorString = QStringLiteral("#%1").arg(fromColor, 6, 16,  QChar::fromLatin1('0'));
+        QString toColorString = QStringLiteral("#%1").arg(toColor, 6, 16,  QChar::fromLatin1('0'));
         stringContents = stringContents.replace(fromColorString, toColorString);
     }
     QByteArray contents = stringContents.toUtf8();
@@ -524,6 +521,17 @@ QPixmap BitmapFactoryInst::disabled(const QPixmap& p) const
     return QApplication::style()->generatedIconPixmap(QIcon::Disabled, p, &opt);
 }
 
+QPixmap BitmapFactoryInst::empty(QSize size) const
+{
+    qreal dpr = getMaximumDPR();
+
+    QPixmap res(size * dpr);
+    res.fill(Qt::transparent);
+    res.setDevicePixelRatio(dpr);
+
+    return res;
+}
+
 void BitmapFactoryInst::convert(const QImage& p, SoSFImage& img) const
 {
     SbVec2s size;
@@ -676,4 +684,15 @@ QIcon BitmapFactoryInst::mergePixmap (const QIcon &base, const QPixmap &px, Gui:
                                                        px,position), QIcon::Normal, QIcon::Off);
 
     return overlayedIcon;
+}
+
+qreal BitmapFactoryInst::getMaximumDPR()
+{
+    qreal dpr = 1.0F;
+
+    for (QScreen* screen: QGuiApplication::screens()) {
+        dpr = std::max(screen->devicePixelRatio(), dpr);
+    }
+
+    return dpr;
 }

@@ -2523,7 +2523,7 @@ void StdCmdViewIvIssueCamPos::activated(int iMsg)
     Temp += Temp2;
     Temp += "\")";
 
-    Base::Console().Message("%s\n",Temp2.c_str());
+    Base::Console().message("%s\n",Temp2.c_str());
     getGuiApplication()->macroManager()->addLine(MacroManager::Gui,Temp.c_str());
 }
 
@@ -2612,7 +2612,7 @@ public:
     {
         if (currentSelectionHandler)
         {
-            Base::Console().Message("SelectionCallbackHandler: A selection handler already active.");
+            Base::Console().message("SelectionCallbackHandler: A selection handler already active.");
             return;
         }
 
@@ -2688,19 +2688,16 @@ public:
 
     static QCursor makeCursor(QWidget* widget, const QSize& size, const char* svgFile, int hotX, int hotY)
     {
-        qreal pRatio = widget->devicePixelRatioF();
         qreal hotXF = hotX;
         qreal hotYF = hotY;
 #if !defined(Q_OS_WIN32) && !defined(Q_OS_MACOS)
         if (qApp->platformName() == QLatin1String("xcb")) {
+            qreal pRatio = widget->devicePixelRatioF();
             hotXF *= pRatio;
             hotYF *= pRatio;
         }
 #endif
-        qreal cursorWidth = size.width() * pRatio;
-        qreal cursorHeight = size.height() * pRatio;
-        QPixmap px(Gui::BitmapFactory().pixmapFromSvg(svgFile, QSizeF(cursorWidth, cursorHeight)));
-        px.setDevicePixelRatio(pRatio);
+        QPixmap px(Gui::BitmapFactory().pixmapFromSvg(svgFile, size));
         return QCursor(px, hotXF, hotYF);
     }
 };
@@ -2868,7 +2865,7 @@ static std::vector<std::string> getBoxSelection(
         if(!vis)
             continue;
 
-        auto svp = dynamic_cast<ViewProviderDocumentObject*>(Application::Instance->getViewProvider(sobj));
+        auto svp = freecad_cast<ViewProviderDocumentObject*>(Application::Instance->getViewProvider(sobj));
         if(!svp)
             continue;
 
@@ -2931,7 +2928,7 @@ static void doSelect(void* ud, SoEventCallback * cb)
             if(App::GeoFeatureGroupExtension::getGroupOfObject(obj))
                 continue;
 
-            auto vp = dynamic_cast<ViewProviderDocumentObject*>(Application::Instance->getViewProvider(obj));
+            auto vp = freecad_cast<ViewProviderDocumentObject*>(Application::Instance->getViewProvider(obj));
             if (!vp || !vp->isVisible())
                 continue;
 
@@ -3113,7 +3110,7 @@ bool StdCmdTreeSelectAllInstances::isActive()
     auto obj = sels[0].getObject();
     if(!obj || !obj->isAttachedToDocument())
         return false;
-    return dynamic_cast<ViewProviderDocumentObject*>(
+    return freecad_cast<ViewProviderDocumentObject*>(
             Application::Instance->getViewProvider(obj)) != nullptr;
 }
 
@@ -3126,7 +3123,7 @@ void StdCmdTreeSelectAllInstances::activated(int iMsg)
     auto obj = sels[0].getObject();
     if(!obj || !obj->isAttachedToDocument())
         return;
-    auto vpd = dynamic_cast<ViewProviderDocumentObject*>(
+    auto vpd = freecad_cast<ViewProviderDocumentObject*>(
             Application::Instance->getViewProvider(obj));
     if(!vpd)
         return;
@@ -3304,7 +3301,7 @@ bool StdCmdSelForward::isActive()
 DEF_STD_CMD_AC(StdTree##_name) \
 void StdTree##_name::activated(int){ \
     TreeParams::setDocumentMode(_v);\
-    if(_pcAction) _pcAction->setChecked(true,true);\
+    if(_pcAction) _pcAction->setBlockedChecked(true);\
 }\
 Action * StdTree##_name::createAction(void) {\
     Action *pcAction = Command::createAction();\
@@ -3317,7 +3314,7 @@ Action * StdTree##_name::createAction(void) {\
 bool StdTree##_name::isActive() {\
     bool checked = TreeParams::getDocumentMode()==_v;\
     if(_pcAction && _pcAction->isChecked()!=checked)\
-        _pcAction->setChecked(checked,true);\
+        _pcAction->setBlockedChecked(checked);\
     return true;\
 }
 
@@ -3377,9 +3374,9 @@ DEF_STD_CMD_AC(StdTree##_name) \
 void StdTree##_name::activated(int){ \
     auto checked = !TreeParams::get##_name();\
     TreeParams::set##_name(checked);\
-    if(_pcAction) _pcAction->setChecked(checked,true);\
+    if(_pcAction) _pcAction->setBlockedChecked(checked);\
 }\
-Action * StdTree##_name::createAction(void) {\
+Action * StdTree##_name::createAction() {\
     Action *pcAction = Command::createAction();\
     pcAction->setCheckable(true);\
     pcAction->setIcon(QIcon());\
@@ -3390,7 +3387,7 @@ Action * StdTree##_name::createAction(void) {\
 bool StdTree##_name::isActive() {\
     bool checked = TreeParams::get##_name();\
     if(_pcAction && _pcAction->isChecked()!=checked)\
-        _pcAction->setChecked(checked,true);\
+        _pcAction->setBlockedChecked(checked);\
     return true;\
 }
 
@@ -3579,7 +3576,7 @@ void StdCmdSelBoundingBox::activated(int iMsg)
     if(checked != ViewParams::instance()->getShowSelectionBoundingBox()) {
         ViewParams::instance()->setShowSelectionBoundingBox(checked);
         if(_pcAction)
-            _pcAction->setChecked(checked,true);
+            _pcAction->setBlockedChecked(checked);
     }
 }
 
@@ -3588,7 +3585,7 @@ bool StdCmdSelBoundingBox::isActive()
     if(_pcAction) {
         bool checked = _pcAction->isChecked();
         if(checked != ViewParams::instance()->getShowSelectionBoundingBox())
-            _pcAction->setChecked(!checked,true);
+            _pcAction->setBlockedChecked(!checked);
     }
     return true;
 }
@@ -3822,10 +3819,10 @@ void StdCmdDockOverlayMouseTransparent::activated(int iMsg)
     bool checked = !OverlayManager::instance()->isMouseTransparent();
     OverlayManager::instance()->setMouseTransparent(checked);
     if(_pcAction)
-        _pcAction->setChecked(checked,true);
+        _pcAction->setBlockedChecked(checked);
 }
 
-Action * StdCmdDockOverlayMouseTransparent::createAction(void) {
+Action * StdCmdDockOverlayMouseTransparent::createAction() {
     Action *pcAction = Command::createAction();
     pcAction->setCheckable(true);
     pcAction->setIcon(QIcon());
@@ -3837,7 +3834,7 @@ Action * StdCmdDockOverlayMouseTransparent::createAction(void) {
 bool StdCmdDockOverlayMouseTransparent::isActive() {
     bool checked = OverlayManager::instance()->isMouseTransparent();
     if(_pcAction && _pcAction->isChecked()!=checked)
-        _pcAction->setChecked(checked,true);
+        _pcAction->setBlockedChecked(checked);
     return true;
 }
 

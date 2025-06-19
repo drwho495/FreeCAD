@@ -478,8 +478,7 @@ bool ImportOCAF2::createGroup(App::Document* doc,
             auto link = doc->addObject<App::Link>("Link");
             link->Label.setValue(child->Label.getValue());
             link->setLink(-1, child);
-            auto pla = Base::freecad_dynamic_cast<App::PropertyPlacement>(
-                child->getPropertyByName("Placement"));
+            auto pla = freecad_cast<App::PropertyPlacement*>(child->getPropertyByName("Placement"));
             if (pla) {
                 link->Placement.setValue(pla->getValue());
             }
@@ -558,7 +557,9 @@ App::DocumentObject* ImportOCAF2::loadShapes()
         ret->recomputeFeature(true);
     }
     if (options.merge && ret && !ret->isDerivedFrom<Part::Feature>()) {
-        auto shape = Part::Feature::getTopoShape(ret);
+        auto shape = Part::Feature::getTopoShape(ret,
+                                                 Part::ShapeOption::ResolveLink
+                                                     | Part::ShapeOption::Transform);
         auto feature = pDocument->addObject<Part::Feature>("Feature");
         auto name = Tools::labelName(pDoc->Main());
         feature->Label.setValue(name.empty() ? default_name.c_str() : name.c_str());

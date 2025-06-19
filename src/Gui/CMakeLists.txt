@@ -270,38 +270,38 @@ if(FREECAD_USE_PYSIDE)
     add_definitions(-DHAVE_PYSIDE${PYSIDE_MAJOR_VERSION})
 endif(FREECAD_USE_PYSIDE)
 
-generate_from_xml(DocumentPy)
-generate_from_xml(PythonWorkbenchPy)
-generate_from_xml(ViewProviderPy)
-generate_from_xml(ViewProviderDocumentObjectPy)
-generate_from_xml(ViewProviderGeometryObjectPy)
-generate_from_xml(ViewProviderExtensionPy)
-generate_from_xml(WorkbenchPy)
-generate_from_xml(Selection/SelectionObjectPy)
-generate_from_xml(LinkViewPy)
-generate_from_xml(ViewProviderLinkPy)
-generate_from_xml(AxisOriginPy)
-generate_from_xml(CommandPy)
-generate_from_xml(Navigation/NavigationStylePy)
+generate_from_py(Document)
+generate_from_py(PythonWorkbench)
+generate_from_py(ViewProvider)
+generate_from_py(ViewProviderDocumentObject)
+generate_from_py(ViewProviderGeometryObject)
+generate_from_py(ViewProviderExtension)
+generate_from_py(Workbench)
+generate_from_py(Selection/SelectionObject)
+generate_from_py(LinkView)
+generate_from_py(ViewProviderLink)
+generate_from_py(AxisOrigin)
+generate_from_py(Command)
+generate_from_py(Navigation/NavigationStyle)
 
 generate_embed_from_py(FreeCADGuiInit GuiInitScript.h)
 
-# The XML files
-SET(FreeCADGui_XML_SRCS
-    ViewProviderDocumentObjectPy.xml
-    ViewProviderGeometryObjectPy.xml
-    ViewProviderPy.xml
-    ViewProviderExtensionPy.xml
-    PythonWorkbenchPy.xml
-    WorkbenchPy.xml
-    Selection/SelectionObjectPy.xml
-    DocumentPy.xml
-    LinkViewPy.xml
-    ViewProviderLinkPy.xml
-    AxisOriginPy.xml
-    CommandPy.xml
+# The Pyi files
+SET(FreeCADGui_Pyi_SRCS
+    ViewProviderDocumentObject.pyi
+    ViewProviderGeometryObject.pyi
+    ViewProvider.pyi
+    ViewProviderExtension.pyi
+    PythonWorkbench.pyi
+    Workbench.pyi
+    Selection/SelectionObject.pyi
+    Document.pyi
+    LinkView.pyi
+    ViewProviderLink.pyi
+    AxisOrigin.pyi
+    Command.pyi
 )
-SOURCE_GROUP("XML" FILES ${FreeCADApp_XML_SRCS})
+SOURCE_GROUP("Pyi" FILES ${FreeCADGui_Pyi_SRCS})
 
 # The 3D Connexion SDK files
 if(FREECAD_USE_3DCONNEXION_LEGACY AND MSVC)
@@ -418,6 +418,7 @@ SET(Gui_UIC_SRCS
     PreferencePages/DlgSettingsUI.ui
     PreferencePages/DlgSettingsViewColor.ui
     PreferencePages/DlgSettingsWorkbenches.ui
+    PreferencePages/DlgSettingsPDF.ui
     Dialogs/DlgCheckableMessageBox.ui
     Dialogs/DlgToolbars.ui
     Dialogs/DlgTreeWidget.ui
@@ -431,7 +432,7 @@ SET(Gui_UIC_SRCS
     SceneInspector.ui
     InputVector.ui
     Placement.ui
-    TaskCSysDragger.ui
+    TaskTransform.ui
     TextureMapping.ui
     TaskView/TaskAppearance.ui
     TaskView/TaskOrientation.ui
@@ -517,7 +518,7 @@ SET(Dialog_CPP_SRCS
     Dialogs/DlgExpressionInput.cpp
     TaskDlgRelocation.cpp
     Dialogs/DlgCheckableMessageBox.cpp
-    TaskCSysDragger.cpp
+    TaskTransform.cpp
     Dialogs/DlgUndoRedo.cpp
     InputVector.cpp
     Placement.cpp
@@ -558,7 +559,7 @@ SET(Dialog_HPP_SRCS
     Dialogs/DlgCheckableMessageBox.h
     Dialogs/DlgExpressionInput.h
     TaskDlgRelocation.h
-    TaskCSysDragger.h
+    TaskTransform.h
     Dialogs/DlgUndoRedo.h
     InputVector.h
     Placement.h
@@ -659,6 +660,7 @@ SET(Dialog_Settings_CPP_SRCS
     Dialogs/DlgOnlineHelpImp.cpp
     Dialogs/DlgPreferencesImp.cpp
     PreferencePages/DlgSettings3DViewImp.cpp
+    PreferencePages/DlgSettingsPDF.cpp
     PreferencePages/DlgSettingsCacheDirectory.cpp
     Dialogs/DlgSettingsColorGradientImp.cpp
     PreferencePages/DlgSettingsDocumentImp.cpp
@@ -681,6 +683,7 @@ SET(Dialog_Settings_HPP_SRCS
     Dialogs/DlgOnlineHelpImp.h
     Dialogs/DlgPreferencesImp.h
     PreferencePages/DlgSettings3DViewImp.h
+    PreferencePages/DlgSettingsPDF.h
     PreferencePages/DlgSettingsCacheDirectory.h
     Dialogs/DlgSettingsColorGradientImp.h
     PreferencePages/DlgSettingsDocumentImp.h
@@ -721,6 +724,7 @@ SET(Dialog_Settings_SRCS
     PreferencePages/DlgSettingsUI.ui
     PreferencePages/DlgSettingsViewColor.ui
     PreferencePages/DlgSettingsWorkbenches.ui
+    PreferencePages/DlgSettingsPDF.ui
 )
 SOURCE_GROUP("Dialog\\Settings" FILES ${Dialog_Settings_SRCS})
 
@@ -928,12 +932,14 @@ SET(View3D_SRCS
 SOURCE_GROUP("View3D" FILES ${View3D_SRCS})
 
 SET(Navigation_CPP_SRCS
+    Navigation/NavigationStateChart.cpp
     Navigation/NavigationStyle.cpp
     Navigation/NavigationStylePyImp.cpp
     Navigation/InventorNavigationStyle.cpp
     Navigation/CADNavigationStyle.cpp
     Navigation/RevitNavigationStyle.cpp
     Navigation/BlenderNavigationStyle.cpp
+    Navigation/SiemensNXNavigationStyle.cpp
     Navigation/SolidWorksNavigationStyle.cpp
     Navigation/MayaGestureNavigationStyle.cpp
     Navigation/OpenCascadeNavigationStyle.cpp
@@ -946,11 +952,13 @@ SET(Navigation_CPP_SRCS
 )
 SET(Navigation_SRCS
     ${Navigation_CPP_SRCS}
+    Navigation/NavigationStateChart.h
     Navigation/NavigationStyle.h
-    Navigation/NavigationStylePy.xml
+    Navigation/NavigationStyle.pyi
     Navigation/GestureNavigationStyle.h
     Navigation/NavigationAnimator.h
     Navigation/NavigationAnimation.h
+    Navigation/SiemensNXNavigationStyle.h
 )
 SOURCE_GROUP("Navigation" FILES ${Navigation_SRCS})
 
@@ -1071,6 +1079,10 @@ SET(Inventor_CPP_SRCS
     Inventor/SoFCBoundingBox.cpp
     Inventor/SoMouseWheelEvent.cpp
     Inventor/SoFCTransform.cpp
+    Inventor/Draggers/SoTransformDragger.cpp
+    Inventor/Draggers/SoLinearDragger.cpp
+    Inventor/Draggers/SoPlanarDragger.cpp
+    Inventor/Draggers/SoRotationDragger.cpp
     SoFCColorBar.cpp
     SoFCColorBarNotifier.cpp
     SoFCColorGradient.cpp
@@ -1089,7 +1101,6 @@ SET(Inventor_CPP_SRCS
     SoTextLabel.cpp
     SoDatumLabel.cpp
     SoTouchEvents.cpp
-    SoFCCSysDragger.cpp
     ArcEngine.cpp
 )
 SET(Inventor_SRCS
@@ -1104,6 +1115,10 @@ SET(Inventor_SRCS
     Inventor/SoFCBoundingBox.h
     Inventor/SoMouseWheelEvent.h
     Inventor/SoFCTransform.h
+    Inventor/Draggers/SoTransformDragger.h
+    Inventor/Draggers/SoLinearDragger.h
+    Inventor/Draggers/SoPlanarDragger.h
+    Inventor/Draggers/SoRotationDragger.h
     SoFCColorBar.h
     SoFCColorBarNotifier.h
     SoFCColorGradient.h
@@ -1122,7 +1137,6 @@ SET(Inventor_SRCS
     SoTextLabel.h
     SoDatumLabel.h
     SoTouchEvents.h
-    SoFCCSysDragger.h
     ArcEngine.h
 )
 SOURCE_GROUP("View3D\\Inventor" FILES ${Inventor_SRCS})
@@ -1295,6 +1309,8 @@ SET(FreeCADGui_CPP_SRCS
     GuiApplication.cpp
     GuiApplicationNativeEventAware.cpp
     GuiConsole.cpp
+    InputHintWidget.cpp
+    InputHintPy.cpp
     Macro.cpp
     MergeDocuments.cpp
     ModuleIO.cpp
@@ -1330,6 +1346,9 @@ SET(FreeCADGui_SRCS
     3Dconnexion/GuiAbstractNativeEvent.h
     GuiConsole.h
     InventorAll.h
+    InputHint.h
+    InputHintPy.h
+    InputHintWidget.h
     Macro.h
     MergeDocuments.h
     MetaTypes.h
@@ -1355,7 +1374,7 @@ SET(FreeCADGui_SRCS
     ${FreeCADGui_connexion_SRCS}
     ${FreeCADGui_connexion_HDRS}
     ${FreeCADGui_CPP_SRCS}
-    ${FreeCADGui_XML_SRCS}
+    ${FreeCADGui_Pyi_SRCS}
     ${qsint_MOC_SRCS}
     ${Gui_QRC_SRCS}
     ${Gui_UIC_HDRS}
@@ -1428,9 +1447,12 @@ if (EIGEN3_NO_DEPRECATED_COPY)
     set_source_files_properties(
         NaviCube.cpp
         Inventor/SoAutoZoomTranslation.cpp
+        Inventor/Draggers/SoTransformDragger.cpp
+        Inventor/Draggers/SoLinearDragger.cpp
+        Inventor/Draggers/SoPlanarDragger.cpp
+        Inventor/Draggers/SoRotationDragger.cpp
         SoFCOffscreenRenderer.cpp
         Selection/SoFCSelectionAction.cpp
-        SoFCCSysDragger.cpp
         Quarter/QuarterWidget.cpp
         View3DInventorViewer.cpp
         PROPERTIES COMPILE_FLAGS ${EIGEN3_NO_DEPRECATED_COPY})

@@ -236,7 +236,7 @@ bool GroupExtension::hasObject(const DocumentObject* obj, bool recursive) const
         return false;
     }
     catch (const Base::RuntimeError& e) {
-        e.ReportException();
+        e.reportException();
         return false;
     }
 }
@@ -414,7 +414,7 @@ bool GroupExtension::extensionGetSubObject(DocumentObject*& ret,
 {
     const char* dot;
     if (!subname || *subname == 0) {
-        auto obj = Base::freecad_dynamic_cast<const DocumentObject>(getExtendedContainer());
+        auto obj = freecad_cast<const DocumentObject*>(getExtendedContainer());
         ret = const_cast<DocumentObject*>(obj);
         return true;
     }

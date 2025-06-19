@@ -29,6 +29,7 @@
 #include <QMessageBox>
 #include <TopoDS.hxx>
 #include <TopoDS_Shape.hxx>
+#include <limits>
 #include <sstream>
 #endif
 
@@ -138,25 +139,26 @@ TaskFemConstraintFluidBoundary::TaskFemConstraintFluidBoundary(
     QMetaObject::connectSlotsByName(this);
 
     // create a context menu for the listview of the references
-    createDeleteAction(ui->listReferences);
+    createActions(ui->listReferences);
     connect(deleteAction,
             &QAction::triggered,
             this,
             &TaskFemConstraintFluidBoundary::onReferenceDeleted);
 
     // setup ranges
-    ui->spinBoundaryValue->setMinimum(-FLOAT_MAX);
-    ui->spinBoundaryValue->setMaximum(FLOAT_MAX);
+    constexpr float max = std::numeric_limits<float>::max();
+    ui->spinBoundaryValue->setMinimum(-max);
+    ui->spinBoundaryValue->setMaximum(max);
     ui->spinTurbulentIntensityValue->setMinimum(0.0);
-    ui->spinTurbulentIntensityValue->setMaximum(FLOAT_MAX);
+    ui->spinTurbulentIntensityValue->setMaximum(max);
     ui->spinTurbulentLengthValue->setMinimum(0.0);
-    ui->spinTurbulentLengthValue->setMaximum(FLOAT_MAX);
+    ui->spinTurbulentLengthValue->setMaximum(max);
     ui->spinTemperatureValue->setMinimum(-273.15);
-    ui->spinTemperatureValue->setMaximum(FLOAT_MAX);
+    ui->spinTemperatureValue->setMaximum(max);
     ui->spinHeatFluxValue->setMinimum(0.0);
-    ui->spinHeatFluxValue->setMaximum(FLOAT_MAX);
+    ui->spinHeatFluxValue->setMaximum(max);
     ui->spinHTCoeffValue->setMinimum(0.0);
-    ui->spinHTCoeffValue->setMaximum(FLOAT_MAX);
+    ui->spinHTCoeffValue->setMaximum(max);
 
     connect(ui->comboBoundaryType,
             qOverload<int>(&QComboBox::currentIndexChanged),
@@ -233,7 +235,7 @@ TaskFemConstraintFluidBoundary::TaskFemConstraintFluidBoundary(
         }
     }
     else {
-        Base::Console().Log("FemAnalysis object is not activated or no FemAnalysis in the active "
+        Base::Console().log("FemAnalysis object is not activated or no FemAnalysis in the active "
                             "document, mesh dimension is unknown\n");
         dimension = -1;  // unknown dimension of mesh
     }
@@ -294,7 +296,7 @@ TaskFemConstraintFluidBoundary::TaskFemConstraintFluidBoundary(
             }
             else {
                 ui->tabThermalBoundary->setEnabled(false);  // could be hidden
-                // Base::Console().Message("retrieve solver property HeatTransferring as false\n");
+                // Base::Console().message("retrieve solver property HeatTransferring as false\n");
             }
         }
         else {
@@ -325,7 +327,7 @@ TaskFemConstraintFluidBoundary::TaskFemConstraintFluidBoundary(
         }
     }
     else {
-        Base::Console().Warning(
+        Base::Console().warning(
             "No solver object inside FemAnalysis object, default to non-thermal, non-turbulence\n");
     }
     ui->tabWidget->setTabText(0, tr("Basic"));
@@ -352,8 +354,8 @@ TaskFemConstraintFluidBoundary::TaskFemConstraintFluidBoundary(
 
     // Fill data into dialog elements
     double f = pcConstraint->BoundaryValue.getValue();
-    ui->spinBoundaryValue->setMinimum(FLOAT_MIN);  // previous set the min to ZERO is not flexible
-    ui->spinBoundaryValue->setMaximum(FLOAT_MAX);
+    ui->spinBoundaryValue->setMinimum(std::numeric_limits<float>::min());  // ZERO is not flexible
+    ui->spinBoundaryValue->setMaximum(std::numeric_limits<float>::max());
     ui->spinBoundaryValue->setValue(f);
     ui->listReferences->clear();
     for (std::size_t i = 0; i < Objects.size(); i++) {
@@ -415,7 +417,7 @@ void TaskFemConstraintFluidBoundary::updateBoundaryTypeUI()
         pcConstraint->Reversed.setValue(false);  // outlet must point outward
     }
     else {
-        Base::Console().Error("Error: Fluid boundary type `%s` is not defined\n",
+        Base::Console().error("Error: Fluid boundary type `%s` is not defined\n",
                               boundaryType.c_str());
     }
     // std::string subtypeLabel = boundaryType + std::string(" type");
@@ -493,7 +495,7 @@ void TaskFemConstraintFluidBoundary::updateSubtypeUI()
         ui->tabBasicBoundary->setEnabled(true);
     }
     else {
-        Base::Console().Error("Fluid boundary type `%s` is not defined\n", boundaryType.c_str());
+        Base::Console().error("Fluid boundary type `%s` is not defined\n", boundaryType.c_str());
     }
 }
 
@@ -517,7 +519,7 @@ void TaskFemConstraintFluidBoundary::updateTurbulenceUI()
         ui->labelTurbulentLengthValue->setText(tr("Hydraulic Diameter [m]"));
     }
     else {
-        Base::Console().Error("turbulence Spec type `%s` is not defined\n", turbulenceSpec.c_str());
+        Base::Console().error("turbulence Spec type `%s` is not defined\n", turbulenceSpec.c_str());
     }
 }
 
@@ -558,7 +560,7 @@ void TaskFemConstraintFluidBoundary::updateThermalBoundaryUI()
         ui->spinTemperatureValue->setEnabled(true);
     }
     else {
-        Base::Console().Error("Thermal boundary type `%s` is not defined\n",
+        Base::Console().error("Thermal boundary type `%s` is not defined\n",
                               thermalBoundaryType.c_str());
     }
 }
@@ -579,7 +581,7 @@ void TaskFemConstraintFluidBoundary::onBoundaryTypeChanged()
     bool ret = pcConstraint->recomputeFeature();
     if (!ret) {
         std::string boundaryType = ui->comboBoundaryType->currentText().toStdString();
-        Base::Console().Error("Fluid boundary recomputationg failed for boundaryType `%s` \n",
+        Base::Console().error("Fluid boundary recomputationg failed for boundaryType `%s` \n",
                               boundaryType.c_str());
     }
 }
@@ -1078,7 +1080,7 @@ bool TaskDlgFemConstraintFluidBoundary::accept()
             }
         }
         else {
-            Base::Console().Warning("FemSolverObject is not found in the FemAnalysis object, "
+            Base::Console().warning("FemSolverObject is not found in the FemAnalysis object, "
                                     "thermal and turbulence setting is not accepted\n");
         }
     }

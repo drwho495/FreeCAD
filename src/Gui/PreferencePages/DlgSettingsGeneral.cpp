@@ -63,7 +63,8 @@
 using namespace Gui;
 using namespace Gui::Dialog;
 namespace fs = std::filesystem;
-using namespace Base;
+using Base::UnitsApi;
+using Base::QuantityFormat;
 
 /* TRANSLATOR Gui::Dialog::DlgSettingsGeneral */
 
@@ -84,6 +85,9 @@ DlgSettingsGeneral::DlgSettingsGeneral( QWidget* parent )
 
     recreatePreferencePackMenu();
 
+    for(const char* option : Translator::formattingOptions) {
+        ui->UseLocaleFormatting->addItem(tr(option));
+    }
 
     ui->themesCombobox->setEnabled(true);
     Gui::Document* doc = Gui::Application::Instance->activeDocument();
@@ -117,23 +121,16 @@ DlgSettingsGeneral::DlgSettingsGeneral( QWidget* parent )
     connect(ui->comboBox_UnitSystem, qOverload<int>(&QComboBox::currentIndexChanged), this, &DlgSettingsGeneral::onUnitSystemIndexChanged);
     ui->spinBoxDecimals->setMaximum(std::numeric_limits<double>::digits10 + 1);
 
-    int num = static_cast<int>(Base::UnitSystem::NumUnitSystemTypes);
-    for (int i = 0; i < num; i++) {
-        QString item = Base::UnitsApi::getDescription(static_cast<Base::UnitSystem>(i));
-        ui->comboBox_UnitSystem->addItem(item, i);
-    }
+    auto addItem = [&, index {0}](const std::string& item) mutable {
+        ui->comboBox_UnitSystem->addItem(QString::fromStdString(item), index++);
+    };
+    auto descriptions = UnitsApi::getDescriptions();
+    std::for_each(descriptions.begin(), descriptions.end(), addItem);
 
     // Enable/disable the fractional inch option depending on system
-    if (UnitsApi::getSchema() == UnitSystem::ImperialBuilding)
-    {
-        ui->comboBox_FracInch->setVisible(true);
-        ui->fractionalInchLabel->setVisible(true);
-    }
-    else
-    {
-        ui->comboBox_FracInch->setVisible(false);
-        ui->fractionalInchLabel->setVisible(false);
-    }
+    const auto visible = UnitsApi::isMultiUnitLength();
+    ui->comboBox_FracInch->setVisible(visible);
+    ui->fractionalInchLabel->setVisible(visible);
 }
 
 /**
@@ -178,28 +175,7 @@ void DlgSettingsGeneral::setNumberLocale(bool force/* = false*/)
     if (localeIndex == localeFormat && (!force || localeFormat == 0)) {
         return;
     }
-
-    if (localeFormat == 0) {
-        Translator::instance()->setLocale(); // Defaults to system locale
-    }
-    else if (localeFormat == 1) {
-        QByteArray current = ui->Languages->itemData(ui->Languages->currentIndex()).toByteArray();
-        Translator::instance()->setLocale(current.constData());
-    }
-    else if (localeFormat == 2) {
-        Translator::instance()->setLocale("C");
-    }
-    else {
-        return; // Prevent localeIndex updating if localeFormat is out of range
-    }
     localeIndex = localeFormat;
-}
-
-void DlgSettingsGeneral::setDecimalPointConversion(bool on)
-{
-    if (Translator::instance()->isEnabledDecimalPointConversion() != on) {
-        Translator::instance()->enableDecimalPointConversion(on);
-    }
 }
 
 void DlgSettingsGeneral::saveUnitSystemSettings()
@@ -211,7 +187,7 @@ void DlgSettingsGeneral::saveUnitSystemSettings()
     hGrpu->SetBool("IgnoreProjectSchema", ui->checkBox_projectUnitSystemIgnore->isChecked());
 
     // Set actual value
-    Base::UnitsApi::setDecimals(ui->spinBoxDecimals->value());
+    UnitsApi::setDecimals(ui->spinBoxDecimals->value());
 
     // Convert the combobox index to the its integer denominator. Currently
     // with 1/2, 1/4, through 1/128, this little equation directly computes the
@@ -225,21 +201,21 @@ void DlgSettingsGeneral::saveUnitSystemSettings()
     hGrpu->SetInt("FracInch", FracInch);
 
     // Set the actual format value
-    Base::QuantityFormat::setDefaultDenominator(FracInch);
+    QuantityFormat::setDefaultDenominator(FracInch);
 
     // Set and save the Unit System
     if (ui->checkBox_projectUnitSystemIgnore->isChecked()) {
         // currently selected View System (unit system)
         int viewSystemIndex = ui->comboBox_UnitSystem->currentIndex();
-        UnitsApi::setSchema(static_cast<UnitSystem>(viewSystemIndex));
+        UnitsApi::setSchema(viewSystemIndex);
     }
     else if (App::Document* doc = App::GetApplication().getActiveDocument()) {
-        UnitsApi::setSchema(static_cast<UnitSystem>(doc->UnitSystem.getValue()));
+        UnitsApi::setSchema(doc->UnitSystem.getValue());
     }
     else {
         // if there is no existing document then the unit must still be set
         int viewSystemIndex = ui->comboBox_UnitSystem->currentIndex();
-        UnitsApi::setSchema(static_cast<UnitSystem>(viewSystemIndex));
+        UnitsApi::setSchema(viewSystemIndex);
     }
 
     ui->SubstituteDecimal->onSave();
@@ -262,7 +238,6 @@ void DlgSettingsGeneral::saveSettings()
     bool force = setLanguage();
     // In case type is "Selected language", we need to force locale change
     setNumberLocale(force);
-    setDecimalPointConversion(ui->SubstituteDecimal->isChecked());
 
     ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("General");
     QVariant size = ui->toolbarIconSize->itemData(ui->toolbarIconSize->currentIndex());
@@ -294,11 +269,11 @@ void DlgSettingsGeneral::loadSettings()
     ParameterGrp::handle hGrpu = App::GetApplication().GetParameterGroupByPath
     ("User parameter:BaseApp/Preferences/Units");
     ui->comboBox_UnitSystem->setCurrentIndex(hGrpu->GetInt("UserSchema", 0));
-    ui->spinBoxDecimals->setValue(hGrpu->GetInt("Decimals", Base::UnitsApi::getDecimals()));
+    ui->spinBoxDecimals->setValue(hGrpu->GetInt("Decimals", UnitsApi::getDecimals()));
     ui->checkBox_projectUnitSystemIgnore->setChecked(hGrpu->GetBool("IgnoreProjectSchema", false));
 
     // Get the current user setting for the minimum fractional inch
-    FracInch = hGrpu->GetInt("FracInch", Base::QuantityFormat::getDefaultDenominator());
+    FracInch = hGrpu->GetInt("FracInch", QuantityFormat::getDefaultDenominator());
 
     // Convert fractional inch to the corresponding combobox index using this
     // handy little equation.
@@ -536,11 +511,11 @@ void DlgSettingsGeneral::translateIconSizes()
 
 void DlgSettingsGeneral::retranslateUnits()
 {
-    int num = ui->comboBox_UnitSystem->count();
-    for (int i = 0; i < num; i++) {
-        QString item = Base::UnitsApi::getDescription(static_cast<Base::UnitSystem>(i));
-        ui->comboBox_UnitSystem->setItemText(i, item);
-    }
+    auto setItem = [&, index {0}](const std::string& item) mutable {
+        ui->comboBox_UnitSystem->setItemText(index++, QString::fromStdString(item));
+    };
+    const auto descriptions = UnitsApi::getDescriptions();
+    std::for_each(descriptions.begin(), descriptions.end(), setItem);
 }
 
 void DlgSettingsGeneral::changeEvent(QEvent *event)
@@ -768,22 +743,16 @@ void DlgSettingsGeneral::onLoadPreferencePackClicked(const std::string& packName
     }
 }
 
-void DlgSettingsGeneral::onUnitSystemIndexChanged(int index)
+void DlgSettingsGeneral::onUnitSystemIndexChanged(const int index)
 {
-    if (index < 0)
-        return; // happens when clearing the combo box in retranslateUi()
+    if (index < 0) {
+        return;  // happens when clearing the combo box in retranslateUi()
+    }
 
     // Enable/disable the fractional inch option depending on system
-    if (static_cast<UnitSystem>(index) == UnitSystem::ImperialBuilding)
-    {
-        ui->comboBox_FracInch->setVisible(true);
-        ui->fractionalInchLabel->setVisible(true);
-    }
-    else
-    {
-        ui->comboBox_FracInch->setVisible(false);
-        ui->fractionalInchLabel->setVisible(false);
-    }
+    const auto visible = UnitsApi::isMultiUnitLength();
+    ui->comboBox_FracInch->setVisible(visible);
+    ui->fractionalInchLabel->setVisible(visible);
 }
 
 void DlgSettingsGeneral::onThemeChanged(int index) {

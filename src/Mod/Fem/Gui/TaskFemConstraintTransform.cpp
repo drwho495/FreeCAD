@@ -31,6 +31,7 @@
 #include <QAction>
 #include <QMessageBox>
 #include <TopoDS.hxx>
+#include <limits>
 #include <sstream>
 #endif
 
@@ -59,7 +60,7 @@ TaskFemConstraintTransform::TaskFemConstraintTransform(
     QMetaObject::connectSlotsByName(this);
 
     // create a context menu for the listview of the references
-    createDeleteAction(ui->lw_Rect);
+    createActions(ui->lw_Rect);
     connect(deleteAction,
             &QAction::triggered,
             this,
@@ -130,14 +131,15 @@ TaskFemConstraintTransform::TaskFemConstraintTransform(
     ui->qsb_rot_angle->bind(
         App::ObjectIdentifier::parse(pcConstraint, std::string("Rotation.Angle")));
 
-    ui->spb_rot_axis_x->setMinimum(-FLOAT_MAX);
-    ui->spb_rot_axis_x->setMaximum(FLOAT_MAX);
-    ui->spb_rot_axis_y->setMinimum(-FLOAT_MAX);
-    ui->spb_rot_axis_y->setMaximum(FLOAT_MAX);
-    ui->spb_rot_axis_z->setMinimum(-FLOAT_MAX);
-    ui->spb_rot_axis_z->setMaximum(FLOAT_MAX);
-    ui->qsb_rot_angle->setMinimum(-FLOAT_MAX);
-    ui->qsb_rot_angle->setMaximum(FLOAT_MAX);
+    float max = std::numeric_limits<float>::max();
+    ui->spb_rot_axis_x->setMinimum(-max);
+    ui->spb_rot_axis_x->setMaximum(max);
+    ui->spb_rot_axis_y->setMinimum(-max);
+    ui->spb_rot_axis_y->setMaximum(max);
+    ui->spb_rot_axis_z->setMinimum(-max);
+    ui->spb_rot_axis_z->setMaximum(max);
+    ui->qsb_rot_angle->setMinimum(-max);
+    ui->qsb_rot_angle->setMaximum(max);
 
     std::string transform_type = pcConstraint->TransformType.getValueAsString();
     if (transform_type == "Rectangular") {

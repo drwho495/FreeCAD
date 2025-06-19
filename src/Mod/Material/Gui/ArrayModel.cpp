@@ -47,7 +47,7 @@ AbstractArrayModel::AbstractArrayModel(QObject* parent)
 
 
 Array2DModel::Array2DModel(const std::shared_ptr<Materials::MaterialProperty>& property,
-                           const std::shared_ptr<Materials::Material2DArray>& value,
+                           const std::shared_ptr<Materials::Array2D>& value,
                            QObject* parent)
     : AbstractArrayModel(parent)
     , _property(property)
@@ -199,7 +199,7 @@ bool Array2DModel::removeColumns(int column, int count, const QModelIndex& paren
 //===
 
 Array3DDepthModel::Array3DDepthModel(const std::shared_ptr<Materials::MaterialProperty>& property,
-                                     const std::shared_ptr<Materials::Material3DArray>& value,
+                                     const std::shared_ptr<Materials::Array3D>& value,
                                      QObject* parent)
     : AbstractArrayModel(parent)
     , _property(property)
@@ -337,7 +337,7 @@ bool Array3DDepthModel::removeColumns(int column, int count, const QModelIndex& 
 //===
 
 Array3DModel::Array3DModel(const std::shared_ptr<Materials::MaterialProperty>& property,
-                           const std::shared_ptr<Materials::Material3DArray>& value,
+                           const std::shared_ptr<Materials::Array3D>& value,
                            QObject* parent)
     : AbstractArrayModel(parent)
     , _property(property)
@@ -391,7 +391,7 @@ QVariant Array3DModel::data(const QModelIndex& index, int role) const
         catch (const Materials::InvalidIndex&) {
         }
         catch (const std::exception& e) {
-            Base::Console().Error("The error message is: %s\n", e.what());
+            Base::Console().error("The error message is: %s\n", e.what());
         }
 
         try {
@@ -442,7 +442,7 @@ bool Array3DModel::setData(const QModelIndex& index, const QVariant& value, int 
         _value->setValue(index.row(), index.column(), value.value<Base::Quantity>());
     }
     catch (const Materials::InvalidIndex&) {
-        Base::Console().Error("Array3DModel::setData - InvalidIndex");
+        Base::Console().error("Array3DModel::setData - InvalidIndex");
     }
 
     Q_EMIT dataChanged(index, index);
