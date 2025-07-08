@@ -129,7 +129,7 @@ def isLinkGroup(obj):
     return obj.TypeId == "App::Link" and obj.ElementCount > 0
 
 
-def getObject(ref):
+def getObject(ref, returnTopObject = False):
     if len(ref) != 2:
         return None
     subs = ref[1]
@@ -154,13 +154,13 @@ def getObject(ref):
             return None
 
         # the last is the element name. So if we are at the last but one name, then it must be the selected
-        if i == len(names) - 2:
+        if i == len(names) - 2: # this is the top object
             return obj
 
         if obj.TypeId in {"App::Part", "Assembly::AssemblyObject"} or isLinkGroup(obj):
             continue
 
-        elif obj.isDerivedFrom("App::LocalCoordinateSystem"):
+        elif obj.isDerivedFrom("App::LocalCoordinateSystem") and not returnTopObject:
             # 2 cases possible, either we have the LCS itself: "part.LCS."
             # or we have a datum: "part.LCS.X_Axis"
             if i + 1 < len(names):
@@ -172,24 +172,24 @@ def getObject(ref):
                 if obj2 and obj2.isDerivedFrom("App::DatumElement"):
                     return obj2
 
-        elif obj.isDerivedFrom("App::DatumElement"):
+        elif obj.isDerivedFrom("App::DatumElement") and not returnTopObject:
             return obj
 
-        elif obj.TypeId == "PartDesign::Body":
+        elif obj.TypeId == "PartDesign::Body" and not returnTopObject:
             return process_body(obj, obj, names, i)
 
-        elif obj.isDerivedFrom("Part::Feature"):
+        elif obj.isDerivedFrom("Part::Feature") and not returnTopObject:
             # primitive, fastener, gear ...
             return obj
 
         elif isLink(obj):
             linked_obj = obj.getLinkedObject()
-            if linked_obj.TypeId == "PartDesign::Body":
+            if linked_obj.TypeId == "PartDesign::Body" and not returnTopObject:
                 return process_body(linked_obj, obj, names, i)
-            elif linked_obj.isDerivedFrom("Part::Feature"):
+            elif linked_obj.isDerivedFrom("Part::Feature") and not returnTopObject:
                 return obj
             else:
-                doc = linked_obj.Document
+                doc = linked_obj.Document # this needs to get run for `returnTopObject`!
                 continue
 
     return None
@@ -338,7 +338,7 @@ def getGlobalPlacement(ref, targetObj=None):
         return App.Placement()
 
     if targetObj is None:  # If no targetObj is given, we consider it's the getObject(ref)
-        targetObj = getObject(ref)
+        targetObj = getObject(ref, True) # we need the top object to fix the bad placement bug
         if targetObj is None:
             return App.Placement()
 
@@ -950,7 +950,7 @@ So here we want to find a placement that corresponds to a local coordinate syste
 def findPlacement(ref, ignoreVertex=False):
     if not isRefValid(ref, 2):
         return App.Placement()
-    obj = getObject(ref)
+    obj = getObject(ref, True)
     if not obj:
         return App.Placement()
 
@@ -991,8 +991,7 @@ def findPlacement(ref, ignoreVertex=False):
         if vtx_type == "Edge" or ignoreVertex:
             # In this case the wanted vertex is the center.
             if curve.TypeId == "Part::GeomCircle":
-                center_point = curve.Location
-                plc.Base = (center_point.x, center_point.y, center_point.z)
+                plc.Base = curve.Location
             elif curve.TypeId == "Part::GeomLine":
                 edge_points = getPointsFromVertexes(edge.Vertexes)
                 line_middle = (edge_points[0] + edge_points[1]) * 0.5
@@ -1007,6 +1006,7 @@ def findPlacement(ref, ignoreVertex=False):
         # Then we find the Rotation
         if curve.TypeId == "Part::GeomCircle":
             plc.Rotation = App.Rotation(curve.Rotation)
+            # print(f"plc rotation euler: {plc.Rotation.toEulerAngles("XYZ")}")
 
         if curve.TypeId == "Part::GeomLine":
             isLine = True
