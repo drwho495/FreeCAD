@@ -616,13 +616,6 @@ int SketchObject::solve(bool updateGeoAfterSolving /*=true*/)
             }
         }
     }
-    else if (err < 0) {
-        // if solver failed, invalid constraints were likely added before solving
-        // (see solve in addConstraint), so solver information is definitely invalid.
-        //
-        // Update: ViewProviderSketch shall now rely on the signalSolverUpdate below for update
-        // this->Constraints.touch();
-    }
 
     signalSolverUpdate();
 
@@ -1791,8 +1784,9 @@ int SketchObject::delGeometry(int GeoId, bool deleteinternalgeo)
     Base::StateLocker lock(managedoperation, true);
 
     const std::vector<Part::Geometry*>& vals = getInternalGeometry();
-    if (GeoId < 0 || GeoId >= int(vals.size()))
+    if (GeoId >= int(vals.size())) {
         return -1;
+    }
 
     if (deleteinternalgeo && hasInternalGeometry(getGeometry(GeoId))) {
         // Only for supported types
@@ -3827,7 +3821,7 @@ int SketchObject::join(int geoId1, Sketcher::PointPos posId1, int geoId2, Sketch
 
     if (Sketcher::PointPos::start != posId1 && Sketcher::PointPos::end != posId1
         && Sketcher::PointPos::start != posId2 && Sketcher::PointPos::end != posId2) {
-        THROWM(ValueError, "Invalid position(s): points must be start or end points of a curve.");
+        THROWM(ValueError, "Invalid positions: points must be start or end points of a curve.");
         return -1;
     }
 
@@ -7575,8 +7569,9 @@ const Part::Geometry* SketchObject::_getGeometry(int GeoId) const
         if (GeoId < int(geomlist.size()))
             return geomlist[GeoId];
     }
-    else if (GeoId < 0 && -GeoId-1 < ExternalGeo.getSize())
+    else if (-GeoId-1 < ExternalGeo.getSize()) {
         return ExternalGeo[-GeoId-1];
+    }
 
     return nullptr;
 }
@@ -9450,16 +9445,16 @@ void SketchObject::getConstraintIndices(int GeoId, std::vector<int>& constraintL
 void SketchObject::appendConflictMsg(const std::vector<int>& conflicting, std::string& msg)
 {
     appendConstraintsMsg(conflicting,
-                         "Please remove the following conflicting constraint:\n",
-                         "Please remove at least one of the following conflicting constraints:\n",
+                         "Remove the following conflicting constraint:",
+                         "Remove at least one of the following conflicting constraints:",
                          msg);
 }
 
 void SketchObject::appendRedundantMsg(const std::vector<int>& redundant, std::string& msg)
 {
     appendConstraintsMsg(redundant,
-                         "Please remove the following redundant constraint:",
-                         "Please remove the following redundant constraints:",
+                         "Remove the following redundant constraint:",
+                         "Remove the following redundant constraints:",
                          msg);
 }
 
@@ -9467,8 +9462,8 @@ void SketchObject::appendMalformedConstraintsMsg(const std::vector<int>& malform
                                                  std::string& msg)
 {
     appendConstraintsMsg(malformed,
-                         "Please remove the following malformed constraint:",
-                         "Please remove the following malformed constraints:",
+                         "Remove the following malformed constraint:",
+                         "Remove the following malformed constraints:",
                          msg);
 }
 
