@@ -1398,7 +1398,6 @@ TopoShape& TopoShape::makeShapeWithElementMap(const TopoDS_Shape& shape,
     if (shapes.empty()) {
         return *this;
     }
-
     size_t canMap = 0;
     for (auto& incomingShape : shapes) {
         if (canMapElement(incomingShape)) {
@@ -1504,8 +1503,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(const TopoDS_Shape& shape,
                     }
 
                     key.tag = incomingShape.Tag;
-                    FC_LOG("element name (created from mod): " << key.name << "\n");
-                    elementMap()->setElementName(element, key.name, Tag, &sids);
+                    ensureElementMap()->setElementName(element, key.name, Tag, &sids);
                 }
 
                 int checkParallel = -1;
@@ -1566,7 +1564,6 @@ TopoShape& TopoShape::makeShapeWithElementMap(const TopoDS_Shape& shape,
                     key.shapetype += shapeOffset;
                     for (auto& workingShape : newShapes) {
                         ++newShapeCounter;
-                        FC_LOG("new shape counter: " << std::to_string(newShapeCounter) << "\n");
 
                         int workingShapeIndex = newInfo.find(workingShape);
                         if (workingShapeIndex == 0) {
@@ -1756,7 +1753,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(const TopoDS_Shape& shape,
 
             ensureElementMap()
                 ->encodeElementName(element[0], first_name, ss, &sids, Tag, op, first_key.tag);
-            elementMap()->setElementName(element, first_name, Tag, &sids);
+            ensureElementMap()->setElementName(element, first_name, Tag, &sids);
             if (!delayed && first_key.shapetype < 3) {
                 newNames.erase(itName);
             }
@@ -1771,6 +1768,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(const TopoDS_Shape& shape,
         // names (which must be sorted, because we may use the first one to name
         // upper element in the final pass) to lower element if it appears in
         // multiple higher elements, e.g. same edge in multiple faces.
+        //FC_MSG("no error line 1790\n");
 
         for (size_t infoIndex = infos.size() - 1; infoIndex != 0; --infoIndex) {
             std::map<Data::IndexedName,
