@@ -454,22 +454,20 @@ SoLinearDragger* SoLinearDraggerContainer::getDragger()
     return SO_GET_PART(this, "dragger", SoLinearDragger);
 }
 
-Base::Vector3d Gui::SoLinearDraggerContainer::getPointerDirection()
+SbVec3f SoLinearDraggerContainer::getPointerDirection()
 {
     // This is the direction along which the SoLinearDragger points in it local space
-    SbVec3f draggerDir{0, 1, 0};
+    SbVec3f draggerDir = SO_GET_ANY_PART(this, "arrow", SoLinearGeometryKit)->tipPosition.getValue();
     rotation.getValue().multVec(draggerDir, draggerDir);
 
-    return Base::convertTo<Base::Vector3d>(draggerDir);
+    return draggerDir;
 }
 
-void Gui::SoLinearDraggerContainer::setPointerDirection(const Base::Vector3d& dir)
+void SoLinearDraggerContainer::setPointerDirection(const SbVec3f& dir)
 {
-    // This is the direction along which the SoLinearDragger points in it local space
-    Base::Vector3d draggerDir{0, 1, 0};
-    Base::Vector3d axis = draggerDir.Cross(dir).Normalize();
-    double ang = draggerDir.GetAngleOriented(dir, axis);
+    // This is the direction from the origin to the spherical pivot of the rotator
+    SbVec3f draggerDir = SO_GET_ANY_PART(this, "arrow", SoLinearGeometryKit)->tipPosition.getValue();
 
-    SbRotation rot{Base::convertTo<SbVec3f>(axis), static_cast<float>(ang)};
+    SbRotation rot{draggerDir, dir};
     rotation.setValue(rot);
 }
