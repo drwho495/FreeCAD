@@ -1579,8 +1579,6 @@ TopoShape& TopoShape::makeShapeWithElementMap(const TopoDS_Shape& shape,
                             Data::IndexedName::fromConst(newInfo.shapetype, workingShapeIndex);
                         auto mapped = getMappedName(element);
                         if (mapped) {
-                            FC_LOG("alr mapped name (in gen): " << mapped.toString() << "\n");
-
                             continue;
                         }
 
@@ -1740,6 +1738,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(const TopoDS_Shape& shape,
             else {
                 ss << modgenPostfix();
             }
+
             if (first_info.index == intMin) {
                 ss << '0';
             }

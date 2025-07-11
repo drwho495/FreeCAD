@@ -28,7 +28,7 @@
  * The operational code (op code) is encoded into the mapped element name to
  * provide more context and meaning to the  shape history when tracing it back
  * to its predecessors. Some op codes can be passed to the generalized shape-
- * making API TopoShape::makEBoolean() to make a shape.
+ * making API TopoShape::makeElementBoolean() to make a shape.
  */
 namespace Part {
 
@@ -43,7 +43,8 @@ public:
 
     static constexpr const int Version = 15;
 
-    /** @name Op codes that are also accepted by TopoShape::makEBoolean() */
+    /** @name Op codes that are also accepted by TopoShape::makeElementBoolean() 
+     * (fyi, that method is really in TopoShapeExpansion) */
     //@{
     static constexpr const char *Fuse = "FUS";
     static constexpr const char *Cut = "CUT";
@@ -56,6 +57,7 @@ public:
     static constexpr const char *Wire = "WIR";
     //@}
 
+    // FeatureTypes
     static constexpr const char *Tag = "TAG";
     static constexpr const char *Copy = "CPY";
     static constexpr const char *Transform = "XFM";
