@@ -452,3 +452,13 @@ void SoRotationDraggerContainer::setPointerDirection(const SbVec3f& dir)
     SbRotation rot{draggerDir, dir};
     rotation.setValue(rot);
 }
+
+void SoRotationDraggerContainer::setArcNormalDirection(const SbVec3f& dir)
+{
+    SbVec3f currentNormal = {0, 0, 1};
+    auto currentRot = rotation.getValue();
+    currentRot.multVec(currentNormal, currentNormal);
+
+    SbRotation rot{currentNormal, dir};
+    rotation = currentRot * rot; 
+}

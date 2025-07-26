@@ -1123,6 +1123,7 @@ SET(Inventor_SRCS
     Inventor/Draggers/SoPlanarDragger.h
     Inventor/Draggers/SoRotationDragger.h
     Inventor/Draggers/Gizmo.h
+    Inventor/Draggers/GizmoHelper.h
     SoFCColorBar.h
     SoFCColorBarNotifier.h
     SoFCColorGradient.h

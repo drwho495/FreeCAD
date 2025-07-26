@@ -6,6 +6,7 @@
 #include <Inventor/nodes/SoScale.h>
 #include <Inventor/nodes/SoPickStyle.h>
 #include <Inventor/So3DAnnotation.h>
+#include <Inventor/SoToggleSwitch.h>
 #include <Base/Converter.h>
 #include <Base/Console.h>
 
@@ -13,7 +14,7 @@
 #include "Document.h"
 #include "Gui/Utilities.h"
 
-#include "PrefWidgets.h"
+#include "QuantitySpinBox.h"
 #include "SoLinearDragger.h"
 #include "SoRotationDragger.h"
 #include "View3DInventorViewer.h"
@@ -58,8 +59,16 @@ GizmoPlacement LinearGizmo::getDraggerPlacement()
 
 void LinearGizmo::setDraggerPlacement(const SbVec3f& pos, const SbVec3f& dir)
 {
+    assert(draggerContainer);
     draggerContainer->translation = pos;
     draggerContainer->setPointerDirection(dir);
+}
+
+void LinearGizmo::setDraggerPlacement(Base::Placement placement)
+{
+    assert(draggerContainer);
+    draggerContainer->translation = Base::convertTo<SbVec3f>(placement.getPosition());
+    draggerContainer->rotation = Base::convertTo<SbRotation>(placement.getRotation());
 }
 
 double LinearGizmo::getDragLength()
@@ -165,6 +174,7 @@ GizmoPlacement RotationGizmo::getDraggerPlacement()
 
 void RotationGizmo::setDraggerPlacement(const SbVec3f& pos, const SbVec3f& dir)
 {
+    assert(draggerContainer);
     draggerContainer->translation = pos;
     draggerContainer->setPointerDirection(dir);
 }
@@ -230,12 +240,13 @@ void RotationGizmo::dragMotionCallback(void *data, [[maybe_unused]] SoDragger *d
     auto sudoThis = static_cast<RotationGizmo*>(data);
 
     double value = sudoThis->initialValue + sudoThis->getRotAngle();
+    value = fmod(value, 360);
     value = std::clamp(value, sudoThis->property->minimum(), sudoThis->property->maximum());
 
     sudoThis->property->setValue(value);
     sudoThis->setRotAngle(value);
 
-    Base::Console().message("Continuing rotating, value: %lf\n", value);
+    Base::Console().message("Continuing rotating, value: %lf, max: %lf, min: %lf\n", value, sudoThis->property->minimum(), sudoThis->property->maximum());
 }
 
 void RotationGizmo::translationSensorCB(void* data, SoSensor* sensor)
@@ -256,6 +267,10 @@ void RotationGizmo::translationSensorCB(void* data, SoSensor* sensor)
 
 void RotationGizmo::orientAlongCamera(SoCamera* camera)
 {
+    if (linearGizmo == nullptr) {
+        return;
+    }
+
     assert(camera);
     SbVec3f cameraDir{0, 0, 1};
     camera->orientation.getValue().multVec(cameraDir, cameraDir);
@@ -268,12 +283,7 @@ void RotationGizmo::orientAlongCamera(SoCamera* camera)
     }
 
     assert(draggerContainer);
-    SbVec3f currentNormal = {0, 0, 1};
-    auto currentRot = draggerContainer->rotation.getValue();
-    currentRot.multVec(currentNormal, currentNormal);
-
-    SbRotation rot{currentNormal, proj};
-    draggerContainer->rotation = currentRot * rot; 
+    draggerContainer->setArcNormalDirection(proj);
 }
 
 SO_KIT_SOURCE(Gizmos)
@@ -293,12 +303,18 @@ Gizmos::Gizmos()
 
     FC_ADD_CATALOG_ENTRY(annotation, So3DAnnotation, this);
     FC_ADD_CATALOG_ENTRY(pickStyle, SoPickStyle, annotation);
-    FC_ADD_CATALOG_ENTRY(geometry, SoSeparator, annotation);
+    FC_ADD_CATALOG_ENTRY(toggleSwitch, SoToggleSwitch, annotation);
+    FC_ADD_CATALOG_ENTRY(geometry, SoSeparator, toggleSwitch);
 
     SO_KIT_INIT_INSTANCE();
 
+    SO_KIT_ADD_FIELD(visible, (1));
+
     auto pickStyle = SO_GET_ANY_PART(this, "pickStyle", SoPickStyle);
     pickStyle->style = SoPickStyle::SHAPE_ON_TOP;
+
+    auto toggleSwitch = SO_GET_ANY_PART(this, "toggleSwitch", SoToggleSwitch);
+    toggleSwitch->on.connectFrom(&visible);
 
     setPart("geometry", new SoSeparator);
 
