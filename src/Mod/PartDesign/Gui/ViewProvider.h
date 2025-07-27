@@ -31,11 +31,6 @@
 
 #include <Mod/Part/Gui/ViewProviderAttachExtension.h>
 
-namespace Gui
-{
-class Gizmos;
-}
-
 namespace PartDesignGui {
 
 class TaskDlgFeatureParameters;
@@ -82,14 +77,10 @@ public:
 
     QIcon mergeColorfulOverlayIcons (const QIcon & orig) const override;
 
-    void attachGizmos(Gui::Gizmos* gizmos);
-    void detachGizmos();
-
 protected:
     void setupContextMenu(QMenu* menu, QObject* receiver, const char* member) override;
     bool setEdit(int ModNum) override;
     void unsetEdit(int ModNum) override;
-    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum) override;
 
     bool onDelete(const std::vector<std::string> &) override;
 

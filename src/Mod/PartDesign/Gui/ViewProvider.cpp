@@ -172,19 +172,6 @@ void ViewProvider::unsetEdit(int ModNum)
     }
 }
 
-void ViewProvider::setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum)
-{
-    PartGui::ViewProviderPart::setEditViewer(viewer, ModNum);
-
-    if (gizmos) {
-        gizmos->setUpAutoScale(viewer->getSoRenderManager()->getCamera());
-
-        auto originPlacement = App::GeoFeature::getGlobalPlacement(getObject())
-            * getObjectPlacement().inverse();
-        gizmos->attachViewer(viewer, originPlacement);
-    }
-}
-
 void ViewProvider::updateData(const App::Property* prop)
 {
     // TODO What's that? (2015-07-24, Fat-Zer)
@@ -348,17 +335,6 @@ ViewProviderBody* ViewProvider::getBodyViewProvider()
 
     return nullptr;
 }
-
-void ViewProvider::attachGizmos(Gui::Gizmos* gizmos)
-{
-    this->gizmos = gizmos;
-}
-
-void ViewProvider::detachGizmos()
-{
-    this->gizmos = nullptr;
-}
-
 
 
 namespace Gui {

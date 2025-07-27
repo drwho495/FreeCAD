@@ -102,6 +102,17 @@ inline DraggerPlacementProps getDraggerPlacementFromEdgeAndFace(Part::TopoShape&
     return getDraggerPlacementFromEdgeAndFace(edge, _face);
 }
 
+inline std::vector<Part::TopoShape> getAdjacentEdgesFromFace(Part::TopoShape& face)
+{
+    assert(face.getShape().ShapeType() == TopAbs_FACE);
+
+    std::vector<Part::TopoShape> edges;
+    for (TopExp_Explorer explorer(face.getShape(), TopAbs_EDGE); explorer.More(); explorer.Next()) {
+        edges.push_back(explorer.Current());
+    }
+
+    return edges;
+}
 
 inline void reverseGizmoDir(Gui::LinearGizmo* gizmo) {
     auto dir = gizmo->getDraggerContainer()->getPointerDirection();
