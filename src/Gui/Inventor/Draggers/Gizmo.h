@@ -143,7 +143,7 @@ public:
     template<typename T = Gizmo>
     T* getGizmo(int index)
     {
-        assert(index >= 0 && index < gizmos.size() && "index out of range!");
+        assert(index >= 0 && index < static_cast<int>(gizmos.size()) && "index out of range!");
         T* ptr  = dynamic_cast<T*>(gizmos[index]);
         assert(ptr);
 
@@ -153,6 +153,9 @@ public:
     void addGizmo(Gizmo* gizmo);
     void attachViewer(Gui::View3DInventorViewer* viewer, Base::Placement &origin);
     void setUpAutoScale(SoCamera* cameraIn);
+
+    // Checks if the gizmos are enabled in the preferences
+    static bool isEnabled();
 
 private:
     std::vector<Gizmo*> gizmos;

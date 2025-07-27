@@ -204,7 +204,9 @@ void TaskThicknessParameters::onReversedChanged(bool on)
         thickness->Reversed.setValue(on);
         onAfterChange(thickness);
 
-        reverseGizmoDir(gizmos->getGizmo<LinearGizmo>(0));
+        if (gizmos) {
+            reverseGizmoDir(gizmos->getGizmo<LinearGizmo>(0));
+        }
     }
 }
 
@@ -268,6 +270,10 @@ void TaskThicknessParameters::apply()
 
 void TaskThicknessParameters::setupGizmos(ViewProviderDressUp* vp)
 {
+    if (!Gizmos::isEnabled()) {
+        return;
+    }
+
     gizmos = std::make_unique<Gizmos>();
 
     auto linearGizmo = new Gui::LinearGizmo;
@@ -284,6 +290,10 @@ void TaskThicknessParameters::setupGizmos(ViewProviderDressUp* vp)
 
 void TaskThicknessParameters::setGizmoPositions()
 {
+    if (!gizmos) {
+        return;
+    }
+
     auto thickness = getObject<PartDesign::Thickness>();
     auto baseShape = thickness->getBaseTopoShape();
     auto shapes = thickness->getContinuousEdges(baseShape);

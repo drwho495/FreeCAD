@@ -209,6 +209,10 @@ void TaskFilletParameters::apply()
 
 void TaskFilletParameters::setupGizmos(ViewProviderDressUp* vp)
 {
+    if (!Gizmos::isEnabled()) {
+        return;
+    }
+
     gizmos = std::make_unique<Gizmos>();
 
     auto linearGizmo = new Gui::LinearGizmo;
@@ -225,6 +229,10 @@ void TaskFilletParameters::setupGizmos(ViewProviderDressUp* vp)
 
 void TaskFilletParameters::setGizmoPositions()
 {
+    if (!gizmos) {
+        return;
+    }
+
     auto fillet = getObject<PartDesign::Fillet>();
     Part::TopoShape baseShape = fillet->getBaseTopoShape();
     std::vector<Part::TopoShape> shapes = fillet->getContinuousEdges(baseShape);

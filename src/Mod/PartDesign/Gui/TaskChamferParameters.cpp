@@ -351,6 +351,10 @@ void TaskChamferParameters::apply()
 
 void TaskChamferParameters::setupGizmos(ViewProviderDressUp* vp)
 {
+    if (!Gizmos::isEnabled()) {
+        return;
+    }
+
     gizmos = std::make_unique<Gizmos>();
 
     auto linearGizmo = new Gui::LinearGizmo;
@@ -407,6 +411,10 @@ void TaskChamferParameters::setupGizmos(ViewProviderDressUp* vp)
 
 void TaskChamferParameters::setGizmoPositions()
 {
+    if (!gizmos) {
+        return;
+    }
+
     auto linearGizmo = gizmos->getGizmo<LinearGizmo>(0);
     auto linearGizmo2 = gizmos->getGizmo<LinearGizmo>(1);
     auto rotationGizmo = gizmos->getGizmo<RotationGizmo>(2);

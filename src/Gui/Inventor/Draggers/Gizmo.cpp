@@ -11,6 +11,8 @@
 #include <Base/Console.h>
 
 #include <algorithm>
+#include "App/Application.h"
+#include "Base/Parameter.h"
 #include "Document.h"
 #include "Gui/Utilities.h"
 
@@ -420,4 +422,13 @@ void Gizmos::cameraPositionChangeCallback(void* data, SoSensor*)
             gizmo->orientAlongCamera(camera);
         }
     }
+}
+
+bool Gizmos::isEnabled()
+{
+    static Base::Reference<ParameterGrp> hGrp = App::GetApplication()
+        .GetUserParameter()
+        .GetGroup("BaseApp/Preferences/Mod/PartDesign");
+
+    return hGrp->GetBool("EnableGizmos", false);
 }

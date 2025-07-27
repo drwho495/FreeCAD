@@ -33,7 +33,7 @@
 
 namespace Gui
 {
-    class Gizmos;
+class Gizmos;
 }
 
 namespace PartDesignGui {

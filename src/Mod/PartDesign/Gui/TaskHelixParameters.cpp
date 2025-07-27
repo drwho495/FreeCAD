@@ -715,6 +715,10 @@ void TaskHelixParameters::apply()  // NOLINT
 
 void TaskHelixParameters::setupGizmos(ViewProviderHelix* vp)
 {
+    if (!Gizmos::isEnabled()) {
+        return;
+    }
+
     gizmos = std::make_unique<Gizmos>();
 
     auto heightGizmo = new Gui::LinearGizmo;
@@ -739,6 +743,10 @@ void TaskHelixParameters::setupGizmos(ViewProviderHelix* vp)
 
 void TaskHelixParameters::setGizmoPositions()
 {
+    if (!gizmos) {
+        return;
+    }
+
     auto helix = getObject<PartDesign::Helix>();
     double reversed = propReversed->getValue()? -1.0 : 1.0;
     auto profileCog = helix->getProfileShape().centerOfGravity();

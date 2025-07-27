@@ -1217,6 +1217,10 @@ void TaskExtrudeParameters::handleLineFaceNameNo()
 
 void PartDesignGui::TaskExtrudeParameters::setupGizmos()
 {
+    if (Gizmos::isEnabled() == false) {
+        return;
+    }
+
     gizmos = std::make_unique<Gizmos>();
 
     auto linearGizmo = new Gui::LinearGizmo;
