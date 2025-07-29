@@ -1193,9 +1193,10 @@ void ElementMap::addChildElements(long masterTag, const std::vector<MappedChildE
 
         ChildMapInfo* entry = nullptr;
 
-        // do child mapping only if the child element count >= 5
-        const int threshold {5};
-        if (child.count >= threshold || !child.elementMap) {
+        // this is old code that caused extra shape tags and faulty code to check
+        // if there are duplicated tags
+
+        if (!child.elementMap) {
             encodeElementName(child.indexedName[0],
                               tmp,
                               ss,
@@ -1217,7 +1218,7 @@ void ElementMap::addChildElements(long masterTag, const std::vector<MappedChildE
             }
         }
 
-        if (!entry) {
+        if (entry == nullptr) {
             IndexedName childIdx(child.indexedName);
             IndexedName idx(childIdx.getType(), childIdx.getIndex() + child.offset);
             for (int i = 0; i < child.count; ++i, ++childIdx, ++idx) {
@@ -1234,14 +1235,15 @@ void ElementMap::addChildElements(long masterTag, const std::vector<MappedChildE
                 }
                 ss.str("");
                 encodeElementName(idx[0],
-                                  name,
-                                  ss,
-                                  &sids,
-                                  masterTag,
-                                  child.postfix.constData(),
-                                  child.tag);
+                                    name,
+                                    ss,
+                                    &sids,
+                                    masterTag,
+                                    child.postfix.constData(),
+                                    child.tag);
                 setElementName(idx, name, masterTag, &sids);
             }
+
             continue;
         }
 
@@ -1254,7 +1256,7 @@ void ElementMap::addChildElements(long masterTag, const std::vector<MappedChildE
             // disambiguation. We don't need to extract the index.
             ss.str("");
             ss << ELEMENT_MAP_PREFIX << ":C" << entry->index - 1;
-
+            
             tmp.clear();
             encodeElementName(child.indexedName[0],
                               tmp,
