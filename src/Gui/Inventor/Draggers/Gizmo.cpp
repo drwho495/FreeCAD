@@ -332,6 +332,8 @@ Gizmos::~Gizmos()
 
     cameraPositionSensor.setData(nullptr);
     cameraPositionSensor.detach();
+
+    uninitGizmos();
 }
 
 void Gizmos::initGizmos()
@@ -348,6 +350,7 @@ void Gizmos::uninitGizmos()
         gizmo->uninitDragger();
         delete gizmo;
     }
+    gizmos.clear();
 }
 
 void Gizmos::addGizmo(Gizmo* gizmo)

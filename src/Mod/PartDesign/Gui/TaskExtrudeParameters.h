@@ -35,6 +35,10 @@ namespace App {
 class Property;
 }
 
+namespace Gui {
+class Gizmos;
+}
+
 namespace PartDesign {
 class ProfileBased;
 }
@@ -79,7 +83,7 @@ public:
 
     TaskExtrudeParameters(ViewProviderExtrude *ExtrudeView, QWidget *parent,
                           const std::string& pixmapname, const QString& parname);
-    ~TaskExtrudeParameters() override;
+    ~TaskExtrudeParameters() override = default;
 
     void saveHistory() override;
 
@@ -141,7 +145,7 @@ protected:
     void handleLineFaceNameNo();
 
 private:
-    Gui::Gizmos gizmos;
+    std::unique_ptr<Gui::Gizmos> gizmos;
 
     void selectedReferenceAxis(const Gui::SelectionChanges& msg);
     void selectedFace(const Gui::SelectionChanges& msg);

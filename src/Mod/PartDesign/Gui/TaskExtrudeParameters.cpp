@@ -33,6 +33,7 @@
 #include <Base/UnitsApi.h>
 #include <Gui/Command.h>
 #include <Gui/Tools.h>
+#include <Gui/Inventor/Draggers/Gizmo.h>
 #include <Mod/PartDesign/App/FeatureExtrude.h>
 #include <Mod/Part/Gui/ReferenceHighlighter.h>
 
@@ -66,10 +67,6 @@ TaskExtrudeParameters::TaskExtrudeParameters(ViewProviderExtrude* SketchBasedVie
     group->setExclusive(true);
 
     this->groupLayout()->addWidget(proxy);
-}
-
-TaskExtrudeParameters::~TaskExtrudeParameters() {
-    gizmos.uninitGizmos();
 }
 
 void TaskExtrudeParameters::setupDialog()
@@ -1220,6 +1217,8 @@ void TaskExtrudeParameters::handleLineFaceNameNo()
 
 void PartDesignGui::TaskExtrudeParameters::setupGizmos()
 {
+    gizmos = std::make_unique<Gizmos>();
+
     auto linearGizmo = new Gui::LinearGizmo;
     auto linearGizmo2 = new Gui::LinearGizmo;
     auto rotationGizmo = new Gui::RotationGizmo;
@@ -1279,11 +1278,11 @@ void PartDesignGui::TaskExtrudeParameters::setupGizmos()
         rotationGizmo2->setDraggerPlacement(placement.pos, -rotationGizmo2->getDraggerContainer()->getPointerDirection());
     });
 
-    gizmos.addGizmo(rotationGizmo);
-    gizmos.addGizmo(linearGizmo);
-    gizmos.addGizmo(rotationGizmo2);
-    gizmos.addGizmo(linearGizmo2);
-    gizmos.initGizmos();
+    gizmos->addGizmo(rotationGizmo);
+    gizmos->addGizmo(linearGizmo);
+    gizmos->addGizmo(rotationGizmo2);
+    gizmos->addGizmo(linearGizmo2);
+    gizmos->initGizmos();
 
     auto extrude = getObject<PartDesign::FeatureExtrude>();
     PartDesign::TopoShape shape = extrude->getProfileShape();
@@ -1294,8 +1293,9 @@ void PartDesignGui::TaskExtrudeParameters::setupGizmos()
     linearGizmo2->Gizmo::setDraggerPlacement(center, -extrude->getProfileNormal());
     rotationGizmo2->placeOverLinearGizmo(linearGizmo2);
 
-    vp->attachGizmos(&gizmos);
+    vp->attachGizmos(gizmos.get());
 
+    // These gizmos shouldn't be visible until the user set type to two dimensions
     rotationGizmo2->getDraggerContainer()->visible = false;
     linearGizmo2->getDraggerContainer()->visible = false;
 }
