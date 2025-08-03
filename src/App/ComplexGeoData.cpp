@@ -204,12 +204,12 @@ const std::string& ComplexGeoData::elementMapPrefix()
 
 std::string ComplexGeoData::getElementMapVersion() const
 {
-    return "4";
+    return "5";
 }
 
 bool ComplexGeoData::checkElementMapVersion(const char* ver) const
 {
-    return !boost::equals(ver, "3") && !boost::equals(ver, "4") && !boost::starts_with(ver, "3.");
+    return !boost::equals(ver, "3") && !boost::ends_with(ver, "5") && !boost::equals(ver, "5") && !boost::starts_with(ver, "3.");
 }
 
 size_t ComplexGeoData::getElementMapSize(bool flush) const
@@ -276,18 +276,30 @@ ComplexGeoData::getElementName(const char* name, ElementIDRefs* sid, bool copy) 
     }
 
     MappedElement result;
-    // Strip out the trailing '.XXXX' if any
-    const char* dot = strchr(name, '.');
-    if (dot) {
-        result.name = MappedName(name, static_cast<int>(dot - name));
+
+    flushElementMap();
+    if (_elementMap) {
+        const char* dot = strchr(name, '.');
+        MappedName mappedName = MappedName(name);
+
+        if (dot) {
+            mappedName = MappedName(name, static_cast<int>(dot - name));
+        } 
+
+        result = _elementMap->findMappedElement(mappedName, sid);
+
+        if (result.name.empty()) {
+            result.name = mappedName;
+        }
+
+        // if we want to copy the original unfiltered name, then do so.
+        // this should not be done before running findMatching, as this
+        // will include the dot which we do not want at that stage.
+        if (copy) {
+            result.name = name;
+        }
     }
-    else if (copy) {
-        result.name = name;
-    }
-    else {
-        result.name = MappedName(name);
-    }
-    result.index = getIndexedName(result.name, sid);
+
     return result;
 }
 
