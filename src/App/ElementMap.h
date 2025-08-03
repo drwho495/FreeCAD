@@ -350,6 +350,7 @@ private:
         std::vector<geoID> opCodeIDs;
         char elementType = '-';
         int postfixNumber = 0;
+        int index = 0;
     };
 
     std::vector<ElementSection> compileElementSections(const std::string &name) const;
@@ -361,6 +362,7 @@ private:
     struct ToponamingElement {
         std::string normalName;
         std::string dehashedName;
+        std::vector<ElementSection> removedSections;
         std::vector<ElementSection> splitSections;
         std::vector<ElementSection> unfilteredSplitSections;
         // example layout: {<"SIF": ["g2", "g54", "g66"]>, <"SKT": ["g2", "g54", "g66"]>}
