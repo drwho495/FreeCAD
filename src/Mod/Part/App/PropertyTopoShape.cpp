@@ -76,6 +76,11 @@ void PropertyPartShape::setValue(const TopoShape& sh)
             res.mapSubElement(_Shape);
             _Shape = res;
         }
+        if(_Shape.getElementMap().size() != sh.getElementMap().size()) {
+            TopoShape res(obj->getID(), sh.Hasher, _Shape.getShape());
+            res.mapSubElement(_Shape);
+            _Shape = res;
+        }
         auto tag = obj->getID();
         if(_Shape.Tag && tag!=_Shape.Tag) {
             auto hasher = _Shape.Hasher ? _Shape.Hasher : obj->getDocument()->getStringHasher();
