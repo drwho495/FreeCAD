@@ -406,8 +406,6 @@ void PropertyPartShape::Restore(Base::XMLReader &reader)
                     }
                     owner->getDocument()->addRecomputeObject(owner);
                     
-                    FC_WARN("set needsToMigrate for: " << owner->Label.getValue());
-
                     // tell the element map that it needs to migrate
                     needsToMigrate = true;
                 }
