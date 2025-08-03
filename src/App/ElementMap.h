@@ -209,6 +209,17 @@ public:
                            MappedName* original = nullptr,
                            std::vector<MappedName>* history = nullptr) const;
     
+    struct MigrationItem
+    {
+        MappedElement oldElement;
+        MappedElement newElement;
+    };
+
+    std::vector<MigrationItem> migrationList;
+
+    bool migrationEnabled;
+    void copyMigrationList(std::vector<ElementMap::MigrationItem> newList);
+    
     // true enables, false disables.
     void enableMigration(std::vector<Data::MappedElement> &oldMap);
 
@@ -219,7 +230,6 @@ public:
      * @sa TraceCallback
      */
     void traceElement(const MappedName& name, long masterTag, TraceCallback cb) const;
-
 
 private:
     /** Serialize this map
@@ -366,14 +376,6 @@ private:
     // it contains two MappedElements
     // this is it's own struct incase i need to add more specific data
     // for migration.
-    struct MigrationItem
-    {
-        MappedElement oldElement;
-        MappedElement newElement;
-    };
-
-    std::vector<MigrationItem> migrationList;
-    bool migrationEnabled;
 
     QHash<QByteArray, ChildMapInfo> childElements;
     std::size_t childElementSize = 0;

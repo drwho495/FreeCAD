@@ -338,6 +338,13 @@ private:
 
 public:
     void enableMigration(std::vector<Data::MappedElement> oldMap);
+
+    bool hasMigrationList() const;
+
+    std::vector<Data::ElementMap::MigrationItem> getMigrationList() const;
+
+    void copyMigrationList(std::vector<Data::ElementMap::MigrationItem> newMap);
+
     /// Get the standard accuracy to be used with getPoints, getLines or getFaces
     double getAccuracy() const override;
     /** Get points from object with given accuracy */

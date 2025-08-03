@@ -71,10 +71,6 @@ void PropertyPartShape::setValue(const TopoShape& sh)
 
     auto obj = freecad_cast<App::DocumentObject*>(getContainer());
     if(obj) {
-        if (needsToMigrate && obj->getDocument() && !obj->getDocument()->isAnyRestoring()) {
-            _Shape.enableMigration(oldShape.getElementMap());
-            needsToMigrate = false;
-        }
         if(_Shape.getElementMap().size() != sh.getElementMap().size()) {
             TopoShape res(obj->getID(), sh.Hasher, _Shape.getShape());
             res.mapSubElement(_Shape);
@@ -90,6 +86,16 @@ void PropertyPartShape::setValue(const TopoShape& sh)
         if (!_Shape.Hasher && _Shape.hasChildElementMap()) {
             _Shape.Hasher = obj->getDocument()->getStringHasher();
             _Shape.hashChildMaps();
+        }
+
+        // copy the old migration list, even if all of the elements in the new list have
+        // been overwritten. this is safe to do because the output of migration list will
+        // be put through findMappedElement to make sure the new mapped name actually exists
+        if (needsToMigrate && obj->getDocument() && !obj->getDocument()->isAnyRestoring()) {
+            _Shape.enableMigration(oldShape.getElementMap());
+            needsToMigrate = false;
+        } else if (oldShape.hasMigrationList()) {
+            _Shape.copyMigrationList(oldShape.getMigrationList());
         }
     }
     hasSetValue();
@@ -399,6 +405,8 @@ void PropertyPartShape::Restore(Base::XMLReader &reader)
                                                                         << ": " << _Ver << " -> " << ver);
                     }
                     owner->getDocument()->addRecomputeObject(owner);
+                    
+                    FC_WARN("set needsToMigrate for: " << owner->Label.getValue());
 
                     // tell the element map that it needs to migrate
                     needsToMigrate = true;
