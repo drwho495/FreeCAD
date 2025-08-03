@@ -1254,31 +1254,30 @@ ElementMap::ToponamingElement ElementMap::compileToponamingElement(MappedName na
 
 bool ElementMap::checkGeoIDsLists(std::vector<ElementMap::geoID> &list1, std::vector<ElementMap::geoID> &list2) const {
     if (list1.size() != list2.size()) return false;
-    bool tagCheck = true;
-    bool elementTypeCheck = true;
-    bool mainIDCheck = true;
 
-    for (const auto &id1 : list1) {
-        for (const auto &id2 : list2) {
-            if (id1.tags != id2.tags) {
-                tagCheck = false;
-            }
+    // the lists should be the same sizes
+    for (int i = 0; i < list1.size(); i++) {
+        auto id1 = list1[i];
+        auto id2 = list2[i];
 
-            if (id1.elementType != id2.elementType) {
-                elementTypeCheck = false;
-            }
+        if (id1.tags != id2.tags) {
+            return false;
+        }
 
-            if (id1.startID != id2.startID) {
-                mainIDCheck = false;
-            }
+        if (id1.elementType != id2.elementType) {
+            return false;
+        }
+
+        if (id1.startID != id2.startID) {
+            return false;
         }
     }
 
-    return (tagCheck && elementTypeCheck && mainIDCheck);
+    return true;
 }
 
 MappedElement ElementMap::complexFind(const MappedName& name) const {
-    FC_WARN("start complex find");
+    // FC_WARN("start complex find");
     ToponamingElement originalElement = compileToponamingElement(name);
     ToponamingElement loopElement = ToponamingElement();
     MappedElement foundName = MappedElement();
@@ -1286,9 +1285,6 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
     const int tagOccurenceMin = -1; // -1 means only one tag can be missing
     int foundUnfilteredSizeDifference = -1; // -1 is the start, 
     //                                         it will never go below 0 during the check
-
-    // FC_WARN("orig name: " << originalElement.dehashedName);
-
     if (originalElement.dehashedName.empty()) {
         return foundName;
     }
@@ -1299,12 +1295,8 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         if (loopElement.dehashedName.empty()) {
             continue;
         }
-        // FC_WARN("loop name: " << loopElement.dehashedName);
 
         if (originalElement.splitSections.size() != loopElement.splitSections.size()) {
-            // FC_WARN("orig: " << originalElement.splitSections.size());
-            // FC_WARN("loop: " << loopElement.splitSections.size());
-            // FC_WARN("size failed");
             continue;
         }
 
@@ -1341,14 +1333,12 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
 
         if (!geoIDCheck) {
-            // FC_WARN("geo id check failed");
             continue;
         }
 
         bool sectionCheck = true;
 
         if (!checkGeoIDsLists(originalElement.postFixIDs, loopElement.postFixIDs) || !checkGeoIDsLists(originalElement.opCodesIDs, loopElement.opCodesIDs)) {
-            // FC_WARN("check postfixes and opcodes ids failed");
             continue;
         }
 
@@ -1392,19 +1382,16 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
             }
 
             if (tagOccurences < (shortTagList.size() + tagOccurenceMin)) {
-                // FC_WARN("tag failed");
                 sectionCheck = false;
                 break;
             }
         }
 
         if (!sectionCheck) {
-            // FC_WARN("section check failed");
             continue;
         }
 
         if (originalElement.unfilteredSplitSections.back().elementType != loopElement.unfilteredSplitSections.back().elementType) {
-            // FC_WARN("element type failed");
             continue;
         }
 
@@ -1421,7 +1408,7 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
     }
 
-    FC_WARN("finish complex find");
+    // FC_WARN("finish complex find");
     return foundName;
 }
 
