@@ -883,17 +883,17 @@ MappedElement ElementMap::findMappedElement(const MappedName &name, ElementIDRef
     if (nameIter == mappedNames.end()) {
         if (migrationEnabled && !migrationList.empty()) {
             for (const auto &item : migrationList) {
-                if (item.oldElement.name.toString() == name.toString()) {
-                    FC_WARN("found migration! old name: " << item.oldElement.name);
-                    FC_WARN("found migration! new name: " << item.newElement.name);
-                    return item.newElement;
+                if (item.oldElement.name.toString() == name.toString()
+                    && item.oldElement.name.toString() != item.newElement.name.toString()) // avoid infinite recursion.
+                {
+                    return findMappedElement(item.newElement.name, sids); // don't just return the newElement,
+                    //                                                       it might still be wrong.
                 }
             }
         }
 
         if (childElements.isEmpty()) {
-            FC_WARN("ret emp 1");
-            return MappedElement();
+            return complexFind(name);
         }
 
         int len = 0;
@@ -1457,11 +1457,21 @@ long ElementMap::getElementHistory(const MappedName& name,
     }
 }
 
+void ElementMap::copyMigrationList(std::vector<ElementMap::MigrationItem> newList) {
+    this->migrationEnabled = true;
+    this->migrationList = newList;
+}
+
 void ElementMap::enableMigration(std::vector<Data::MappedElement> &oldMap) {
     std::vector<MappedElement> newMap = getAll();
+    migrationEnabled = true;
 
-    if (newMap.size() == oldMap.size()) {
-        migrationEnabled = true;
+    if (newMap.size() == oldMap.size()) {    
+        // make sure this map hasn't already been migrated yet
+        if (!migrationList.empty()) {
+            return;
+        }
+
         std::vector<std::string> mappedIndexedNames;
 
         // run two loops because the order of each item will vary.

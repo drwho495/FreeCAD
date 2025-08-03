@@ -2060,10 +2060,35 @@ TopoShape TopoShape::getSubTopoShape(TopAbs_ShapeEnum type, int idx, bool silent
 }
 
 void TopoShape::enableMigration(std::vector<Data::MappedElement> oldMap) {
-    auto elementMap = this->elementMap(true);
+    auto elementMap = this->elementMap(false);
 
     if (elementMap && !oldMap.empty()) {
         elementMap->enableMigration(oldMap);
+    }
+}
+
+bool TopoShape::hasMigrationList() const {
+    auto elementMap = this->elementMap(false);
+
+    return elementMap && !elementMap->migrationList.empty();
+}
+
+std::vector<Data::ElementMap::MigrationItem> TopoShape::getMigrationList() const {
+    auto elementMap = this->elementMap(false);
+
+    if (elementMap) {
+        return elementMap->migrationList;
+    } else {
+        std::vector<Data::ElementMap::MigrationItem> emptyList;
+        return emptyList;
+    }
+}
+
+void TopoShape::copyMigrationList(std::vector<Data::ElementMap::MigrationItem> newMap) {
+    auto elementMap = this->elementMap(false);
+
+    if (elementMap && !newMap.empty()) {
+        elementMap->copyMigrationList(newMap);
     }
 }
 
