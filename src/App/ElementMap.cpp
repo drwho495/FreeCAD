@@ -842,6 +842,11 @@ MappedName ElementMap::fullDehashElementName(const MappedName& name) const {
                 dehashedString = dehashElementName(MappedName(hashedString)).toString();
 
                 if(dehashedString != hashedString) {
+                    // there is a cyclic dependency, return immediately!
+                    if (currentTreeString == dehashedString) {
+                        return MappedName();
+                    }
+
                     currentTreePos++;
 
                     i = 0;
@@ -1273,6 +1278,7 @@ bool ElementMap::checkGeoIDsLists(std::vector<ElementMap::geoID> &list1, std::ve
 }
 
 MappedElement ElementMap::complexFind(const MappedName& name) const {
+    FC_WARN("start complex find");
     ToponamingElement originalElement = compileToponamingElement(name);
     ToponamingElement loopElement = ToponamingElement();
     MappedElement foundName = MappedElement();
@@ -1281,7 +1287,6 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
     int foundUnfilteredSizeDifference = -1; // -1 is the start, 
     //                                         it will never go below 0 during the check
 
-    // FC_WARN("start complex find");
     // FC_WARN("orig name: " << originalElement.dehashedName);
 
     if (originalElement.dehashedName.empty()) {
@@ -1416,7 +1421,7 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
     }
 
-    // FC_WARN("finish complex find");
+    FC_WARN("finish complex find");
     return foundName;
 }
 
