@@ -132,11 +132,14 @@ StringID::IndexID StringID::fromString(const char* name, bool eof, int size)
     if (size < 0) {
         size = static_cast<int>(std::strlen(name));
     }
+    if (boost::ends_with(name, "_:")) {
+        size--;
+    }
     bio::stream<bio::array_source> iss(name, size);
     char sep = 0;
     char sep2 = 0;
     iss >> sep >> std::hex >> res.id >> sep2 >> res.index;
-    if ((eof && !iss.eof()) || sep != '#' || (sep2 != 0 && sep2 != ':')) {
+    if ((eof && !iss.eof()) || sep != '#' || (sep2 != 0 && sep2 != ':' && sep2 != '_')) {
         res.id = -1;
         return res;
     }
