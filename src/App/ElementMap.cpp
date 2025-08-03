@@ -1161,20 +1161,6 @@ std::vector<ElementMap::ElementSection> ElementMap::compileElementSections(const
         }
     }
 
-    // currentSection.stringData.push_back(name[i - 1]);
-    // char currentElementType = name.back();
-
-    // if (currentElementType == 'F' || currentElementType == 'E' || currentElementType == 'V') {
-    //     currentSection.elementType = currentElementType;
-    // } else {
-    //     currentSection.elementType = '-';
-    // }
-
-    // currentSection.postfix = currentPostfixBuffer;
-    // currentSection.postfixNumber = postfixNumberBuffer;
-    // currentSection.opcode = currentOpCode;
-    // sections.push_back(currentSection);
-
     return sections;
 }
 
@@ -1281,8 +1267,7 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
     int foundUnfilteredSizeDifference = -1; // -1 is the start, 
     //                                         it will never go below 0 during the check
 
-    // FC_WARN("start complex find");
-    // FC_WARN("orig name: " << originalElement.dehashedName);
+    FC_WARN("start complex find");
 
     if (originalElement.dehashedName.empty()) {
         return foundName;
@@ -1294,12 +1279,7 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         if (loopElement.dehashedName.empty()) {
             continue;
         }
-        // FC_WARN("loop name: " << loopElement.dehashedName);
-
         if (originalElement.splitSections.size() != loopElement.splitSections.size()) {
-            // FC_WARN("orig: " << originalElement.splitSections.size());
-            // FC_WARN("loop: " << loopElement.splitSections.size());
-            // FC_WARN("size failed");
             continue;
         }
 
@@ -1343,7 +1323,6 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         bool sectionCheck = true;
 
         if (!checkGeoIDsLists(originalElement.postFixIDs, loopElement.postFixIDs) || !checkGeoIDsLists(originalElement.opCodesIDs, loopElement.opCodesIDs)) {
-            // FC_WARN("check postfixes and opcodes ids failed");
             continue;
         }
 
@@ -1394,12 +1373,10 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
 
         if (!sectionCheck) {
-            // FC_WARN("section check failed");
             continue;
         }
 
         if (originalElement.unfilteredSplitSections.back().elementType != loopElement.unfilteredSplitSections.back().elementType) {
-            // FC_WARN("element type failed");
             continue;
         }
 
@@ -1415,8 +1392,6 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
             foundUnfilteredSizeDifference = currentUnfilteredSizeDifference;
         }
     }
-
-    // FC_WARN("finish complex find");
     return foundName;
 }
 

@@ -156,10 +156,7 @@ public:
 
     IndexedName find(const MappedName& name, ElementIDRefs* sids = nullptr) const;
 
-    // this method finds the correct MappedName and IndexedName from the input MappedName
-    // the reason you need a MappedName is because it might need to use complexFind to 
-    // find an equivelent name that is not the same as the input.
-    MappedElement findMatching(const MappedName& name, ElementIDRefs* sids = nullptr) const;
+    MappedElement findMappedElement(const MappedName &name, ElementIDRefs* sids = nullptr) const;
 
     MappedName find(const IndexedName& idx, ElementIDRefs* sids = nullptr) const;
 
@@ -232,6 +229,32 @@ public:
     void traceElement(const MappedName& name, long masterTag, TraceCallback cb) const;
 
 private:
+    // struct to hold all information needed for complexFind checks
+    struct ComplexFindData {
+        std::string originalName;
+        std::vector<std::pair<std::string, char>> unfilteredMajorSections;
+        std::vector<std::pair<std::string, char>> majorSections;
+        std::vector<std::pair<std::string, char>> looseSections;
+        std::vector<std::string> geometryOpCodes;
+        std::vector<std::string> geometryDefSections;
+        std::map<int, std::vector<std::string>> parenthesesMap;
+        std::vector<int> postfixNumbers;
+        std::vector<int> unfilteredPostfixNumbers;
+        bool isHashed = false;
+
+        void cleanup() {
+            originalName.clear();
+            majorSections.clear();
+            looseSections.clear();
+            geometryOpCodes.clear();
+            geometryDefSections.clear();
+            parenthesesMap.clear();
+        }
+    };
+
+    // Helper to populate ComplexFindData from a MappedName
+    ComplexFindData compileComplexFindData(const MappedName& name) const;
+
     /** Serialize this map
      * @param stream: serialized stream
      * @param childMapSet: where all child element maps are stored
@@ -241,6 +264,29 @@ private:
               int index,
               const std::map<const ElementMap*, int>& childMapSet,
               const std::map<QByteArray, int>& postfixMap) const;
+
+    /** Complex check methods. 
+     * All are meant to be private for right now.
+     */
+    IndexedName complexFind(
+              const MappedName& name) const;
+    
+    std::vector<std::pair<std::string, char>> splitNameIntoSections(
+              const std::string &name,
+              const bool &filterSections,
+              const bool &findSmallSections,
+              std::map<int, std::vector<std::string>> *parenMapPtr,
+              std::vector<int> *postfixNumbersPtr = nullptr,
+              std::vector<std::pair<std::string, char>> *outputVecPtr = nullptr) const;
+    
+    MappedName fullDehashElementName(const MappedName& name) const;
+    
+    std::vector<std::string> findGeometryOpCodes(
+              const std::vector<std::string> &name) const;
+    
+    double percentSimilarity(
+              const std::string& a, 
+              const std::string& b) const;
 
     /** Deserialize and restore this map.
      * @param hasherRef: where all the StringIDs are stored
@@ -338,6 +384,46 @@ private:
     // FIXME duplicate code? as in copy/paste
     const MappedNameRef* findMappedRef(const IndexedName& idx) const;
     MappedNameRef* findMappedRef(const IndexedName& idx);
+
+    /// Reverse fully hashed MappedName
+    MappedName fullDehashElementName(const MappedName& name) const;
+
+    struct geoID {
+        std::string stringData;
+        std::string startID;
+        std::string elementType;
+        std::vector<std::string> tags;
+    };
+
+    struct ElementSection {
+        std::string stringData;
+        std::string postfix;
+        std::string opcode;
+        std::vector<std::string> tags;
+        std::vector<geoID> postFixIDs;
+        std::vector<geoID> opCodeIDs;
+        char elementType = '-';
+        int postfixNumber = 0;
+    };
+
+    std::vector<ElementSection> compileElementSections(const std::string &name) const;
+
+    bool checkGeoIDsLists(std::vector<geoID> &list1, std::vector<geoID> &list2) const;
+    MappedElement complexFind(const MappedName &name) const;
+    geoID makeGeoID(const std::string ID) const;
+
+    struct ToponamingElement {
+        std::string normalName;
+        std::string dehashedName;
+        std::vector<ElementSection> splitSections;
+        std::vector<ElementSection> unfilteredSplitSections;
+        // example layout: {<"SIF": ["g2", "g54", "g66"]>, <"SKT": ["g2", "g54", "g66"]>}
+        std::vector<geoID> mainIDs;
+        std::vector<geoID> opCodesIDs;
+        std::vector<geoID> postFixIDs;
+    };
+
+    ToponamingElement compileToponamingElement(MappedName name) const;
 
     MappedNameRef& mappedRef(const IndexedName& idx);
 

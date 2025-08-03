@@ -288,20 +288,14 @@ ComplexGeoData::getElementName(const char* name, ElementIDRefs* sid, bool copy) 
 
         result = _elementMap->findMappedElement(mappedName, sid);
 
-        if (result.name.empty()) {
+        if (result.name.empty() || copy) {
             result.name = mappedName;
-        }
-
-        // if we want to copy the original unfiltered name, then do so.
-        // this should not be done before running findMatching, as this
-        // will include the dot which we do not want at that stage.
-        if (copy) {
-            result.name = name;
         }
     }
 
     return result;
 }
+
 
 std::vector<std::pair<MappedName, ElementIDRefs>>
 ComplexGeoData::getElementMappedNames(const IndexedName& element, bool needUnmapped) const
