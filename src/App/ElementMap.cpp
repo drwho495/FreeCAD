@@ -886,14 +886,13 @@ MappedElement ElementMap::findMappedElement(const MappedName &name, ElementIDRef
                 if (item.oldElement.name.toString() == name.toString()
                     && item.oldElement.name.toString() != item.newElement.name.toString()) // avoid infinite recursion.
                 {
-                    return findMappedElement(item.newElement.name, sids); // don't just return the newElement,
-                    //                                                       it might still be wrong.
+                    return findMappedElement(item.newElement.name, sids); // don't just return the newElement, it might still be wrong.
                 }
             }
         }
 
         if (childElements.isEmpty()) {
-            return complexFind(name);
+            return MappedElement();
         }
 
         int len = 0;
