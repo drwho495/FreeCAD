@@ -852,7 +852,6 @@ MappedName ElementMap::fullDehashElementName(const MappedName& name) const {
                     if (currentTreeString == dehashedString 
                         || (it != dehashedStrings.end() && it->second == i)) 
                     {
-                        FC_WARN("found recursion!");
                         isDehashed = true;
                         dehashedName = "";
                         break;
@@ -2165,7 +2164,7 @@ void ElementMap::traceElement(const MappedName& name, long masterTag, TraceCallb
             break;
         }
 
-        if (encodedTag && masterTag != std::abs(encodedTag)
+        if (encodedTag && std::abs(masterTag) != std::abs(encodedTag)
             && !tagSet.insert(std::abs(encodedTag)).second) {
             if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
                 FC_WARN("circular element mapping");
