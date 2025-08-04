@@ -760,8 +760,9 @@ MappedName ElementMap::dehashElementName(const MappedName& name) const
 // this reverses the compression of hashed persistent names.
 // an example: #3d:2;:G3#3f;CUT;:H-1216:b,E --> g2;SKT;:H1215,E;FAC;:H1215:4,F;:G0;XTR;:H1215:8,F;:G3(g6;SKT;:H1213,E;:G;...
 MappedName ElementMap::fullDehashElementName(const MappedName& name) const {
-    std::string dehashedName;
     std::vector<std::map<std::string, std::array<int, 2>>> dehashTree;
+    std::vector<std::pair<std::string, int>> dehashedStrings;
+    std::string dehashedName;
     std::string currentTreeString = "";
     std::string selTreeString = "";
     std::string hashedString = "";
@@ -842,10 +843,21 @@ MappedName ElementMap::fullDehashElementName(const MappedName& name) const {
                 dehashedString = dehashElementName(MappedName(hashedString)).toString();
 
                 if(dehashedString != hashedString) {
+                    auto it = std::find_if(dehashedStrings.begin(), dehashedStrings.end(),
+                           [&](const std::pair<std::string, int>& p) {
+                               return p.first == dehashedString;
+                           });
+
                     // there is a cyclic dependency, return immediately!
-                    if (currentTreeString == dehashedString) {
-                        return MappedName();
+                    if (currentTreeString == dehashedString 
+                        || (it != dehashedStrings.end() && it->second == i)) 
+                    {
+                        FC_WARN("found recursion!");
+                        isDehashed = true;
+                        dehashedName = "";
+                        break;
                     }
+                    dehashedStrings.push_back(std::pair<std::string, int>(dehashedString, i));
 
                     currentTreePos++;
 
@@ -1301,13 +1313,14 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
 
         bool geoIDCheck = false;
-        std::vector<ElementMap::geoID> smallerIDList = originalElement.mainIDs;
-        std::vector<ElementMap::geoID> largerIDList = loopElement.mainIDs;
-        int occurences = 0;
 
         if (originalElement.mainIDs.size() == 1 && loopElement.mainIDs.size() == 1) {
             geoIDCheck = checkGeoIDsLists(originalElement.mainIDs, loopElement.mainIDs);
         } else if (originalElement.mainIDs.size() > 1 && loopElement.mainIDs.size() > 1) {
+            int occurences = 0;
+            std::vector<ElementMap::geoID> smallerIDList = originalElement.mainIDs;
+            std::vector<ElementMap::geoID> largerIDList = loopElement.mainIDs;
+
             if (originalElement.mainIDs.size() > loopElement.mainIDs.size()) {
                 smallerIDList = loopElement.mainIDs;
                 largerIDList = originalElement.mainIDs;
