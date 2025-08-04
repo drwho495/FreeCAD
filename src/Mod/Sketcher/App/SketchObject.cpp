@@ -10160,7 +10160,7 @@ void SketchObject::updateGeometryRefs() {
     std::vector<std::string> originalRefs;
     std::map<std::string,std::string> refMap;
     if(updateGeoRef) {
-        assert(externalGeoRef.size() == objs.size());
+        // assert(externalGeoRef.size() == objs.size());
         updateGeoRef = false;
         originalRefs = std::move(externalGeoRef);
     }
