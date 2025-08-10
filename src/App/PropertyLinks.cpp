@@ -326,7 +326,6 @@ void PropertyLinkBase::_registerElementReference(App::DocumentObject* obj,
     }
 
     if (_ElementRefs.insert(geo).second) {
-        FC_WARN("register obj: " << obj->Label.getValue());
         _ElementRefMap[geo].insert(this);
     }
 }
@@ -2065,7 +2064,7 @@ void PropertyLinkSub::getLinks(std::vector<App::DocumentObject*>& objs,
 {
     if (all || _pcScope != LinkScope::Hidden) {
         if (_pcLinkSub && _pcLinkSub->isAttachedToDocument()) {
-            updateElementReferences(obj);
+            updateElementReferences(_pcLinkSub);
             objs.push_back(_pcLinkSub);
             if (subs) {
                 *subs = getSubValues(newStyle);
