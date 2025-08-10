@@ -326,6 +326,7 @@ void PropertyLinkBase::_registerElementReference(App::DocumentObject* obj,
     }
 
     if (_ElementRefs.insert(geo).second) {
+        FC_WARN("register obj: " << obj->Label.getValue());
         _ElementRefMap[geo].insert(this);
     }
 }
@@ -1557,8 +1558,6 @@ void PropertyLinkSub::afterRestore()
     _ShadowSubList.resize(_cSubList.size());
     if (!_pcLinkSub || !_pcLinkSub->isAttachedToDocument()) {
         return;
-    } else {
-        updateElementReferences(_pcLinkSub, true);
     }
     if (!testFlag(LinkRestoreLabel)) {
         return;
@@ -2066,6 +2065,7 @@ void PropertyLinkSub::getLinks(std::vector<App::DocumentObject*>& objs,
 {
     if (all || _pcScope != LinkScope::Hidden) {
         if (_pcLinkSub && _pcLinkSub->isAttachedToDocument()) {
+            updateElementReferences(obj);
             objs.push_back(_pcLinkSub);
             if (subs) {
                 *subs = getSubValues(newStyle);
@@ -2710,9 +2710,6 @@ void PropertyLinkSubList::setPyObject(PyObject* value)
 void PropertyLinkSubList::afterRestore()
 {
     assert(_lSubList.size() == _ShadowSubList.size());
-    // if (_pcLink) {
-    //     updateElementReferences(_pcLink, true);
-    // }
     if (!testFlag(LinkRestoreLabel)) {
         return;
     }
@@ -3140,6 +3137,7 @@ void PropertyLinkSubList::getLinks(std::vector<App::DocumentObject*>& objs,
         objs.reserve(objs.size() + _lValueList.size());
         for (auto obj : _lValueList) {
             if (obj && obj->isAttachedToDocument()) {
+                updateElementReferences(obj);
                 objs.push_back(obj);
             }
         }
@@ -4071,11 +4069,8 @@ int PropertyXLink::checkRestore(std::string* msg) const
 
 void PropertyXLink::afterRestore()
 {
-    assert(_SubList.size() == _ShadowSubList.size());
     if (!_pcLink || !_pcLink->isAttachedToDocument()) {
         return;
-    } else {
-        updateElementReferences(_pcLink, true);
     }
 
     if (!testFlag(LinkRestoreLabel)) {
@@ -4646,8 +4641,9 @@ void PropertyXLink::getLinks(std::vector<App::DocumentObject*>& objs,
                              bool all,
                              std::vector<std::string>* subs,
                              bool newStyle) const
-{
+{   
     if ((all || _pcScope != LinkScope::Hidden) && _pcLink && _pcLink->isAttachedToDocument()) {
+        updateElementReferences(_pcLink, false);
         objs.push_back(_pcLink);
         if (subs && _SubList.size() == _ShadowSubList.size()) {
             *subs = getSubValues(newStyle);
@@ -5382,6 +5378,8 @@ void PropertyXLinkSubList::getLinks(std::vector<App::DocumentObject*>& objs,
         for (auto& l : _Links) {
             auto obj = l.getValue();
             if (obj && obj->isAttachedToDocument()) {
+                updateElementReferences(obj);
+
                 auto subnames = l.getSubValues(newStyle);
                 if (subnames.empty()) {
                     subnames.emplace_back("");
