@@ -1209,9 +1209,15 @@ ElementMap::ToponamingElement ElementMap::compileToponamingElement(MappedName na
 
     // filter out sections with the postfix of 'M'
     // it must also have a number of 0 and a postfix id list size of 0
-    for (const auto &data : element.unfilteredSplitSections) {
-        if (data.postfix != "M" || (data.postfixNumber != 0 || !data.postFixIDs.empty())) {
+    int currentIndex = 0;
+    for (auto &data : element.unfilteredSplitSections) {
+        data.index = currentIndex;
+
+        if (data.postfix != "M") {
             element.splitSections.push_back(data);
+            ++currentIndex;
+        } else {
+            element.removedSections.push_back(data);
         }
     }
 
@@ -1295,6 +1301,8 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
     const int tagOccurenceMin = -1; // -1 means only one tag can be missing
     int foundUnfilteredSizeDifference = -1; // -1 is the start, 
     //                                         it will never go below 0 during the check
+    int currentFeatureHistory = 0; // -1 is below, 0 is same, 1 is ahead
+    int foundFeatureHistory = 0; // -1 is below, 0 is same, 1 is ahead
     if (originalElement.dehashedName.empty()) {
         return foundName;
     }
