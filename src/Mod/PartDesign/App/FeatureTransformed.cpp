@@ -227,37 +227,38 @@ App::DocumentObjectExecReturn* Transformed::recomputePreview()
 {
     const auto mode = static_cast<Mode>(TransformMode.getValue());
 
-    switch (mode) {
-        case Mode::TransformToolShapes: {
-            BRep_Builder builder;
-            TopoDS_Compound compound;
+    const auto makeCompoundOfToolShapes = [this]() {
+        BRep_Builder builder;
+        TopoDS_Compound compound;
 
-            builder.MakeCompound(compound);
-            for (const auto& original : getOriginals()) {
-                if (auto* feature = freecad_cast<FeatureAddSub*>(original)) {
-                    const auto& shape = feature->AddSubShape.getShape();
+        builder.MakeCompound(compound);
+        for (const auto& original : getOriginals()) {
+            if (auto* feature = freecad_cast<FeatureAddSub*>(original)) {
+                const auto& shape = feature->AddSubShape.getShape();
 
-                    if (shape.isNull()) {
-                        continue;
-                    }
-
-                    builder.Add(compound, shape.getShape());
+                if (shape.isNull()) {
+                    continue;
                 }
+
+                builder.Add(compound, shape.getShape());
             }
-
-            PreviewShape.setValue(compound);
-
-            return StdReturn;
         }
 
-        case Mode::TransformBody: {
+        return compound;
+    };
+
+    switch (mode) {
+        case Mode::TransformToolShapes:
+            PreviewShape.setValue(makeCompoundOfToolShapes());
+            return StdReturn;
+
+        case Mode::TransformBody:
             PreviewShape.setValue(getBaseShape());
-
             return StdReturn;
-        }
 
+        default:
+            return FeatureRefine::recomputePreview();
     }
-    return FeatureRefine::recomputePreview();
 }
 
 void Transformed::onChanged(const App::Property* prop)

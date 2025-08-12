@@ -890,7 +890,7 @@ void ViewProviderPartExt::setupContextMenu(QMenu* menu, QObject* receiver, const
 {
     QIcon iconObject = mergeGreyableOverlayIcons(Gui::BitmapFactory().pixmap("Part_ColorFace.svg"));
     Gui::ViewProviderGeometryObject::setupContextMenu(menu, receiver, member);
-    QAction* act = menu->addAction(iconObject, QObject::tr("Set appearance per face..."), receiver, member);
+    QAction* act = menu->addAction(iconObject, QObject::tr("Appearance per Face"), receiver, member);
     act->setData(QVariant((int)ViewProvider::Color));
 }
 
@@ -1017,6 +1017,7 @@ void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
     TopTools_IndexedMapOfShape edgeMap;
     TopExp::MapShapes(shape, TopAbs_EDGE, edgeMap);
 
+{
     // key is the edge number, value the coord indexes. This is needed to keep the same order as
     // the edges.
     std::map<int, std::vector<int32_t>> lineSetMap;
@@ -1047,7 +1048,6 @@ void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
             }
         }
     }
-
     // handling of the vertices
     TopTools_IndexedMapOfShape vertexMap;
     TopExp::MapShapes(shape, TopAbs_VERTEX, vertexMap);
@@ -1091,7 +1091,6 @@ void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
             identity = false;
             myTransf = aLoc.Transformation();
         }
-
         // getting size of node and triangle array of this face
         int nbNodesInFace = mesh->NbNodes();
         int nbTriInFace = mesh->NbTriangles();

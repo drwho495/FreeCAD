@@ -359,36 +359,35 @@ void Feature::getGeneratedShapes(std::vector<int>& faces,
                                  std::vector<int>& edges,
                                  std::vector<int>& vertices) const
 {
+    static const auto addAllSubShapesToSet = [](
+        const Part::TopoShape& shape,
+        const Part::TopoShape& face,
+        TopAbs_ShapeEnum type,
+        std::set<int>& set
+    ) {
+        for (auto &subShape : face.getSubShapes(type)) {
+            if (int subShapeId = shape.findShape(subShape); subShapeId > 0) {
+                set.insert(subShapeId);
+            }
+        }
+    };
+
     Part::TopoShape shape = Shape.getShape();
 
     std::set<int> edgeSet;
     std::set<int> vertexSet;
 
-    unsigned count = shape.countSubShapes(TopAbs_FACE);
+    int count = shape.countSubShapes(TopAbs_FACE);
 
-    for (unsigned faceId = 1; faceId <= count; ++faceId) {
-        Data::MappedName mapped = shape.getMappedName(Data::IndexedName::fromConst("Face", faceId));
-
-        if (mapped && shape.isElementGenerated(mapped)) {
+    for (int faceId = 1; faceId <= count; ++faceId) {
+        if (Data::MappedName mapped = shape.getMappedName(Data::IndexedName::fromConst("Face", faceId));
+            shape.isElementGenerated(mapped)) {
             faces.push_back(faceId);
 
             Part::TopoShape face = shape.getSubTopoShape(TopAbs_FACE, faceId);
 
-            for (auto &edge : face.getSubShapes(TopAbs_EDGE)) {
-                int edgeId = shape.findShape(edge);
-
-                if (edgeId > 0) {
-                    edgeSet.insert(edgeId);
-                }
-            }
-
-            for (auto &vertex : face.getSubShapes(TopAbs_VERTEX)) {
-                int vertexId = shape.findShape(vertex);
-
-                if (vertexId > 0) {
-                    vertexSet.insert(vertexId);
-                }
-            }
+            addAllSubShapesToSet(shape, face, TopAbs_EDGE, edgeSet);
+            addAllSubShapesToSet(shape, face, TopAbs_VERTEX, vertexSet);
         }
     }
 

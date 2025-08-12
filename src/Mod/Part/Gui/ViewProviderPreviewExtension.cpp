@@ -21,9 +21,17 @@
  *                                                                          *
  ***************************************************************************/
 
-#include "ViewProviderPreviewExtension.h"
-
 #include "PreCompiled.h"
+
+#ifndef _PreComp_
+# include <Inventor/nodes/SoDrawStyle.h>
+# include <Inventor/nodes/SoLightModel.h>
+# include <Inventor/nodes/SoMaterial.h>
+# include <Inventor/nodes/SoPickStyle.h>
+# include <Inventor/nodes/SoPolygonOffset.h>
+#endif
+
+#include "ViewProviderPreviewExtension.h"
 #include "ViewProviderExt.h"
 
 #include <Gui/Utilities.h>
@@ -42,6 +50,11 @@ SO_NODE_SOURCE(SoPreviewShape);
 const SbColor SoPreviewShape::defaultColor = SbColor(1.F, 0.F, 1.F);
 
 SoPreviewShape::SoPreviewShape()
+    : coords(new SoCoordinate3)
+    , norm(new SoNormal)
+    , faceset(new PartGui::SoBrepFaceSet)
+    , lineset(new PartGui::SoBrepEdgeSet)
+    , nodeset(new PartGui::SoBrepPointSet)
 {
     SO_NODE_CONSTRUCTOR(SoPreviewShape);
 
@@ -208,9 +221,14 @@ void ViewProviderPreviewExtension::updatePreviewShape(Part::TopoShape shape,
 
     const auto updatePreviewShape = [vp](SoPreviewShape* preview, Part::TopoShape shape) {
         ViewProviderPartExt::setupCoinGeometry(shape.getShape(),
-                                               preview,
+                                               preview->coords,
+                                               preview->faceset,
+                                               preview->norm,
+                                               preview->lineset,
+                                               preview->nodeset,
                                                vp->Deviation.getValue(),
-                                               vp->AngularDeflection.getValue());
+                                               vp->AngularDeflection.getValue(),
+                                               false);
     };
 
     try {
@@ -218,7 +236,7 @@ void ViewProviderPreviewExtension::updatePreviewShape(Part::TopoShape shape,
     } catch (Standard_Failure& e) {
         Base::Console().userTranslatedNotification(
             tr("Failure while rendering preview: %1. That usually indicates an error with model.")
-                .arg(e.GetMessageString())
+                .arg(QString::fromUtf8(e.GetMessageString()))
                 .toUtf8());
 
         updatePreviewShape(preview, {});

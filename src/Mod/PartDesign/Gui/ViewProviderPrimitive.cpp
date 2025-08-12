@@ -48,7 +48,7 @@ ViewProviderPrimitive::~ViewProviderPrimitive() = default;
 
 void ViewProviderPrimitive::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
-    addDefaultAction(menu, QObject::tr("Edit primitive"));
+    addDefaultAction(menu, QObject::tr("Edit Primitive"));
     PartDesignGui::ViewProvider::setupContextMenu(menu, receiver, member);
 }
 
