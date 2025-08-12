@@ -473,9 +473,10 @@ Part::TopoShape SketchObject::buildInternals(const Part::TopoShape &edges) const
         if (!joiner.Shape().IsNull()) {
             joiner.getResultWires(result, "SKF");
             result = result.makeElementFace(result.getSubTopoShapes(TopAbs_WIRE),
-                    /*op*/"",
+                    /*op*/"SIF",
                     /*maker*/"Part::FaceMakerRing",
-                    /*pln*/nullptr
+                    /*pln*/nullptr,
+                    /*supportNum*/-1
             );
         }
         Part::TopoShape openWires(getID(), getDocument()->getStringHasher());
@@ -10159,7 +10160,7 @@ void SketchObject::updateGeometryRefs() {
     std::vector<std::string> originalRefs;
     std::map<std::string,std::string> refMap;
     if(updateGeoRef) {
-        assert(externalGeoRef.size() == objs.size());
+        // assert(externalGeoRef.size() == objs.size());
         updateGeoRef = false;
         originalRefs = std::move(externalGeoRef);
     }

@@ -36,6 +36,11 @@
 
 #include <Gui/Utilities.h>
 #include <Gui/Inventor/So3DAnnotation.h>
+#include <Inventor/nodes/SoDrawStyle.h>
+#include <Inventor/nodes/SoLightModel.h>
+#include <Inventor/nodes/SoMaterial.h>
+#include <Inventor/nodes/SoPickStyle.h>
+#include <Inventor/nodes/SoPolygonOffset.h>
 #include <Mod/Part/App/Tools.h>
 
 using namespace PartGui;

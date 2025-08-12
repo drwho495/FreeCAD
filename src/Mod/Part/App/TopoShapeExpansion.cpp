@@ -974,7 +974,6 @@ void TopoShape::mapSubElement(const TopoShape& other, const char* op, bool force
                     }
                 }
                 ss.str("");
-
                 ensureElementMap()->encodeElementName(shapetype[0], name, ss, &sids, Tag, op, other.Tag);
                 elementMap()->setElementName(element, name, Tag, &sids);
             }
@@ -2057,6 +2056,39 @@ TopoShape TopoShape::getSubTopoShape(TopAbs_ShapeEnum type, int idx, bool silent
     }
 
     return shapeMap.getTopoShape(*this, idx);
+}
+
+void TopoShape::enableMigration(std::vector<Data::MappedElement> oldMap) {
+    auto elementMap = this->elementMap(false);
+
+    if (elementMap && !oldMap.empty()) {
+        elementMap->enableMigration(oldMap);
+    }
+}
+
+bool TopoShape::hasMigrationList() const {
+    auto elementMap = this->elementMap(false);
+
+    return elementMap && !elementMap->migrationList.empty();
+}
+
+std::vector<Data::ElementMap::MigrationItem> TopoShape::getMigrationList() const {
+    auto elementMap = this->elementMap(false);
+
+    if (elementMap) {
+        return elementMap->migrationList;
+    } else {
+        std::vector<Data::ElementMap::MigrationItem> emptyList;
+        return emptyList;
+    }
+}
+
+void TopoShape::copyMigrationList(std::vector<Data::ElementMap::MigrationItem> newMap) {
+    auto elementMap = this->elementMap(false);
+
+    if (elementMap && !newMap.empty()) {
+        elementMap->copyMigrationList(newMap);
+    }
 }
 
 static const std::string& _getElementMapVersion()
@@ -4591,7 +4623,8 @@ TopoShape& TopoShape::makeElementDraft(const TopoShape& shape,
 TopoShape& TopoShape::makeElementFace(const TopoShape& shape,
                                       const char* op,
                                       const char* maker,
-                                      const gp_Pln* plane)
+                                      const gp_Pln* plane,
+                                      const int faceElementSupportLimit)
 {
     std::vector<TopoShape> shapes;
     if (shape.isNull()) {
@@ -4603,19 +4636,21 @@ TopoShape& TopoShape::makeElementFace(const TopoShape& shape,
     else {
         shapes.push_back(shape);
     }
-    return makeElementFace(shapes, op, maker, plane);
+    return makeElementFace(shapes, op, maker, plane, faceElementSupportLimit);
 }
 
 TopoShape& TopoShape::makeElementFace(const std::vector<TopoShape>& shapes,
                                       const char* op,
                                       const char* maker,
-                                      const gp_Pln* plane)
+                                      const gp_Pln* plane,
+                                      const int faceElementSupportLimit)
 {
     if (!maker || !maker[0]) {
         maker = "Part::FaceMakerBullseye";
     }
     std::unique_ptr<FaceMaker> mkFace = FaceMaker::ConstructFromType(maker);
     mkFace->MyHasher = Hasher;
+    mkFace->setElementSupportLimit(faceElementSupportLimit);
     mkFace->MyOp = op;
     if (plane) {
         mkFace->setPlane(*plane);

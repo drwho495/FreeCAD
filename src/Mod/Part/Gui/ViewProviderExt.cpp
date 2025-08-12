@@ -852,10 +852,12 @@ void ViewProviderPartExt::updateData(const App::Property* prop)
     const char *propName = prop->getName();
     if (propName && (strcmp(propName, "Shape") == 0 || strstr(propName, "Touched"))) {
         // calculate the visual only if visible
-        if (isUpdateForced() || Visibility.getValue())
+        if (isUpdateForced() || Visibility.getValue()) {
             updateVisual();
-        else
+        }
+        else {
             VisualTouched = true;
+        }
 
         if (!VisualTouched) {
             if (this->faceset->partIndex.getNum() >
@@ -1015,6 +1017,7 @@ void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
     TopTools_IndexedMapOfShape edgeMap;
     TopExp::MapShapes(shape, TopAbs_EDGE, edgeMap);
 
+{
     // key is the edge number, value the coord indexes. This is needed to keep the same order as
     // the edges.
     std::map<int, std::vector<int32_t>> lineSetMap;
@@ -1045,7 +1048,6 @@ void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
             }
         }
     }
-
     // handling of the vertices
     TopTools_IndexedMapOfShape vertexMap;
     TopExp::MapShapes(shape, TopAbs_VERTEX, vertexMap);
@@ -1089,7 +1091,6 @@ void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
             identity = false;
             myTransf = aLoc.Transformation();
         }
-
         // getting size of node and triangle array of this face
         int nbNodesInFace = mesh->NbNodes();
         int nbTriInFace = mesh->NbTriangles();
@@ -1309,6 +1310,23 @@ void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
     Base::Console().log("ViewProvider update time: %f s\n",Base::TimeElapsed::diffTimeF(startTime,Base::TimeElapsed()));
     Base::Console().log("Shape mesh info: Faces:%d Edges:%d Nodes:%d Triangles:%d IdxVec:%d\n",numFaces,numEdges,numNodes,numTriangles,numLines);
 #   endif
+}
+
+void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
+                                            SoFCShape* node,
+                                            double deviation,
+                                            double angularDeflection,
+                                            bool normalsFromUV)
+{
+    setupCoinGeometry(shape,
+                      node->coords,
+                      node->faceset,
+                      node->norm,
+                      node->lineset,
+                      node->nodeset,
+                      deviation,
+                      angularDeflection,
+                      normalsFromUV);
 }
 
 void ViewProviderPartExt::updateVisual()

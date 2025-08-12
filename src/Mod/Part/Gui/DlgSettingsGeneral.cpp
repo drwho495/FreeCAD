@@ -66,6 +66,8 @@ void DlgSettingsGeneral::saveSettings()
     ui->checkShowFinalPreview->onSave();
     ui->checkShowTransparentPreview->onSave();
     ui->checkSwitchToTask->onSave();
+    ui->checkShowFinalPreview->onSave();
+    ui->checkShowTransparentPreview->onSave();
 }
 
 void DlgSettingsGeneral::loadSettings()
@@ -79,6 +81,8 @@ void DlgSettingsGeneral::loadSettings()
     ui->checkShowFinalPreview->onRestore();
     ui->checkShowTransparentPreview->onRestore();
     ui->checkSwitchToTask->onRestore();
+    ui->checkShowFinalPreview->onRestore();
+    ui->checkShowTransparentPreview->onRestore();
 }
 
 /**
