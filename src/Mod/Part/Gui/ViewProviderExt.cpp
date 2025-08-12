@@ -1017,7 +1017,6 @@ void ViewProviderPartExt::setupCoinGeometry(TopoDS_Shape shape,
     TopTools_IndexedMapOfShape edgeMap;
     TopExp::MapShapes(shape, TopAbs_EDGE, edgeMap);
 
-{
     // key is the edge number, value the coord indexes. This is needed to keep the same order as
     // the edges.
     std::map<int, std::vector<int32_t>> lineSetMap;
