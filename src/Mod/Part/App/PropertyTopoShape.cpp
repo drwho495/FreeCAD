@@ -92,7 +92,9 @@ void PropertyPartShape::setValue(const TopoShape& sh)
         // been overwritten. this is safe to do because the output of migration list will
         // be put through findMappedElement to make sure the new mapped name actually exists
         if (needsToMigrate && obj->getDocument() && !obj->getDocument()->isAnyRestoring()) {
-            _Shape.enableMigration(oldShape.getElementMap());
+            if (oldShape.getShape().IsPartner(_Shape.getShape())) {
+                _Shape.enableMigration(oldShape.getElementMap());
+            }
             needsToMigrate = false;
         } else if (oldShape.hasMigrationList()) {
             _Shape.copyMigrationList(oldShape.getMigrationList());
