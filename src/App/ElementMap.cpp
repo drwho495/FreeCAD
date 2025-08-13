@@ -1406,6 +1406,91 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
             }
         }
 
+        currentFeatureHistory = 0;
+
+        if (!originalElement.removedSections.empty() || !loopElement.removedSections.empty()) {
+            bool removedSectionsCheck = true;
+            std::vector<ElementMap::ElementSection> smallSections = originalElement.removedSections;
+            std::vector<ElementMap::ElementSection> largeSections = loopElement.removedSections;
+            int offset = 1;
+            int removedTagOccurences = 0;
+
+            if (originalElement.removedSections.size() > loopElement.removedSections.size()) {
+                smallSections = loopElement.removedSections;
+                largeSections = originalElement.removedSections;
+
+                offset = -1;
+            }
+
+            for (int i = 0; i < largeSections.size(); i++) {
+                auto &largeSec = largeSections[i];
+
+                if (smallSections.size() <= i) {
+                    currentFeatureHistory = offset;
+                    break;
+                }
+
+                auto &smallSec = smallSections[i];
+
+                if (largeSec.index == smallSec.index) {
+                    if (largeSec.opCodeIDs.size() != smallSec.opCodeIDs.size()) {
+                        removedSectionsCheck = false;
+                        break;
+                    } else if (!largeSec.opCodeIDs.empty() && !smallSec.opCodeIDs.empty()) {
+                        if (!checkGeoIDsLists(largeSec.opCodeIDs, smallSec.opCodeIDs)) {
+                            removedSectionsCheck = false;
+                            break;
+                        }
+                    }
+
+                    if (largeSec.postFixIDs.size() != smallSec.postFixIDs.size()) {
+                        removedSectionsCheck = false;
+                        break;
+                    } else if (!largeSec.postFixIDs.empty() && !smallSec.postFixIDs.empty()) {
+                        if (!checkGeoIDsLists(largeSec.postFixIDs, smallSec.postFixIDs)) {
+                            removedSectionsCheck = false;
+                            break;
+                        }
+                    }
+
+                    if (largeSec.postfix != smallSec.postfix || largeSec.opcode != smallSec.opcode || largeSec.postfixNumber != smallSec.postfixNumber) {
+                        removedSectionsCheck = false;
+                        break;
+                    }
+
+                    removedTagOccurences = 0;
+
+                    std::vector<std::string> shortTagList = largeSec.tags;
+                    std::vector<std::string> largeTagList = smallSec.tags;
+
+                    if (largeSec.tags.size() > smallSec.tags.size()) {
+                        shortTagList = smallSec.tags;
+                        largeTagList = largeSec.tags;
+                    }
+
+                    for (const auto &largeTag : largeTagList) {
+                        for (const auto &smallTag : shortTagList) {
+                            if (largeTag == smallTag) {
+                                removedTagOccurences++;
+                            }
+                        }
+                    }
+
+                    if (removedTagOccurences < (shortTagList.size() + tagOccurenceMin)) {
+                        removedSectionsCheck = false;
+                        break;
+                    }
+                } else {
+                    currentFeatureHistory = offset;
+                }
+            }
+
+            if (!removedSectionsCheck) {
+                FC_WARN("skip: " << loopElement.dehashedName);
+                continue;
+            }
+        }
+
         if (!sectionCheck) {
             continue;
         }
@@ -1421,13 +1506,15 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         int currentUnfilteredSizeDifference = abs(static_cast<int>(originalElement.unfilteredSplitSections.size() 
                                                   - loopElement.unfilteredSplitSections.size()));
 
-        if (foundUnfilteredSizeDifference == -1 || foundUnfilteredSizeDifference > currentUnfilteredSizeDifference) {
+        if (foundName == MappedElement() || currentFeatureHistory == 0 || foundFeatureHistory == -1 && currentFeatureHistory == 1) {
             foundName = MappedElement(loopName.first, loopName.second);
-            foundUnfilteredSizeDifference = currentUnfilteredSizeDifference;
+            foundFeatureHistory = currentFeatureHistory;
         }
     }
 
-    // FC_WARN("finish complex find");
+    FC_WARN("finish complex find, found feature history: " << foundFeatureHistory);
+    FC_WARN("original: " << originalElement.dehashedName);
+    FC_WARN("found:    " << foundName.name);
     return foundName;
 }
 
