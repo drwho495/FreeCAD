@@ -8,7 +8,6 @@
 
 #include "ElementMap.h"
 #include "ElementNamingUtils.h"
-// #include <chrono>
 
 #include "App/Application.h"
 #include "Base/Console.h"
@@ -760,8 +759,9 @@ MappedName ElementMap::dehashElementName(const MappedName& name) const
 // this reverses the compression of hashed persistent names.
 // an example: #3d:2;:G3#3f;CUT;:H-1216:b,E --> g2;SKT;:H1215,E;FAC;:H1215:4,F;:G0;XTR;:H1215:8,F;:G3(g6;SKT;:H1213,E;:G;...
 MappedName ElementMap::fullDehashElementName(const MappedName& name) const {
-    std::string dehashedName;
     std::vector<std::map<std::string, std::array<int, 2>>> dehashTree;
+    std::vector<std::pair<std::string, int>> dehashedStrings;
+    std::string dehashedName;
     std::string currentTreeString = "";
     std::string selTreeString = "";
     std::string hashedString = "";
@@ -842,10 +842,20 @@ MappedName ElementMap::fullDehashElementName(const MappedName& name) const {
                 dehashedString = dehashElementName(MappedName(hashedString)).toString();
 
                 if(dehashedString != hashedString) {
+                    auto it = std::find_if(dehashedStrings.begin(), dehashedStrings.end(),
+                           [&](const std::pair<std::string, int>& p) {
+                               return p.first == dehashedString;
+                           });
+
                     // there is a cyclic dependency, return immediately!
-                    if (currentTreeString == dehashedString) {
-                        return MappedName();
+                    if (currentTreeString == dehashedString 
+                        || (it != dehashedStrings.end() && it->second == i)) 
+                    {
+                        isDehashed = true;
+                        dehashedName = "";
+                        break;
                     }
+                    dehashedStrings.push_back(std::pair<std::string, int>(dehashedString, i));
 
                     currentTreePos++;
 
@@ -1166,6 +1176,20 @@ std::vector<ElementMap::ElementSection> ElementMap::compileElementSections(const
         }
     }
 
+    // currentSection.stringData.push_back(name[i - 1]);
+    // char currentElementType = name.back();
+
+    // if (currentElementType == 'F' || currentElementType == 'E' || currentElementType == 'V') {
+    //     currentSection.elementType = currentElementType;
+    // } else {
+    //     currentSection.elementType = '-';
+    // }
+
+    // currentSection.postfix = currentPostfixBuffer;
+    // currentSection.postfixNumber = postfixNumberBuffer;
+    // currentSection.opcode = currentOpCode;
+    // sections.push_back(currentSection);
+
     return sections;
 }
 
@@ -1246,31 +1270,30 @@ ElementMap::ToponamingElement ElementMap::compileToponamingElement(MappedName na
 
 bool ElementMap::checkGeoIDsLists(std::vector<ElementMap::geoID> &list1, std::vector<ElementMap::geoID> &list2) const {
     if (list1.size() != list2.size()) return false;
-    bool tagCheck = true;
-    bool elementTypeCheck = true;
-    bool mainIDCheck = true;
 
-    for (const auto &id1 : list1) {
-        for (const auto &id2 : list2) {
-            if (id1.tags != id2.tags) {
-                tagCheck = false;
-            }
+    // the lists should be the same sizes
+    for (int i = 0; i < list1.size(); i++) {
+        auto id1 = list1[i];
+        auto id2 = list2[i];
 
-            if (id1.elementType != id2.elementType) {
-                elementTypeCheck = false;
-            }
+        if (id1.tags != id2.tags) {
+            return false;
+        }
 
-            if (id1.startID != id2.startID) {
-                mainIDCheck = false;
-            }
+        if (id1.elementType != id2.elementType) {
+            return false;
+        }
+
+        if (id1.startID != id2.startID) {
+            return false;
         }
     }
 
-    return (tagCheck && elementTypeCheck && mainIDCheck);
+    return true;
 }
 
 MappedElement ElementMap::complexFind(const MappedName& name) const {
-    FC_WARN("start complex find");
+    // FC_WARN("start complex find");
     ToponamingElement originalElement = compileToponamingElement(name);
     ToponamingElement loopElement = ToponamingElement();
     MappedElement foundName = MappedElement();
@@ -1290,18 +1313,20 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         if (loopElement.dehashedName.empty()) {
             continue;
         }
+
         if (originalElement.splitSections.size() != loopElement.splitSections.size()) {
             continue;
         }
 
         bool geoIDCheck = false;
-        std::vector<ElementMap::geoID> smallerIDList = originalElement.mainIDs;
-        std::vector<ElementMap::geoID> largerIDList = loopElement.mainIDs;
-        int occurences = 0;
 
         if (originalElement.mainIDs.size() == 1 && loopElement.mainIDs.size() == 1) {
             geoIDCheck = checkGeoIDsLists(originalElement.mainIDs, loopElement.mainIDs);
         } else if (originalElement.mainIDs.size() > 1 && loopElement.mainIDs.size() > 1) {
+            int occurences = 0;
+            std::vector<ElementMap::geoID> smallerIDList = originalElement.mainIDs;
+            std::vector<ElementMap::geoID> largerIDList = loopElement.mainIDs;
+
             if (originalElement.mainIDs.size() > loopElement.mainIDs.size()) {
                 smallerIDList = loopElement.mainIDs;
                 largerIDList = originalElement.mainIDs;
@@ -1327,7 +1352,6 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
 
         if (!geoIDCheck) {
-            // FC_WARN("geo id check failed");
             continue;
         }
 
@@ -1377,7 +1401,6 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
             }
 
             if (tagOccurences < (shortTagList.size() + tagOccurenceMin)) {
-                // FC_WARN("tag failed");
                 sectionCheck = false;
                 break;
             }
@@ -1489,6 +1512,9 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
     }
 
+    FC_WARN("finish complex find, found feature history: " << foundFeatureHistory);
+    FC_WARN("original: " << originalElement.dehashedName);
+    FC_WARN("found:    " << foundName.name);
     return foundName;
 }
 
@@ -1553,17 +1579,17 @@ MappedElement ElementMap::findMappedElement(const MappedName &name, ElementIDRef
     if (nameIter == mappedNames.end()) {
         if (migrationEnabled && !migrationList.empty()) {
             for (const auto &item : migrationList) {
-                if (item.oldElement.name.toString() == name.toString()) {
-                    FC_WARN("found migration! old name: " << item.oldElement.name);
-                    FC_WARN("found migration! new name: " << item.newElement.name);
-                    return item.newElement;
+                if (item.oldElement.name.toString() == name.toString()
+                    && item.oldElement.name.toString() != item.newElement.name.toString()) // avoid infinite recursion.
+                {
+                    return findMappedElement(item.newElement.name, sids); // don't just return the newElement,
+                    //                                                       it might still be wrong.
                 }
             }
         }
 
         if (childElements.isEmpty()) {
-            FC_WARN("ret emp 1");
-            return MappedElement();
+            return complexFind(name);
         }
 
         int len = 0;
@@ -2128,11 +2154,21 @@ long ElementMap::getElementHistory(const MappedName& name,
     }
 }
 
+void ElementMap::copyMigrationList(std::vector<ElementMap::MigrationItem> newList) {
+    this->migrationEnabled = true;
+    this->migrationList = newList;
+}
+
 void ElementMap::enableMigration(std::vector<Data::MappedElement> &oldMap) {
     std::vector<MappedElement> newMap = getAll();
+    migrationEnabled = true;
 
-    if (newMap.size() == oldMap.size()) {
-        migrationEnabled = true;
+    if (newMap.size() == oldMap.size()) {    
+        // make sure this map hasn't already been migrated yet
+        if (!migrationList.empty()) {
+            return;
+        }
+
         std::vector<std::string> mappedIndexedNames;
 
         // run two loops because the order of each item will vary.
@@ -2222,7 +2258,7 @@ void ElementMap::traceElement(const MappedName& name, long masterTag, TraceCallb
             break;
         }
 
-        if (encodedTag && masterTag != std::abs(encodedTag)
+        if (encodedTag && std::abs(masterTag) != std::abs(encodedTag)
             && !tagSet.insert(std::abs(encodedTag)).second) {
             if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
                 FC_WARN("circular element mapping");
