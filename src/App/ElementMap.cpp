@@ -1193,9 +1193,6 @@ void ElementMap::addChildElements(long masterTag, const std::vector<MappedChildE
 
         ChildMapInfo* entry = nullptr;
 
-        // this is old code that caused extra shape tags and faulty code to check
-        // if there are duplicated tags
-
         if (!child.elementMap) {
             encodeElementName(child.indexedName[0],
                               tmp,
@@ -1218,7 +1215,7 @@ void ElementMap::addChildElements(long masterTag, const std::vector<MappedChildE
             }
         }
 
-        if (entry == nullptr) {
+        if (!entry) {
             IndexedName childIdx(child.indexedName);
             IndexedName idx(childIdx.getType(), childIdx.getIndex() + child.offset);
             for (int i = 0; i < child.count; ++i, ++childIdx, ++idx) {
