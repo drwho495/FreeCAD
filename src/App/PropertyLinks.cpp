@@ -507,7 +507,7 @@ bool PropertyLinkBase::_updateElementReference(DocumentObject* feature,
         if (shadow.newName.size() && Data::hasMappedElementName(sub.c_str())) {
             updateSub(shadow.newName);
         }
-        else {
+        else if (shadow.oldName.size()) {
             updateSub(shadow.oldName);
         }
         return true;
