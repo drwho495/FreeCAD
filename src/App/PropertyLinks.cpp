@@ -4066,6 +4066,7 @@ int PropertyXLink::checkRestore(std::string* msg) const
 
 void PropertyXLink::afterRestore()
 {
+    assert(_SubList.size() == _ShadowSubList.size());
     if (!testFlag(LinkRestoreLabel) || !_pcLink || !_pcLink->isAttachedToDocument()) {
         return;
     }
