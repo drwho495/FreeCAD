@@ -519,7 +519,9 @@ const std::string &TopoShape::shapeName(bool silent) const {
 
 PyObject * TopoShape::getPySubShape(const char* Type, bool silent) const
 {
-    return Py::new_reference_to(shape2pyshape(getSubShape(Type,silent)));
+
+    TopoShape s(*this);
+    return Py::new_reference_to(shape2pyshape(s.getSubTopoShape(Type,silent)));
 }
 
 PyObject * TopoShape::getPyObject()
@@ -1359,6 +1361,11 @@ bool TopoShape::isValid() const
 {
     BRepCheck_Analyzer aChecker(this->_Shape);
     return aChecker.IsValid() ? true : false;
+}
+
+bool TopoShape::isEmpty() const
+{
+    return Tools::isShapeEmpty(this->_Shape);
 }
 
 namespace Part {

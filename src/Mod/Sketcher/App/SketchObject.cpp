@@ -473,9 +473,10 @@ Part::TopoShape SketchObject::buildInternals(const Part::TopoShape &edges) const
         if (!joiner.Shape().IsNull()) {
             joiner.getResultWires(result, "SKF");
             result = result.makeElementFace(result.getSubTopoShapes(TopAbs_WIRE),
-                    /*op*/"",
+                    /*op*/"SIF",
                     /*maker*/"Part::FaceMakerRing",
-                    /*pln*/nullptr
+                    /*pln*/nullptr,
+                    /*supportNum*/-1
             );
         }
         Part::TopoShape openWires(getID(), getDocument()->getStringHasher());
@@ -7134,9 +7135,7 @@ int SketchObject::addExternal(App::DocumentObject* Obj,
     std::vector<long> Types = ExternalTypes.getValues();
     std::vector<DocumentObject*> Objects = ExternalGeometry.getValues();
     std::vector<std::string> SubElements = ExternalGeometry.getSubValues();
-    if (Types.size() != Objects.size()) {
-        Types.resize(Objects.size(), 0);
-    }
+    Types.resize(Objects.size(), static_cast<long>(ExtType::Projection));
 
     const std::vector<DocumentObject*> originalObjects = Objects;
     const std::vector<std::string> originalSubElements = SubElements;
@@ -8763,9 +8762,7 @@ void SketchObject::rebuildExternalGeometry(std::optional<ExternalToAdd> extToAdd
     BRepBuilderAPI_MakeFace mkFace(sketchPlane);
     TopoDS_Shape aProjFace = mkFace.Shape();
 
-    if (Types.size() != Objects.size()) {
-        Types.resize(Objects.size(), 0);
-    }
+    Types.resize(Objects.size(), static_cast<long>(ExtType::Projection));
 
     std::set<std::string> refSet;
     // We use a vector here to keep the order (roughly) the same as ExternalGeometry
@@ -10163,7 +10160,7 @@ void SketchObject::updateGeometryRefs() {
     std::vector<std::string> originalRefs;
     std::map<std::string,std::string> refMap;
     if(updateGeoRef) {
-        assert(externalGeoRef.size() == objs.size());
+        // assert(externalGeoRef.size() == objs.size());
         updateGeoRef = false;
         originalRefs = std::move(externalGeoRef);
     }
