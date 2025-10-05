@@ -20,9 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
+
 # include <boost/core/ignore_unused.hpp>
 # include <Inventor/actions/SoGetBoundingBoxAction.h>
 # include <Inventor/actions/SoGLRenderAction.h>
@@ -32,7 +31,7 @@
 # include <Inventor/nodes/SoSwitch.h>
 # include <QApplication>
 # include <QMenu>
-#endif
+
 
 #include "SoFCColorBar.h"
 #include "SoFCColorGradient.h"
@@ -350,7 +349,7 @@ void SoFCColorBar::handleEvent (SoHandleEventAction *action)
                 }
 
                 menu.addSeparator();
-                QAction* option = menu.addAction(QObject::tr("Options..."));
+                QAction* option = menu.addAction(QObject::tr("Options"));
                 QAction* select = menu.exec(QCursor::pos());
 
                 if (select == option) {

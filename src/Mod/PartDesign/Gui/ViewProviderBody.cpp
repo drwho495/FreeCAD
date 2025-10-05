@@ -21,14 +21,12 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 # include <Inventor/actions/SoGetBoundingBoxAction.h>
 # include <Inventor/nodes/SoSeparator.h>
 # include <Precision.hxx>
 # include <QMenu>
-#endif
+
 
 #include <App/Document.h>
 #include <App/Origin.h>
@@ -118,7 +116,7 @@ void ViewProviderBody::setupContextMenu(QMenu* menu, QObject* receiver, const ch
     Q_UNUSED(member);
     Gui::ActionFunction* func = new Gui::ActionFunction(menu);
 
-    QAction* act = menu->addAction(tr("Active body"));
+    QAction* act = menu->addAction(tr("Active Body"));
     act->setCheckable(true);
     act->setChecked(isActiveBody());
     func->trigger(act, [this]() {
@@ -392,6 +390,9 @@ bool ViewProviderBody::canDropObject(App::DocumentObject* obj) const
     else if (obj->isDerivedFrom<App::LocalCoordinateSystem>()) {
         return !obj->isDerivedFrom<App::Origin>();
     }
+    else if (obj->isDerivedFrom<Part::Part2DObject>()) {
+        return true;
+    }
     else if (!obj->isDerivedFrom<Part::Feature>()) {
         return false;
     }
@@ -453,3 +454,14 @@ void ViewProviderBody::dropObject(App::DocumentObject* obj)
         }
     }
 }
+bool ViewProviderBody::canDragObjectToTarget(App::DocumentObject* obj,
+                                             App::DocumentObject* target) const
+{
+    if (obj->isDerivedFrom<PartDesign::Feature>()) {
+        return target && target->is<PartDesign::Body>();
+    }
+
+    return ViewProviderPart::canDragObjectToTarget(obj, target);
+}
+
+

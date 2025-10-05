@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <Mod/Measure/MeasureGlobal.h>
 
 #include <App/MeasureManager.h>
 #include <Base/Console.h>
@@ -183,7 +183,7 @@ PyMOD_INIT_FUNC(Measure)
     }
 
 
-    Base::Console().log("Loading Measure module... done\n");
+    Base::Console().log("Loading Measure module… done\n");
     PyMOD_Return(mod);
 }
 

@@ -22,12 +22,10 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 #include <QAction>
 #include <QMessageBox>
-#endif
+
 
 #include <App/Document.h>
 #include <App/DocumentObject.h>
@@ -51,7 +49,7 @@ using namespace Gui;
 
 TaskBooleanParameters::TaskBooleanParameters(ViewProviderBoolean* BooleanView, QWidget* parent)
     : TaskBox(Gui::BitmapFactory().pixmap("PartDesign_Boolean"),
-              tr("Boolean parameters"),
+              tr("Boolean Parameters"),
               true,
               parent)
     , ui(new Ui_TaskBooleanParameters)
@@ -352,13 +350,14 @@ void TaskBooleanParameters::exitSelectionMode()
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 TaskDlgBooleanParameters::TaskDlgBooleanParameters(ViewProviderBoolean* BooleanView)
-    : TaskDialog()
+    : TaskDlgFeatureParameters(BooleanView)
     , BooleanView(BooleanView)
 {
     assert(BooleanView);
     parameter = new TaskBooleanParameters(BooleanView);
 
     Content.push_back(parameter);
+    Content.push_back(preview);
 }
 
 TaskDlgBooleanParameters::~TaskDlgBooleanParameters() = default;

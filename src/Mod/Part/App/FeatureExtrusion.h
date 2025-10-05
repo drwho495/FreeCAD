@@ -25,6 +25,9 @@
 
 #include <App/PropertyStandard.h>
 #include <App/PropertyUnits.h>
+#include <App/Document.h>
+
+#include <Mod/Part/PartGlobal.h>
 
 #include <App/Document.h>
 #include "FaceMakerCheese.h"

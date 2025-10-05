@@ -21,11 +21,9 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 # include <QMenu>
-#endif
+
 
 #include "TaskRevolutionParameters.h"
 #include "ViewProviderRevolution.h"
@@ -43,7 +41,7 @@ ViewProviderRevolution::~ViewProviderRevolution() = default;
 
 void ViewProviderRevolution::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
-    addDefaultAction(menu, QObject::tr("Edit revolution"));
+    addDefaultAction(menu, QObject::tr("Edit Revolution"));
     PartDesignGui::ViewProviderSketchBased::setupContextMenu(menu, receiver, member);
 }
 

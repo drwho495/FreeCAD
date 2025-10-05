@@ -20,9 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <limits>
 # include <BRepAdaptor_Surface.hxx>
 # include <Mod/Part/App/FCBRepAlgoAPI_Common.h>
@@ -36,13 +33,13 @@
 # include <BRepOffsetAPI_MakePipeShell.hxx>
 # include <BRepPrimAPI_MakeRevol.hxx>
 # include <ShapeFix_ShapeTolerance.hxx>
+# include <ShapeFix_Solid.hxx>
 # include <Precision.hxx>
 # include <TopoDS.hxx>
 # include <TopoDS_Face.hxx>
 # include <TopoDS_Wire.hxx>
 # include <gp_Ax1.hxx>
 # include <gp_Ax3.hxx>
-#endif
 
 # include <Standard_Version.hxx>
 # include <Base/Axis.h>
@@ -258,6 +255,13 @@ App::DocumentObjectExecReturn* Helix::execute()
         }
 
         fix.LimitTolerance(result, Precision::Confusion() * size * Tolerance.getValue() ); // significant precision reduction due to helical approximation - needed to allow fusion to succeed
+
+        // try to auto-fix possible invalid result
+        ShapeFix_Solid fixer;
+        fixer.Init(TopoDS::Solid(result));
+        if (fixer.Perform()) {
+            result = fixer.Solid();
+        }
 
         AddSubShape.setValue(result);
 

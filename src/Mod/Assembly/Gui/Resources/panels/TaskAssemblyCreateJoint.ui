@@ -11,11 +11,25 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Create Joint</string>
+   <string>Joint</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0" colspan="2">
     <widget class="QComboBox" name="jointType"/>
+   </item>
+   <item row="15" column="0" colspan="2">
+    <layout class="QHBoxLayout" name="hLayoutIsolate">
+     <item>
+      <widget class="QLabel" name="isolateLabel2">
+       <property name="text">
+        <string>Isolate</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="isolateType"/>
+     </item>
+    </layout>
    </item>
    <item row="1" column="0" colspan="2">
     <widget class="QListWidget" name="featureList">
@@ -141,7 +155,7 @@
      <item>
       <widget class="QPushButton" name="offset1Button">
        <property name="toolTip">
-        <string>By clicking this button, you can set the attachment offset of the first marker (coordinate system) of the joint.</string>
+        <string>Sets the attachment offset of the joint’s first marker (coordinate system)</string>
        </property>
        <property name="text">
         <string></string>
@@ -162,7 +176,7 @@
      <item>
       <widget class="QPushButton" name="offset2Button">
        <property name="toolTip">
-        <string>By clicking this button, you can set the attachment offset of the second marker (coordinate system) of the joint.</string>
+        <string>Sets the attachment offset of the second marker (coordinate system) of the joint</string>
        </property>
        <property name="text">
         <string></string>
@@ -190,7 +204,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>Reverse the direction of the joint.</string>
+      <string>Reverse the direction of the joint</string>
      </property>
      <property name="text">
       <string>Reverse</string>

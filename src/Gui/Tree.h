@@ -49,6 +49,7 @@ using DocumentObjectDataPtr = std::shared_ptr<DocumentObjectData>;
 class TreeWidgetItemDelegate;
 
 class DocumentItem;
+class Command;
 
 GuiExport bool isTreeViewDragging();
 
@@ -91,6 +92,7 @@ public:
      * which Gui::Selection() cannot provide.
      */
     static std::vector<SelInfo> getSelection(App::Document *doc=nullptr);
+    static std::vector<Document*> getSelectedDocuments();
 
     static TreeWidget *instance();
 
@@ -226,6 +228,7 @@ private:
 
     bool CheckForDependents();
     void addDependentToSelection(App::Document* doc, App::DocumentObject* docObject);
+    static TreeWidget* getTreeForSelection();
 
 private:
     QAction* createGroupAction;
@@ -242,6 +245,7 @@ private:
     QAction* closeDocAction;
     QAction* searchObjectsAction;
     QAction* openFileLocationAction;
+    Command* skipRecomputeCommand;
     QTreeWidgetItem *contextItem;
     App::DocumentObject *searchObject;
     Gui::Document *searchDoc;

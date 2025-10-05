@@ -39,13 +39,18 @@ class BIM_Setup:
     def GetResources(self):
         return {
             "Pixmap": ":icons/preferences-system.svg",
-            "MenuText": QT_TRANSLATE_NOOP("BIM_Setup", "BIM Setup..."),
+            "MenuText": QT_TRANSLATE_NOOP("BIM_Setup", "BIM Setup"),
             "ToolTip": QT_TRANSLATE_NOOP(
-                "BIM_Setup", "Set some common FreeCAD preferences for BIM workflow"
+                "BIM_Setup", "Sets common FreeCAD preferences for a BIM workflow"
             ),
         }
 
     def Activated(self):
+
+        # only raise the dialog if it is already open
+        if getattr(self, "form", None):
+            self.form.raise_()
+            return
 
         TARGETVERSION = 0.19
         TECHDRAWDIMFACTOR = (
@@ -140,7 +145,7 @@ class BIM_Setup:
                 + ",".join(m)
                 + "</b>. "
                 + translate(
-                    "BIM", "You can install them from menu Tools -> Addon manager."
+                    "BIM", "Install them from menu Tools -> Addon Manager."
                 )
             )
             self.form.labelMissingWorkbenches.setText(t)
@@ -169,6 +174,8 @@ class BIM_Setup:
         result = self.form.exec_()
         del FreeCADGui.BIMSetupDialog
         if not result:
+            self.form.hide()
+            del self.form
             return
 
         # set preference values
@@ -387,6 +394,8 @@ class BIM_Setup:
         FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/BIM").SetBool(
             "FirstTime", False
         )
+        self.form.hide()
+        del self.form
 
     def setPreset(self, preset=None):
         from PySide import QtGui
@@ -657,7 +666,7 @@ class BIM_Setup:
                     translate("BIM", "IfcOpenShell not found"),
                     translate(
                         "BIM",
-                        "IfcOpenShell is needed to import and export IFC files. It appears to be missing on your system. Would you like to download and install it now? It will be installed in FreeCAD's Macros directory.",
+                        "IfcOpenShell is needed to import and export IFC files. It appears to be missing on the system. Download and install it now? It will be installed in FreeCAD's macros directory.",
                     ),
                     QtGui.QMessageBox.Yes | QtGui.QMessageBox.No,
                     QtGui.QMessageBox.No,
@@ -721,14 +730,14 @@ class BIM_Setup:
                                 break
                     else:
                         FreeCAD.Console.PrintWarning(
-                            "Unable to find a build for your version therefore falling back to a pip install"
+                            "Unable to find a build for this version, therefore falling back to a pip install"
                         )
                         try:
                             import pip
                         except ModuleNotFoundError:
                             FreeCAD.Console.PrintError(
-                                "Please install pip on your system, restart FreeCAD,"
-                                " change to BIM Wb and use Utils menu > ifcOpenShell update"
+                                "Pnstall pip on your system, restart FreeCAD,"
+                                " change to the BIM workbench and navigate the menu: Utils > ifcOpenShell Update"
                             )
                             return
                         from nativeifc import ifc_openshell

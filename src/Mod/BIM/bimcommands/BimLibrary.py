@@ -85,7 +85,7 @@ class BIM_Library:
     def GetResources(self):
         return {
             "Pixmap": "BIM_Library",
-            "MenuText": QT_TRANSLATE_NOOP("BIM_Library", "Objects library"),
+            "MenuText": QT_TRANSLATE_NOOP("BIM_Library", "Objects Library"),
             "ToolTip": QT_TRANSLATE_NOOP("BIM_Library", "Opens the objects library"),
         }
 
@@ -105,8 +105,9 @@ class BIM_Library:
                 # save file paths with forward slashes even on windows
                 pr.SetString("destination", addondir.replace("\\", "/"))
                 libok = True
-        task = FreeCADGui.Control.showDialog(BIM_Library_TaskPanel(offlinemode=libok))
-        task.setDocumentName(FreeCAD.ActiveDocument.Name)
+        panel = BIM_Library_TaskPanel(offlinemode=libok)
+        task = FreeCADGui.Control.showDialog(panel)
+        task.setDocumentName(panel.mainDocName)
         task.setAutoCloseOnDeletedDocument(True)
 
 
@@ -308,7 +309,7 @@ class BIM_Library_TaskPanel:
         try:
             # check if the working document is saved
             if FreeCAD.getDocument(self.mainDocName).FileName == "":
-                FreeCAD.Console.PrintWarning(translate("BIM","Please save the working file before linking.")+"\n")
+                FreeCAD.Console.PrintWarning(translate("BIM","Save the working file before linking.")+"\n")
             else:
                 self.previewOn = PARAMS.GetBool("3DPreview", False)
                 self.linked = True
@@ -501,7 +502,7 @@ class BIM_Library_TaskPanel:
         templibfile = os.path.join(TEMPLIBPATH, LIBINDEXFILE)
         if not os.path.exists(templibfile):
             FreeCAD.Console.PrintError(
-                translate("BIM", "No structure in cache. Please refresh.") + "\n"
+                translate("BIM", "No structure in cache. Refresh required.") + "\n"
             )
             return {}
         import sys
@@ -554,6 +555,8 @@ class BIM_Library_TaskPanel:
         if hasattr(self, "box") and self.box:
             self.box.off()
         FreeCADGui.Control.closeDialog()
+        if self.previewDocName in FreeCAD.listDocuments():
+            FreeCAD.closeDocument(self.previewDocName)
         FreeCAD.ActiveDocument.recompute()
 
     def insert(self, index=None):
@@ -570,8 +573,6 @@ class BIM_Library_TaskPanel:
                 + "\n"
             )
             return
-        if self.previewDocName in FreeCAD.listDocuments().keys():
-            FreeCAD.closeDocument(self.previewDocName)
         if not index:
             index = self.form.tree.selectedIndexes()
             if not index:
@@ -794,7 +795,7 @@ class BIM_Library_TaskPanel:
             j = json.loads(r.content)
             if j["truncated"]:
                 print(
-                    "WARNING: The fetched content exceeds maximum Github allowance and is truncated"
+                    "WARNING: The fetched content exceeds maximum GitHub allowance and is truncated"
                 )
             t = j["tree"]
             for f in t:
@@ -1029,7 +1030,7 @@ if FreeCAD.GuiUp:
     from PySide import QtCore, QtGui
 
     class LibraryModel(QtGui.QFileSystemModel):
-        "a custom QFileSystemModel that displays freecad file icons"
+        "a custom QFileSystemModel that displays FreeCAD file icons"
 
         def __init__(self):
 

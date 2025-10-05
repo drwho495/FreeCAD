@@ -20,16 +20,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 # include <QCheckBox>
 # include <QDialogButtonBox>
 # include <QRegularExpression>
 # include <QRegularExpressionValidator>
 # include <QVBoxLayout>
 # include <Interface_Static.hxx>
-#endif
+
 
 #include <App/Application.h>
 #include <Base/Parameter.h>
@@ -205,7 +203,7 @@ TaskExportStep::TaskExportStep(QWidget* parent)
     setLayout(layout);
 
     showThis = new QCheckBox(this);
-    showThis->setText(tr("Don't show this dialog again"));
+    showThis->setText(tr("Do not show this dialog again"));
     layout->addWidget(showThis);
 
     QDialogButtonBox* buttonBox = new QDialogButtonBox(this);

@@ -20,9 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QApplication>
 #include <QCheckBox>
 #include <QClipboard>
@@ -42,7 +39,6 @@
 #include <QTextStream>
 #include <QTimer>
 #include <QToolButton>
-#endif
 
 #include "EditorView.h"
 #include "Application.h"
@@ -212,7 +208,7 @@ void EditorView::checkTimestamp()
         switch (QMessageBox::question(this,
                                       tr("Modified file"),
                                       tr("%1.\n\nThis has been modified outside of the source "
-                                         "editor. Do you want to reload it?")
+                                         "editor. Reload it?")
                                           .arg(d->fileName),
                                       QMessageBox::Yes | QMessageBox::No,
                                       QMessageBox::Yes)) {
@@ -349,7 +345,7 @@ bool EditorView::canClose()
     switch (QMessageBox::question(this,
                                   tr("Unsaved document"),
                                   tr("The document has been modified.\n"
-                                     "Do you want to save your changes?"),
+                                     "Save all changes?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Cancel)) {
         case QMessageBox::Yes:

@@ -21,7 +21,6 @@
  ******************************************************************************/
 
 
-#include "PreCompiled.h"
 
 #include "ViewProviderMultiTransform.h"
 #include "TaskMultiTransformParameters.h"
@@ -45,7 +44,7 @@ const std::string & ViewProviderMultiTransform::featureName() const
 
 void ViewProviderMultiTransform::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
-    addDefaultAction(menu, QObject::tr("Edit multi-transform"));
+    addDefaultAction(menu, QObject::tr("Edit Multi-Transform"));
     PartDesignGui::ViewProvider::setupContextMenu(menu, receiver, member); // clazy:exclude=skipped-base-method
 }
 

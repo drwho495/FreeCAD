@@ -1,9 +1,6 @@
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <unordered_map>
 #ifndef FC_DEBUG
 #include <random>
-#endif
 #endif
 
 #include "ElementMap.h"
@@ -1956,10 +1953,9 @@ void ElementMap::addChildElements(long masterTag, const std::vector<MappedChildE
 
         ChildMapInfo* entry = nullptr;
 
-        // this is old code that caused extra shape tags and faulty code to check
-        // if there are duplicated tags
-
-        if (!child.elementMap) {
+        // do child mapping only if the child element count >= 5
+        const int threshold {5};
+        if ((child.count >= threshold && child.tag != 0) || !child.elementMap) {
             encodeElementName(child.indexedName[0],
                               tmp,
                               ss,

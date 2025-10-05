@@ -20,15 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 #include <cassert>
 #include <vector>
 #include <map>
 #include <string>
-#endif
 
 #include <Base/PyObjectBase.h>
 
@@ -69,6 +64,7 @@ using namespace App;
 Extension::~Extension()
 {
     if (!ExtensionPythonObject.is(Py::_None())) {
+        Base::PyGILStateLocker lock;
         // Remark: The API of Py::Object has been changed to set whether the wrapper owns the passed
         // Python object or not. In the constructor we forced the wrapper to own the object so we
         // need not to dec'ref the Python object any more. But we must still invalidate the Python

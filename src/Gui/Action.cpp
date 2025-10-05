@@ -20,10 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 # include <QActionEvent>
 # include <QActionGroup>
 # include <QApplication>
@@ -36,7 +32,6 @@
 # include <QToolBar>
 # include <QToolButton>
 # include <QToolTip>
-#endif
 
 #include <Base/Exception.h>
 #include <Base/Interpreter.h>
@@ -570,7 +565,7 @@ void ActionGroup::setCheckedAction(int index)
     this->setIcon(act->icon());
 
     if (!this->_isMode) {
-        this->setToolTip(act->toolTip(), act->text());
+        this->action()->setToolTip(act->toolTip());
     }
     this->setProperty("defaultAction", QVariant(index));
 }
@@ -599,7 +594,7 @@ void ActionGroup::onActivated (QAction* act)
 
         this->setIcon(act->icon());
         if (!this->_isMode) {
-            this->setToolTip(act->toolTip(), act->text());
+            this->action()->setToolTip(act->toolTip());
         }
         this->setProperty("defaultAction", QVariant(index));
         command()->invoke(index, Command::TriggerChildAction);
@@ -722,7 +717,7 @@ void WorkbenchGroup::refreshWorkbenchList()
         action->setObjectName(wbName);
         action->setIcon(px);
         action->setToolTip(tip);
-        action->setStatusTip(tr("Select the '%1' workbench").arg(name));
+        action->setStatusTip(tr("Selects the '%1' workbench").arg(name));
         if (index < 9) {
             action->setShortcut(QKeySequence(QStringLiteral("W,%1").arg(index + 1)));
         }
@@ -1137,7 +1132,7 @@ void RecentMacrosAction::setFiles(const QStringList& files)
     }
     // Raise a single warning no matter how many conflicts
     if (!existingCommands.isEmpty()) {
-        auto msgMain = QStringLiteral("Recent macros : keyboard shortcut(s)");
+        auto msgMain = QStringLiteral("Recent macros : keyboard shortcuts");
         for (int index = 0; index < accel_col.size(); index++) {
             msgMain += QStringLiteral(" %1").arg(accel_col[index]);
         }
@@ -1145,10 +1140,11 @@ void RecentMacrosAction::setFiles(const QStringList& files)
         for (int index = 0; index < existingCommands.count(); index++) {
             msgMain += QStringLiteral(" %1").arg(existingCommands[index]);
         }
-        msgMain += QStringLiteral(" respectively.\nHint: In Preferences -> Python -> Macro ->"
-                             " Recent Macros menu -> Keyboard Modifiers this should be Ctrl+Shift+"
-                             " by default, if this is now blank then you should revert it back to"
-                             " Ctrl+Shift+ by pressing both keys at the same time.");
+        msgMain +=
+            QStringLiteral(" respectively.\nHint: In Preferences → Python → Macro →"
+                           " Recent Macros menu → Keyboard Modifiers this should be Ctrl+Shift+"
+                           " by default, if this is now blank then you should revert it back to"
+                           " Ctrl+Shift+ by pressing both keys at the same time.");
         Base::Console().warning("%s\n", qPrintable(msgMain));
     }
 }

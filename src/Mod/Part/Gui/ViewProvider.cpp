@@ -20,16 +20,16 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 #include <QObject>
-#endif
+
 
 #include <App/Document.h>
 #include <Base/Console.h>
 #include <Base/Exception.h>
 #include <Gui/CommandT.h>
+#include <Gui/Inventor/Draggers/Gizmo.h>
+#include <Gui/View3DInventorViewer.h>
 
 #include "ViewProvider.h"
 

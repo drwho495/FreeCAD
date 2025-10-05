@@ -20,12 +20,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
+
 # include <QEvent>
 # include <QGridLayout>
 # include <QTimer>
-#endif
+
 
 #include <App/Document.h>
 #include <App/DocumentObject.h>
@@ -86,13 +85,11 @@ PropertyView::PropertyView(QWidget *parent)
     propertyEditorView = new Gui::PropertyEditor::PropertyEditor();
     propertyEditorView->setObjectName(QStringLiteral("propertyEditorView"));
     propertyEditorView->setAutomaticDocumentUpdate(_GetParam()->GetBool("AutoTransactionView", false));
-    propertyEditorView->setAutomaticExpand(_GetParam()->GetBool("AutoExpandView", false));
     tabs->addTab(propertyEditorView, tr("View"));
 
     propertyEditorData = new Gui::PropertyEditor::PropertyEditor();
     propertyEditorData->setObjectName(QStringLiteral("propertyEditorData"));
     propertyEditorData->setAutomaticDocumentUpdate(_GetParam()->GetBool("AutoTransactionData", true));
-    propertyEditorData->setAutomaticExpand(_GetParam()->GetBool("AutoExpandData", false));
     tabs->addTab(propertyEditorData, tr("Data"));
 
     int preferredTab = _GetParam()->GetInt("LastTabIndex", 1);
@@ -116,6 +113,9 @@ PropertyView::PropertyView(QWidget *parent)
     this->connectPropRemove =
     App::GetApplication().signalRemoveDynamicProperty.connect(std::bind
         (&PropertyView::slotRemoveDynamicProperty, this, sp::_1));
+    this->connectPropRename =
+    App::GetApplication().signalRenameDynamicProperty.connect(std::bind
+        (&PropertyView::slotRenameDynamicProperty, this, sp::_1, sp::_2));
     this->connectPropChange =
     App::GetApplication().signalChangePropertyEditor.connect(std::bind
         (&PropertyView::slotChangePropertyEditor, this, sp::_1, sp::_2));
@@ -255,6 +255,23 @@ void PropertyView::slotRemoveDynamicProperty(const App::Property& prop)
         propertyEditorView->removeProperty(prop);
     else
         return;
+    timer->start(ViewParams::instance()->getPropertyViewTimer());
+}
+
+void PropertyView::slotRenameDynamicProperty(const App::Property& prop,
+                                             const char* /*oldName*/)
+{
+    App::PropertyContainer* parent = prop.getContainer();
+    if (propertyEditorData->propOwners.contains(parent)) {
+        propertyEditorData->renameProperty(prop);
+    }
+    else if (propertyEditorView->propOwners.contains(parent)) {
+        propertyEditorView->renameProperty(prop);
+    }
+    else {
+        return;
+    }
+    clearPropertyItemSelection();
     timer->start(ViewParams::instance()->getPropertyViewTimer());
 }
 
@@ -559,7 +576,7 @@ void PropertyView::changeEvent(QEvent *e)
 PropertyDockView::PropertyDockView(Gui::Document* pcDocument, QWidget *parent)
   : DockWindow(pcDocument,parent)
 {
-    setWindowTitle(tr("Property view"));
+    setWindowTitle(tr("Property View"));
 
     auto view = new PropertyView(this);
     auto pLayout = new QGridLayout(this);

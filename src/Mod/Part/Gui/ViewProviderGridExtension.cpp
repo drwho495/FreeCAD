@@ -20,10 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
-
 # include <limits>
 
 # include <Inventor/nodes/SoDepthBuffer.h>
@@ -37,7 +33,6 @@
 # include <Inventor/SbVec3f.h>
 
 # include <QApplication>
-#endif
 
 #include <Base/Parameter.h>
 #include <App/Application.h>
@@ -424,7 +419,7 @@ void GridExtensionP::drawGrid(bool cameraUpdate) {
 ViewProviderGridExtension::ViewProviderGridExtension()
 {
 
-    EXTENSION_ADD_PROPERTY_TYPE(ShowGrid, (false), "Grid", (App::PropertyType)(App::Prop_None), "Switch the grid on/off");
+    EXTENSION_ADD_PROPERTY_TYPE(ShowGrid, (false), "Grid", (App::PropertyType)(App::Prop_None), "Toggle grid visibility");
     EXTENSION_ADD_PROPERTY_TYPE(GridSize, (10.0), "Grid", (App::PropertyType)(App::Prop_None), "Gap size of the grid");
     EXTENSION_ADD_PROPERTY_TYPE(GridAuto, (true), "Grid", (App::PropertyType)(App::Prop_None), "Change size of grid based on view area.");
 

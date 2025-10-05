@@ -236,6 +236,7 @@ class DraftModification(test_base.DraftTestCaseDoc):
         _msg("  a={0}, b={1}".format(a, b))
         _msg("  c={0}, d={1}".format(c, d))
         wire = Draft.make_wire([a, b, c, d])
+        self.doc.recompute()
 
         index = 1
         _msg("  Split at")
@@ -607,7 +608,7 @@ class DraftModification(test_base.DraftTestCaseDoc):
         _msg("  page={}".format(page.TypeId))
         template = self.doc.addObject("TechDraw::DrawSVGTemplate")
         template.Template = App.getResourceDir() \
-                            + "Mod/TechDraw/Templates/A3_Landscape_blank.svg"
+                            + "Mod/TechDraw/Templates/ISO/A3_Landscape_blank.svg"
         page.Template = template
         _msg("  template={}".format(template.TypeId))
         view = self.doc.addObject("TechDraw::DrawViewDraft")

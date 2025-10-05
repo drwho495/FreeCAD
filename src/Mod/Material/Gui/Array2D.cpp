@@ -19,11 +19,9 @@
  *                                                                         *
  **************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QMenu>
 #include <QMessageBox>
-#endif
+
 
 #include <Gui/Application.h>
 #include <Gui/Command.h>
@@ -76,7 +74,7 @@ Array2D::Array2D(const QString& propertyName,
     ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tableView, &QWidget::customContextMenuRequested, this, &Array2D::onContextMenu);
 
-    _deleteAction.setText(tr("Delete row"));
+    _deleteAction.setText(tr("Delete Row"));
     _deleteAction.setShortcut(Gui::QtTools::deleteKeySequence());
 
     connect(&_deleteAction, &QAction::triggered, this, &Array2D::onDelete);
@@ -135,7 +133,7 @@ void Array2D::onDataChanged(const QModelIndex& topLeft,
 
 void Array2D::onContextMenu(const QPoint& pos)
 {
-    QMenu contextMenu(tr("Context menu"), this);
+    QMenu contextMenu(tr("Context Menu"), this);
 
     contextMenu.addAction(&_deleteAction);
 
@@ -169,7 +167,7 @@ int Array2D::confirmDelete()
     box.setIcon(QMessageBox::Question);
     box.setWindowTitle(QObject::tr("Confirm Delete"));
 
-    QString prompt = QObject::tr("Are you sure you want to delete the row?");
+    QString prompt = QObject::tr("Delete the row?");
     box.setText(prompt);
 
     box.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);

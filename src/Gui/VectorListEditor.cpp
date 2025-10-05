@@ -20,11 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 #include <limits>
-#endif
 
 #include "VectorListEditor.h"
 #include "ui_VectorListEditor.h"
@@ -334,11 +330,11 @@ VectorListEditor::~VectorListEditor() = default;
 void VectorListEditor::showContextMenu(const QPoint& pos)
 {
     QMenu contextMenu(ui->tableWidget);
-    QAction *copyAction = contextMenu.addAction(tr("Copy table"));
+    QAction *copyAction = contextMenu.addAction(tr("Copy Table"));
     connect(copyAction, &QAction::triggered, model, &VectorTableModel::copyToClipboard);
     copyAction->setEnabled(!data.empty());
 
-    QAction *pasteAction = contextMenu.addAction(tr("Paste table"));
+    QAction *pasteAction = contextMenu.addAction(tr("Paste Table"));
     connect(pasteAction, &QAction::triggered, model, &VectorTableModel::pasteFromClipboard);
     pasteAction->setEnabled(QApplication::clipboard()->mimeData()->hasText());
 

@@ -19,8 +19,6 @@
  *                                                                         *
  **************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QColorDialog>
 #include <QDesktopServices>
 #include <QIODevice>
@@ -33,7 +31,7 @@
 #include <QTextStream>
 #include <QVariant>
 #include <limits>
-#endif
+
 
 #include <App/Application.h>
 #include <Base/Interpreter.h>
@@ -158,7 +156,7 @@ void MaterialDelegate::setValue(QAbstractItemModel* model,
                                 property->getUnits().toStdString().c_str());
 
             QMessageBox msgBox;
-            msgBox.setWindowTitle(QStringLiteral("Property units mismatch"));
+            msgBox.setWindowTitle(QStringLiteral("Property Units Mismatch"));
             msgBox.setText(QStringLiteral("Units mismatch '%1' = '%2', "
                            "setting to default property units '%3'\n")
                            .arg(propertyName)

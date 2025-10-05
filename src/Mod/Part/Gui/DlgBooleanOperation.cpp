@@ -20,13 +20,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <QMessageBox>
 # include <QTreeWidget>
 # include <TopExp_Explorer.hxx>
 # include <TopoDS_Shape.hxx>
-#endif
+
 
 #include <Base/Exception.h>
 #include <Base/Tools.h>
@@ -383,12 +381,12 @@ void DlgBooleanOperation::accept()
 
     if (!litem || !indexOfCurrentItem(litem,ltop,lchild)) {
         QMessageBox::critical(this, windowTitle(),
-            tr("Select a shape on the left side, first"));
+            tr("First, select a shape on the left side"));
         return;
     }
     if (!ritem || !indexOfCurrentItem(ritem,rtop,rchild)) {
         QMessageBox::critical(this, windowTitle(),
-            tr("Select a shape on the right side, first"));
+            tr("First, select a shape on the right side"));
         return;
     }
     if (ltop == rtop && lchild == rchild) {
@@ -413,7 +411,7 @@ void DlgBooleanOperation::accept()
     if (!obj1 || !obj2) {
         // objects don't exists (anymore)
         QMessageBox::critical(this, windowTitle(),
-            tr("One of the selected objects doesn't exist anymore"));
+            tr("One of the selected objects does not exist anymore"));
         return;
     }
 

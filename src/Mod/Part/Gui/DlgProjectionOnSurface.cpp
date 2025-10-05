@@ -20,9 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <limits>
+
 #include <BRep_Tool.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -42,7 +41,7 @@
 #include <TopoDS_Builder.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
-#endif
+
 
 #include <App/Document.h>
 #include <Gui/BitmapFactory.h>
@@ -133,7 +132,7 @@ public:
 DlgProjectionOnSurface::DlgProjectionOnSurface(QWidget* parent)
     : QWidget(parent)
     , ui(new Ui::DlgProjectionOnSurface)
-    , m_projectionObjectName(tr("Projection Object"))
+    , m_projectionObjectName(tr("Projection object"))
     , filterEdge(nullptr)
     , filterFace(nullptr)
 {
@@ -162,13 +161,13 @@ DlgProjectionOnSurface::DlgProjectionOnSurface(QWidget* parent)
 
     m_partDocument = App::GetApplication().getActiveDocument();
     if (!m_partDocument) {
-        throw Base::ValueError(tr("Have no active document!!!").toStdString());
+        throw Base::ValueError(tr("No active document").toStdString());
     }
     this->attachDocument(m_partDocument);
     m_partDocument->openTransaction("Project on surface");
     m_projectionObject = m_partDocument->addObject<Part::Feature>("Projection Object");
     if (!m_projectionObject) {
-        throw Base::ValueError(tr("Can not create a projection object!!!").toStdString());
+        throw Base::ValueError(tr("Cannot create a projection object").toStdString());
     }
     m_projectionObject->Label.setValue(std::string(m_projectionObjectName.toUtf8()).c_str());
     onRadioButtonShowAllClicked();

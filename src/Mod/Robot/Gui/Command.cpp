@@ -20,10 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QMessageBox>
-#endif
+
 
 #include <Gui/Application.h>
 #include <Gui/Command.h>
@@ -161,7 +159,7 @@ CmdRobotConstraintAxle::CmdRobotConstraintAxle()
 {
     sAppModule = "Robot";
     sGroup = QT_TR_NOOP("Robot");
-    sMenuText = QT_TR_NOOP("Place Robot…");
+    sMenuText = QT_TR_NOOP("Place Robot");
     sToolTipText = QT_TR_NOOP("Places a robot in the scene");
 
     sWhatsThis = "Robot_Create";

@@ -20,8 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
+
 # include <sstream>
 # include <QAction>
 # include <QFileInfo>
@@ -37,7 +36,7 @@
 # include <Inventor/nodes/SoShapeHints.h>
 # include <Inventor/nodes/SoTexture2.h>
 # include <Inventor/nodes/SoTextureCoordinate2.h>
-#endif
+
 
 #include <App/Document.h>
 #include <Gui/ActionFunction.h>
@@ -166,7 +165,7 @@ void ViewProviderImagePlane::onChanged(const App::Property* prop)
 void ViewProviderImagePlane::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
     Gui::ActionFunction* func = new Gui::ActionFunction(menu);
-    QAction* action = menu->addAction(QObject::tr("Change image..."));
+    QAction* action = menu->addAction(QObject::tr("Change Image"));
     action->setIcon(QIcon(QLatin1String("images:image-scaling.svg")));
     func->trigger(action, [this](){
         this->manipulateImage();

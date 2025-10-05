@@ -21,11 +21,9 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QAction>
 #include <QApplication>
-#endif
+
 
 #include <Gui/Action.h>
 #include <Gui/BitmapFactory.h>
@@ -43,9 +41,9 @@ PartCmdSelectFilter::PartCmdSelectFilter()
   : Command("Part_SelectFilter")
 {
     sGroup        = "Standard-View";
-    sMenuText     = QT_TR_NOOP("Selection filter");
-    sToolTipText  = QT_TR_NOOP("Change the selection filter");
-    sStatusTip    = QT_TR_NOOP("Change the selection filter");
+    sMenuText     = QT_TR_NOOP("Selection Filter");
+    sToolTipText  = QT_TR_NOOP("Changes the selection filter");
+    sStatusTip    = sToolTipText;
     sWhatsThis    = "Part_SelectFilter";
     sPixmap       = "clear-selection";
     eType         = Alter3DView;
@@ -170,10 +168,10 @@ PartCmdVertexSelection::PartCmdVertexSelection()
   : Command("Part_VertexSelection")
 {
     sGroup        = "Standard-View";
-    sMenuText     = QT_TR_NOOP("Vertex selection");
-    sToolTipText  = QT_TR_NOOP("Only allow the selection of vertices");
+    sMenuText     = QT_TR_NOOP("Vertex Selection");
+    sToolTipText  = QT_TR_NOOP("Only allows the selection of vertices");
     sWhatsThis    = "Part_VertexSelection";
-    sStatusTip    = QT_TR_NOOP("Only allow the selection of vertices");
+    sStatusTip    = sToolTipText;
     sPixmap       = "vertex-selection";
     sAccel        = "X, S";
     eType         = Alter3DView;
@@ -182,7 +180,7 @@ PartCmdVertexSelection::PartCmdVertexSelection()
 void PartCmdVertexSelection::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    doCommand(Command::Gui,"Gui.Selection.addSelectionGate('SELECT Part::Feature SUBELEMENT Vertex')");
+    doCommand(Command::Gui,"Gui.Selection.addSelectionGate('SELECT Part::Feature SUBELEMENT Vertex SELECT App::Link SUBELEMENT Vertex')");
 }
 
 
@@ -195,10 +193,10 @@ PartCmdEdgeSelection::PartCmdEdgeSelection()
   : Command("Part_EdgeSelection")
 {
     sGroup        = "Standard-View";
-    sMenuText     = QT_TR_NOOP("Edge selection");
-    sToolTipText  = QT_TR_NOOP("Only allow the selection of edges");
+    sMenuText     = QT_TR_NOOP("Edge Selection");
+    sToolTipText  = QT_TR_NOOP("Only allows the selection of edges");
     sWhatsThis    = "Part_EdgeSelection";
-    sStatusTip    = QT_TR_NOOP("Only allow the selection of edges");
+    sStatusTip    = sToolTipText;
     sPixmap       = "edge-selection";
     sAccel        = "E, S";
     eType         = Alter3DView;
@@ -207,7 +205,7 @@ PartCmdEdgeSelection::PartCmdEdgeSelection()
 void PartCmdEdgeSelection::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    doCommand(Command::Gui,"Gui.Selection.addSelectionGate('SELECT Part::Feature SUBELEMENT Edge')");
+    doCommand(Command::Gui,"Gui.Selection.addSelectionGate('SELECT Part::Feature SUBELEMENT Edge SELECT App::Link SUBELEMENT Edge')");
 }
 
 
@@ -220,10 +218,10 @@ PartCmdFaceSelection::PartCmdFaceSelection()
   : Command("Part_FaceSelection")
 {
     sGroup        = "Standard-View";
-    sMenuText     = QT_TR_NOOP("Face selection");
-    sToolTipText  = QT_TR_NOOP("Only allow the selection of faces");
+    sMenuText     = QT_TR_NOOP("Face Selection");
+    sToolTipText  = QT_TR_NOOP("Only allows the selection of faces");
     sWhatsThis    = "Part_FaceSelection";
-    sStatusTip    = QT_TR_NOOP("Only allow the selection of faces");
+    sStatusTip    = sToolTipText;
     sPixmap       = "face-selection";
     sAccel        = "F, S";
     eType         = Alter3DView;
@@ -232,7 +230,7 @@ PartCmdFaceSelection::PartCmdFaceSelection()
 void PartCmdFaceSelection::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    doCommand(Command::Gui,"Gui.Selection.addSelectionGate('SELECT Part::Feature SUBELEMENT Face')");
+    doCommand(Command::Gui,"Gui.Selection.addSelectionGate('SELECT Part::Feature SUBELEMENT Face SELECT App::Link SUBELEMENT Face')");
 }
 
 
@@ -245,10 +243,10 @@ PartCmdRemoveSelectionGate::PartCmdRemoveSelectionGate()
   : Command("Part_RemoveSelectionGate")
 {
     sGroup        = "Standard-View";
-    sMenuText     = QT_TR_NOOP("All selection filters cleared");
-    sToolTipText  = QT_TR_NOOP("All selection filters cleared");
+    sMenuText     = QT_TR_NOOP("No Selection Filters");
+    sToolTipText  = QT_TR_NOOP("Clears all selection filters");
     sWhatsThis    = "Part_RemoveSelectionGate";
-    sStatusTip    = QT_TR_NOOP("All selection filters cleared");
+    sStatusTip    = sToolTipText;
     sPixmap       = "clear-selection";
     sAccel        = "C, S";
     eType         = Alter3DView;

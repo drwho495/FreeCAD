@@ -21,11 +21,9 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 #include <QAction>
-#endif
+
 
 #include <App/Application.h>
 #include <App/Document.h>
@@ -48,7 +46,7 @@ using namespace Gui;
 /* TRANSLATOR PartDesignGui::TaskLoftParameters */
 
 TaskLoftParameters::TaskLoftParameters(ViewProviderLoft* LoftView, bool /*newObj*/, QWidget* parent)
-    : TaskSketchBasedParameters(LoftView, parent, "PartDesign_AdditiveLoft", tr("Loft parameters"))
+    : TaskSketchBasedParameters(LoftView, parent, "PartDesign_AdditiveLoft", tr("Loft Parameters"))
     , ui(new Ui_TaskLoftParameters)
 {
     // we need a separate container widget to add all controls to

@@ -21,11 +21,10 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
+
 # include <QDockWidget>
 # include <QStatusBar>
-#endif
+
 
 #include "Workbench.h"
 #include "WorkbenchManipulator.h"
@@ -335,7 +334,7 @@ void Workbench::createLinkMenu(MenuItem *item) {
     }
 
     auto linkMenu = new MenuItem;
-    linkMenu->setCommand("Link actions");
+    linkMenu->setCommand("Link Actions");
     *linkMenu << "Std_LinkMakeGroup" << "Std_LinkMake";
 
     auto &rMgr = Application::Instance->commandManager();
@@ -535,7 +534,7 @@ std::list<std::string> Workbench::listCommandbars() const
     qApp->translate("CommandGroup", "Structure");
     qApp->translate("CommandGroup", "Standard-Test");
     qApp->translate("CommandGroup", "Standard-View");
-    qApp->translate("CommandGroup", "TreeView");
+    qApp->translate("CommandGroup", "Tree View");
     qApp->translate("CommandGroup", "Measure");
 
     qApp->translate("Workbench", "&File");
@@ -544,8 +543,8 @@ std::list<std::string> Workbench::listCommandbars() const
     qApp->translate("Workbench", "Clipboard");
     qApp->translate("Workbench", "Workbench");
     qApp->translate("Workbench", "Structure");
-    qApp->translate("Workbench", "Standard &views");
-    qApp->translate("Workbench", "Individual views");
+    qApp->translate("Workbench", "Standard &Views");
+    qApp->translate("Workbench", "Individual Views");
     qApp->translate("Workbench", "A&xonometric");
     qApp->translate("Workbench", "&Stereo");
     qApp->translate("Workbench", "&Zoom");
@@ -554,7 +553,7 @@ std::list<std::string> Workbench::listCommandbars() const
     qApp->translate("Workbench", "&Tools");
     qApp->translate("Workbench", "&Macro");
     qApp->translate("Workbench", "&Windows");
-    qApp->translate("Workbench", "&On-line help");
+    qApp->translate("Workbench", "&Online Help");
     qApp->translate("Workbench", "&Help");
     qApp->translate("Workbench", "Help");
     qApp->translate("Workbench", "File");
@@ -562,7 +561,7 @@ std::list<std::string> Workbench::listCommandbars() const
     qApp->translate("Workbench", "View");
     qApp->translate("Workbench", "Special Ops");
     // needed for Structure toolbar
-    qApp->translate("Workbench", "Link actions");
+    qApp->translate("Workbench", "Link Actions");
 #endif
 
 #if 0 // needed for the application menu on OSX
@@ -570,7 +569,7 @@ std::list<std::string> Workbench::listCommandbars() const
     qApp->translate("MAC_APPLICATION_MENU", "Hide %1");
     qApp->translate("MAC_APPLICATION_MENU", "Hide Others");
     qApp->translate("MAC_APPLICATION_MENU", "Show All");
-    qApp->translate("MAC_APPLICATION_MENU", "Preferences...");
+    qApp->translate("MAC_APPLICATION_MENU", "Preferences");
     qApp->translate("MAC_APPLICATION_MENU", "Quit %1");
     qApp->translate("MAC_APPLICATION_MENU", "About %1");
 #endif
@@ -592,7 +591,7 @@ void StdWorkbench::setupContextMenu(const char* recipient, MenuItem* item) const
         *item << "Separator";
 
         auto StdViews = new MenuItem;
-        StdViews->setCommand( "Standard views" );
+        StdViews->setCommand( "Standard Views" );
 
         *StdViews << "Std_ViewIsometric" << "Separator" << "Std_ViewHome" << "Std_ViewFront" << "Std_ViewTop" << "Std_ViewRight"
                   << "Std_ViewRear" << "Std_ViewBottom" << "Std_ViewLeft"
@@ -661,7 +660,7 @@ MenuItem* StdWorkbench::setupMenuBar() const
 
     // Standard views
     auto stdviews = new MenuItem;
-    stdviews->setCommand("Standard &views");
+    stdviews->setCommand("Standard &Views");
     *stdviews << "Std_ViewFitAll" << "Std_ViewFitSelection" << "Std_AlignToSelection" << axoviews
               << "Separator" << "Std_ViewHome" << "Std_ViewFront" << "Std_ViewTop"
               << "Std_ViewRight" << "Std_ViewRear" << "Std_ViewBottom" << "Std_ViewLeft"
@@ -719,10 +718,14 @@ MenuItem* StdWorkbench::setupMenuBar() const
     auto tool = new MenuItem( menuBar );
     tool->setCommand("&Tools");
 #ifdef BUILD_ADDONMGR
-    *tool << "Std_AddonMgr"
-          << "Separator";
+    if (Application::Instance->commandManager().getCommandByName("Std_AddonMgr")) {
+        *tool << "Std_AddonMgr"
+              << "Separator";
+    }
 #endif
     *tool << "Std_Measure"
+          << "Std_ClarifySelection"
+          << "Std_QuickMeasure"
           << "Std_UnitsCalculator"
           << "Separator"
           << "Std_ViewLoadImage"
@@ -816,7 +819,7 @@ ToolBarItem* StdWorkbench::setupToolBars() const
 
     // Individual views
     auto individualViews = new ToolBarItem(root, ToolBarItem::DefaultVisibility::Hidden);
-    individualViews->setCommand("Individual views");
+    individualViews->setCommand("Individual Views");
     *individualViews << "Std_ViewIsometric"
                      << "Std_ViewFront"
                      << "Std_ViewTop"
@@ -844,7 +847,7 @@ ToolBarItem* StdWorkbench::setupCommandBars() const
 
     // View
     auto view = new ToolBarItem( root );
-    view->setCommand("Standard views");
+    view->setCommand("Standard Views");
     *view << "Std_ViewFitAll" << "Std_ViewFitSelection" << "Std_ViewIsometric" << "Separator"
           << "Std_ViewFront" << "Std_ViewRight" << "Std_ViewTop"
           << "Std_ViewRear" << "Std_ViewLeft" << "Std_ViewBottom";

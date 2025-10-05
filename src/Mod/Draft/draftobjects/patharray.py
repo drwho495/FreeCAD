@@ -67,7 +67,7 @@ import FreeCAD as App
 import DraftVecUtils
 import lazy_loader.lazy_loader as lz
 
-from draftutils.messages import _wrn, _err
+from draftutils.messages import _err, _log, _wrn
 from draftutils.translate import translate
 def QT_TRANSLATE_NOOP(ctx,txt): return txt
 from draftobjects.base import DraftObject
@@ -299,7 +299,7 @@ class PathArray(DraftLink):
             obj.TangentVector = App.Vector(1, 0, 0)
 
         if "ForceVertical" not in properties:
-            _tip = QT_TRANSLATE_NOOP("App::Property","Force use of 'Vertical Vector' as local Z direction when using 'Original' or 'Tangent' alignment mode")
+            _tip = QT_TRANSLATE_NOOP("App::Property","Force use of 'Vertical Vector' as local Z-direction when using 'Original' or 'Tangent' alignment mode")
             obj.addProperty("App::PropertyBool",
                             "ForceVertical",
                             "Alignment",
@@ -439,7 +439,7 @@ class PathArray(DraftLink):
         w = self.get_wires(obj.PathObject, obj.PathSubelements)
         if not w:
             _err(obj.PathObject.Label
-                 + translate("draft",", path object doesn't have 'Edges'."))
+                 + translate("draft",", path object does not have 'Edges'."))
             return
 
         base_rotation = obj.Base.Shape.Placement.Rotation
@@ -578,19 +578,25 @@ class PathArray(DraftLink):
             return
 
         if hasattr(obj, "PathObj"):
-            _wrn("v0.19, " + obj.Label + ", " + translate("draft", "migrated 'PathObj' property to 'PathObject'"))
+            _log("v0.19, " + obj.Name + ", migrated 'PathObj' property to 'PathObject'")
         if hasattr(obj, "PathSubs"):
-            _wrn("v0.19, " + obj.Label + ", " + translate("draft", "migrated 'PathSubs' property to 'PathSubelements'"))
+            _log("v0.19, " + obj.Name + ", migrated 'PathSubs' property to 'PathSubelements'")
         if hasattr(obj, "Xlate"):
-            _wrn("v0.19, " + obj.Label + ", " + translate("draft", "migrated 'Xlate' property to 'ExtraTranslation'"))
+            _log("v0.19, " + obj.Name + ", migrated 'Xlate' property to 'ExtraTranslation'")
         if not hasattr(obj, "Fuse"):
-            _wrn("v1.0, " + obj.Label + ", " + translate("draft", "added 'Fuse' property"))
+            _log("v1.0, " + obj.Name + ", added 'Fuse' property")
         if obj.getGroupOfProperty("Count") != "Spacing":
-            _wrn("v1.1, " + obj.Label + ", " + translate("draft", "moved 'Count' property to 'Spacing' subsection"))
+            _log("v1.1, " + obj.Name + ", moved 'Count' property to 'Spacing' subsection")
         if not hasattr(obj, "ReversePath"):
-            _wrn("v1.1, " + obj.Label + ", " + translate("draft", "added 'ReversePath', 'SpacingMode', 'SpacingUnit', 'UseSpacingPattern' and 'SpacingPattern' properties"))
+            _log(
+                "v1.1, "
+                + obj.Name
+                + ", "
+                + "added 'ReversePath', 'SpacingMode', 'SpacingUnit', 'UseSpacingPattern' "
+                + "and 'SpacingPattern' properties"
+            )
         if not hasattr(obj, "PlacementList"):
-            _wrn("v1.1, " + obj.Label + ", " + translate("draft", "added hidden property 'PlacementList'"))
+            _log("v1.1, " + obj.Name + ", added hidden property 'PlacementList'")
 
         self.set_properties(obj)
         obj.setGroupOfProperty("Count", "Spacing")
@@ -647,22 +653,25 @@ def placements_on_path(shapeRotation, pathwire, count, xlate, align,
         totalDist += e.Length
         ends.append(totalDist)
 
-    if startOffset > (totalDist - 1e-6):
+    # if align is True the length of the path cannot be zero:
+    minLength = 1e-6 if align else -1e-12
+
+    if startOffset > (totalDist - minLength):
         if startOffset != 0:
             _wrn(
                 translate(
                     "draft",
-                    "Start Offset too large for path length. Using zero instead."
+                    "Start Offset too large for path length. Using 0 instead."
                 )
             )
         startOffset = 0
 
-    if endOffset > (totalDist - startOffset - 1e-6):
+    if endOffset > (totalDist - startOffset - minLength):
         if endOffset != 0:
             _wrn(
                 translate(
                     "draft",
-                    "End Offset too large for path length minus Start Offset. Using zero instead."
+                    "End Offset too large for path length minus Start Offset. Using 0 instead."
                 )
             )
         endOffset = 0
@@ -789,7 +798,7 @@ def calculate_placement(globalRotation,
     t = edge.tangentAt(get_parameter_from_v0(edge, offset))
 
     if t.isEqual(nullv, tol):
-        _wrn(translate("draft", "Length of tangent vector is zero. Copy not aligned."))
+        _wrn(translate("draft", "Length of tangent vector is 0. Copy not aligned."))
         return placement
 
     if reversePath:
@@ -806,7 +815,7 @@ def calculate_placement(globalRotation,
     if mode in ("Original", "Tangent"):
         n = normal
         if n.isEqual(nullv, tol):
-            _wrn(translate("draft", "Length of normal vector is zero. Using a default axis instead."))
+            _wrn(translate("draft", "Length of normal vector is 0. Using a default axis instead."))
             n = t
         else:
             n_nor = n.normalize()
@@ -828,7 +837,7 @@ def calculate_placement(globalRotation,
             n = normal
 
         if n.isEqual(nullv, tol):
-            _wrn(translate("draft", "Length of normal vector is zero. Using a default axis instead."))
+            _wrn(translate("draft", "Length of normal vector is 0. Using a default axis instead."))
             n = t
         else:
             n_nor = n.normalize()

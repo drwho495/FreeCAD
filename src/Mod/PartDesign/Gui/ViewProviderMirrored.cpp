@@ -21,7 +21,6 @@
  ******************************************************************************/
 
 
-#include "PreCompiled.h"
 
 #include "ViewProviderMirrored.h"
 #include "TaskMirroredParameters.h"
@@ -36,7 +35,7 @@ TaskDlgFeatureParameters *ViewProviderMirrored::getEditDialog() {
 
 void ViewProviderMirrored::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
-    addDefaultAction(menu, QObject::tr("Edit mirrored"));
+    addDefaultAction(menu, QObject::tr("Edit Mirror"));
     PartDesignGui::ViewProvider::setupContextMenu(menu, receiver, member);
 }
 

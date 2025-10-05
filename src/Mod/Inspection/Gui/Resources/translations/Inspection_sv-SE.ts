@@ -10,13 +10,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="75"/>
-      <source>Inspection...</source>
-      <translation>Inspektion...</translation>
+      <source>Inspection…</source>
+      <translation>Inspektion…</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="76"/>
-      <source>Get distance information</source>
-      <translation type="unfinished">Get distance information</translation>
+      <source>Inspects distance information</source>
+      <translation>Kontrollerar information om avstånd</translation>
     </message>
   </context>
   <context>
@@ -28,14 +28,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="49"/>
-      <source>Visual inspection...</source>
-      <translation type="unfinished">Visual inspection...</translation>
+      <source>Visual Inspection…</source>
+      <translation>Visuell inspektion…</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="50"/>
-      <location filename="../../Command.cpp" line="51"/>
-      <source>Visual inspection</source>
-      <translation>Visuell inspektion</translation>
+      <source>Inspects the objects visually</source>
+      <translation>Inspekterar objekten visuellt</translation>
     </message>
   </context>
   <context>
@@ -56,7 +55,7 @@
     <message>
       <location filename="../../VisualInspection.ui" line="23"/>
       <source>Actual</source>
-      <translation type="unfinished">Actual</translation>
+      <translation>﻿Faktisk</translation>
     </message>
     <message>
       <location filename="../../VisualInspection.ui" line="39"/>
@@ -67,7 +66,7 @@
     <message>
       <location filename="../../VisualInspection.ui" line="50"/>
       <source>Nominal</source>
-      <translation type="unfinished">Nominal</translation>
+      <translation>Nominell</translation>
     </message>
     <message>
       <location filename="../../VisualInspection.ui" line="77"/>
@@ -77,7 +76,7 @@
     <message>
       <location filename="../../VisualInspection.ui" line="97"/>
       <source>Search distance</source>
-      <translation>Sök avstånd</translation>
+      <translation>Sökavstånd</translation>
     </message>
     <message>
       <location filename="../../VisualInspection.ui" line="129"/>
@@ -96,22 +95,22 @@
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="502"/>
       <source>Remove annotations</source>
-      <translation type="unfinished">Remove annotations</translation>
+      <translation>Ta bort anteckningar</translation>
     </message>
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="503"/>
       <source>Do you want to remove all annotations?</source>
-      <translation type="unfinished">Do you want to remove all annotations?</translation>
+      <translation>Vill du ta bort alla anteckningar?</translation>
     </message>
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="561"/>
       <source>Annotation</source>
-      <translation>Annotering</translation>
+      <translation>Anteckning</translation>
     </message>
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="564"/>
-      <source>Leave info mode</source>
-      <translation>Lämna info läge</translation>
+      <source>Leave Info Mode</source>
+      <translation>Lämna Info-läge</translation>
     </message>
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="695"/>

@@ -20,10 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QMessageBox>
-#endif
+
 
 #include <Gui/Application.h>
 #include <Gui/Command.h>
@@ -44,7 +42,7 @@ CmdRobotExportKukaCompact::CmdRobotExportKukaCompact()
 {
     sAppModule = "Robot";
     sGroup = QT_TR_NOOP("Robot");
-    sMenuText = QT_TR_NOOP("Kuka Compact Subroutine…");
+    sMenuText = QT_TR_NOOP("Kuka Compact Subroutine");
     sToolTipText = QT_TR_NOOP("Exports the trajectory as a compact KRL subroutine");
     sWhatsThis = "Robot_ExportKukaCompact";
     sStatusTip = sToolTipText;
@@ -119,7 +117,7 @@ CmdRobotExportKukaFull::CmdRobotExportKukaFull()
 {
     sAppModule = "Robot";
     sGroup = QT_TR_NOOP("Robot");
-    sMenuText = QT_TR_NOOP("Kuka Full Subroutine…");
+    sMenuText = QT_TR_NOOP("Kuka Full Subroutine");
     sToolTipText = QT_TR_NOOP("Exports the trajectory as a full KRL subroutine");
     sWhatsThis = "Robot_ExportKukaFull";
     sStatusTip = sToolTipText;

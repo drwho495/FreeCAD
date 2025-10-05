@@ -49,6 +49,7 @@ class TopoShape;
 }
 class gp_Lin;
 class gp_Pln;
+class Bnd_Box;
 
 namespace Base {
 // Specialization for gp_Pnt

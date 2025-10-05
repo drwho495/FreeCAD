@@ -20,9 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 
 # include <cmath>
 # include <limits>
@@ -42,7 +39,6 @@
 # include <QRegularExpression>
 # include <QTreeWidget>
 # include <QComboBox>
-#endif
 
 #include <Base/Tools.h>
 #include <App/Application.h>
@@ -282,7 +278,7 @@ bool Mirroring::accept()
 {
     if (ui->shapes->selectedItems().isEmpty()) {
         QMessageBox::critical(this, windowTitle(),
-            tr("Select a shape for mirroring, first."));
+            tr("Select a shape for mirroring."));
         return false;
     }
 

@@ -20,7 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
@@ -44,6 +43,6 @@ PyMOD_INIT_FUNC(MeshPart)
         PyMOD_Return(nullptr);
     }
     PyObject* mod = MeshPart::initModule();
-    Base::Console().log("Loading MeshPart module... done\n");
+    Base::Console().log("Loading MeshPart module… done\n");
     PyMOD_Return(mod);
 }

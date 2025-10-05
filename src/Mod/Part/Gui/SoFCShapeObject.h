@@ -34,13 +34,15 @@
 #include <Inventor/nodes/SoSeparator.h>
 #include <Inventor/nodes/SoShape.h>
 
+#include <Mod/Part/PartGlobal.h>
+
 namespace PartGui {
 
 class PartGuiExport SoFCShape : public SoSeparator {
     using inherited = SoSeparator;
     SO_NODE_HEADER(SoFCShape);
 
-    public:
+public:
     SoFCShape();
     static void initClass();
 

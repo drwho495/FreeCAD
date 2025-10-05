@@ -21,13 +21,10 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <QMessageBox>
 # include <QGroupBox>
 # include <QLabel>
 # include <QScreen>
-#endif // #ifndef _PreComp_
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -186,7 +183,7 @@ void TaskProjGroup::updateUi()
         ui->label_11->show();
     }
     else {
-        setWindowTitle(QObject::tr("Part View"));
+        setWindowTitle(QObject::tr("New View"));
         ui->projection->hide();
         ui->cbAutoDistribute->hide();
         ui->sbXSpacing->hide();

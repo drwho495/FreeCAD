@@ -20,11 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
+
 # include <QContextMenuEvent>
 # include <QMenu>
-#endif
+
 
 #include <cstring>
 
@@ -724,8 +723,8 @@ void PrefQuantitySpinBox::contextMenuEvent(QContextMenuEvent *event)
 
     // add the save value portion of the menu
     menu->addSeparator();
-    QAction *saveValueAction = menu->addAction(tr("Save value"));
-    QAction *clearListAction = menu->addAction(tr("Clear list"));
+    QAction *saveValueAction = menu->addAction(tr("Save Value"));
+    QAction *clearListAction = menu->addAction(tr("Clear List"));
     clearListAction->setDisabled(history.empty());
 
     // call the menu

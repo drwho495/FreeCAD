@@ -20,12 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 #include <limits>
 #include <boost/algorithm/string/predicate.hpp>
-#endif
 
 #include <Base/Tools.h>
 
@@ -570,6 +566,24 @@ void PropertyModel::removeProperty(const App::Property& _prop)
         parent->removeChildren(row, row);
         endRemoveRows();
     }
+}
+
+void PropertyModel::renameProperty(const App::Property& _prop)
+{
+    auto prop = const_cast<App::Property*>(&_prop);
+    auto it = itemMap.find(prop);
+    if (it == itemMap.end() || !it->second) {
+        return;
+    }
+
+    PropertyItem* item = it->second;
+    item->renameProperty(prop);
+    QModelIndex parent = this->index(item->parent()->row(), 0, QModelIndex());
+    QModelIndex nameIndex = this->index(item->row(), 0, parent);
+    QModelIndex dataIndex = this->index(item->row(), 1, parent);
+    QVector<int> roles;
+    roles << Qt::DisplayRole;
+    Q_EMIT dataChanged(nameIndex, dataIndex, roles);
 }
 
 void PropertyModel::updateChildren(PropertyItem* item, int column, const QModelIndex& parent)

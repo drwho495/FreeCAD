@@ -22,8 +22,6 @@
   *                                                                          *
   ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <algorithm>
 # include <cstring>
 # include <QAbstractButton>
@@ -57,7 +55,6 @@
 # include <QSet>
 # include <QStyledItemDelegate>
 # include <QPainter>
-#endif
 
 #include <App/Application.h>
 #include <Base/Console.h>
@@ -769,21 +766,23 @@ void DlgPreferencesImp::showResetOptions()
     auto groupText = currentGroupItem->text();
 
     // Reset per page
-    QAction* pageAction = menu.addAction(tr("Reset page '%1'...").arg(pageText),
-                                         this,
-                                         [&] { restorePageDefaults(currentPageItem); });
+    QAction* pageAction = menu.addAction(tr("Reset Page '%1'").arg(pageText), this, [&] {
+
+        restorePageDefaults(currentPageItem);
+    });
     pageAction->setToolTip(tr("Resets the user settings for the page '%1'").arg(pageText));
 
     // Reset per group
-    QAction* groupAction = menu.addAction(tr("Reset group '%1'...").arg(groupText),
+    QAction* groupAction = menu.addAction(tr("Reset Group '%1'").arg(groupText),
+
                                           this,
                                           [&] { restorePageDefaults(static_cast<PreferencesPageItem*>(currentPageItem->parent())); });
     groupAction->setToolTip(tr("Resets the user settings for the group '%1'").arg(groupText));
 
     // Reset all
-    QAction* allAction = menu.addAction(tr("Reset all..."),
-                                        this,
-                                        &DlgPreferencesImp::restoreDefaults);
+    QAction* allAction =
+        menu.addAction(tr("Reset All"), this, &DlgPreferencesImp::restoreDefaults);
+
     allAction->setToolTip(tr("Resets the user settings entirely"));
 
     connect(&menu, &QMenu::hovered, [&menu](QAction* hover) {
@@ -800,9 +799,9 @@ void DlgPreferencesImp::restoreDefaults()
 {
     QMessageBox box(this);
     box.setIcon(QMessageBox::Question);
-    box.setWindowTitle(tr("Clear user settings"));
-    box.setText(tr("Do you want to clear all your user settings?"));
-    box.setInformativeText(tr("If you agree all your settings will be cleared."));
+    box.setWindowTitle(tr("Clear User Settings"));
+    box.setText(tr("Clear all your user settings?"));
+    box.setInformativeText(tr("All settings will be cleared."));
     box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     box.setDefaultButton(QMessageBox::No);
 
@@ -945,14 +944,14 @@ void DlgPreferencesImp::restartIfRequired()
         QMessageBox restartBox(parentWidget()); // current window likely already closed, cant parent to it
 
         restartBox.setIcon(QMessageBox::Warning);
-        restartBox.setWindowTitle(tr("Restart required"));
-        restartBox.setText(tr("You must restart FreeCAD for changes to take effect."));
+        restartBox.setWindowTitle(tr("Restart Required"));
+        restartBox.setText(tr("Restart FreeCAD for changes to take effect."));
         restartBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
         restartBox.setDefaultButton(QMessageBox::Cancel);
         auto okBtn = restartBox.button(QMessageBox::Ok);
         auto cancelBtn = restartBox.button(QMessageBox::Cancel);
-        okBtn->setText(tr("Restart now"));
-        cancelBtn->setText(tr("Restart later"));
+        okBtn->setText(tr("Restart Now"));
+        cancelBtn->setText(tr("Restart Later"));
 
         int exec = restartBox.exec();
 
@@ -1720,7 +1719,6 @@ bool PreferencesSearchController::fuzzyMatch(const QString& searchText, const QS
     int targetIndex = 0;
     int consecutiveMatches = 0;
     int maxConsecutive = 0;
-    int totalMatches = 0;
     int firstMatchIndex = -1;
     int lastMatchIndex = -1;
     
@@ -1731,7 +1729,6 @@ bool PreferencesSearchController::fuzzyMatch(const QString& searchText, const QS
             }
             lastMatchIndex = targetIndex;
             searchIndex++;
-            totalMatches++;
             consecutiveMatches++;
             maxConsecutive = qMax(maxConsecutive, consecutiveMatches);
     } else {

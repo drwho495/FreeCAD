@@ -20,11 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
+
 # include <QMenu>
-#endif
+
 
 #include <App/Document.h>
 #include <App/DocumentObject.h>
@@ -70,7 +69,7 @@ void ViewProviderPart::setupContextMenu(QMenu* menu, QObject* receiver, const ch
 {
     auto func = new Gui::ActionFunction(menu);
 
-    QAction* act = menu->addAction(QObject::tr("Active object"));
+    QAction* act = menu->addAction(QObject::tr("Active Object"));
     act->setCheckable(true);
     act->setChecked(isActivePart());
     func->trigger(act, [this](){

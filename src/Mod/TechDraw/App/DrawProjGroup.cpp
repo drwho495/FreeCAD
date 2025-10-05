@@ -21,9 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 #include <QRectF>
 #include <gp_Ax2.hxx>
 #include <gp_Dir.hxx>
@@ -31,7 +29,7 @@
 #include <gp_Vec.hxx>
 #include <limits>
 #include <sstream>
-#endif
+
 
 #include <App/Application.h>
 #include <App/Document.h>
@@ -150,16 +148,9 @@ void DrawProjGroup::onChanged(const App::Property* prop)
         }
     }
 
-    //        if ( ScaleType.isValue("Automatic") ||
-    //             ScaleType.isValue("Custom") ){
-    //            //just documenting that nothing is required here
-    //            //DrawView::onChanged will sort out Scale hidden/readonly/etc
-    //        }
-
     if (prop == &Rotation) {
         if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
             Rotation.setValue(0.0);
-            purgeTouched();
         }
         return;
     }
@@ -169,8 +160,6 @@ void DrawProjGroup::onChanged(const App::Property* prop)
 
 App::DocumentObjectExecReturn* DrawProjGroup::execute()
 {
-    //    Base::Console().message("DPG::execute() - %s - waitingForChildren: %d\n",
-    //                            getNameInDocument(), waitingForChildren());
     if (!keepUpdated())
         return App::DocumentObject::StdReturn;
 
@@ -490,13 +479,11 @@ App::DocumentObject* DrawProjGroup::addProjection(const char* viewProjType)
         }
         else {//Front
             Anchor.setValue(view);
-            Anchor.purgeTouched();
             requestPaint();//make sure the group object is on the Gui page
             view->LockPosition.setValue(
                 true);//lock "Front" position within DPG (note not Page!).
             view->LockPosition.setStatus(App::Property::ReadOnly,
                                             true);//Front should stay locked.
-            view->LockPosition.purgeTouched();
         }
     }
     return view;
@@ -508,7 +495,7 @@ int DrawProjGroup::removeProjection(const char* viewProjType)
     // TODO: shouldn't be able to delete "Front" unless deleting whole group
     if (checkViewProjType(viewProjType)) {
         if (!hasProjection(viewProjType)) {
-            throw Base::RuntimeError("The projection doesn't exist in the group");
+            throw Base::RuntimeError("The projection does not exist in the group");
         }
 
         // Iterate through the child views and find the projection type
@@ -984,8 +971,6 @@ void DrawProjGroup::updateChildrenScale()
         }
 
         view->Scale.setValue(getScale());
-        view->Scale.purgeTouched();
-        view->purgeTouched();
     }
 }
 
@@ -1128,9 +1113,7 @@ void DrawProjGroup::updateSecondaryDirs()
         ProjDirection type = static_cast<ProjDirection>(v->Type.getValue());
         data = saveVals[type];
         v->Direction.setValue(data.first);
-        v->Direction.purgeTouched();
         v->XDirection.setValue(data.second);
-        v->XDirection.purgeTouched();
     }
     recomputeChildren();
 }
@@ -1225,4 +1208,26 @@ void DrawProjGroup::handleChangedPropertyType(Base::XMLReader& reader, const cha
         spacingYProperty.Restore(reader);
         spacingY.setValue(spacingYProperty.getValue());
     }
+}
+
+void DrawProjGroup::unsetupObject()
+{
+    if (getDocument() && !getDocument()->isAnyRestoring()) {
+
+        std::vector<std::string> childNamesToDelete;
+        for (App::DocumentObject* child : Views.getValues()) {
+            if (child) {
+                const char* name = child->getNameInDocument();
+                if (name) {
+                    childNamesToDelete.push_back(name);
+                }
+            }
+        }
+
+        for (const std::string& childName : childNamesToDelete) {
+            getDocument()->removeObject(childName.c_str());
+        }
+    }
+
+    DrawViewCollection::unsetupObject();
 }

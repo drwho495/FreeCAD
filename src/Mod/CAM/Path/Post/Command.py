@@ -108,7 +108,7 @@ class CommandPathPost:
             "Pixmap": "CAM_Post",
             "MenuText": QT_TRANSLATE_NOOP("CAM_Post", "Post Process"),
             "Accel": "P, P",
-            "ToolTip": QT_TRANSLATE_NOOP("CAM_Post", "Post Process the selected Job"),
+            "ToolTip": QT_TRANSLATE_NOOP("CAM_Post", "Post Processes the selected job"),
         }
 
     def IsActive(self):
@@ -150,7 +150,7 @@ class CommandPathPost:
             # This is also backwards compatible with the "previous" way of doing things.
             newline_handling = None
 
-        if policy == "Open File Dialog":
+        if policy.casefold() == "open file dialog":
             dlg = QtGui.QFileDialog()
             dlg.setFileMode(QtGui.QFileDialog.FileMode.AnyFile)
             dlg.setAcceptMode(QtGui.QFileDialog.AcceptMode.AcceptSave)
@@ -164,14 +164,14 @@ class CommandPathPost:
             else:
                 return
 
-        elif policy == "Append Unique ID on conflict":
+        elif policy.casefold() == "append unique id on conflict":
             while os.path.isfile(filename):
                 base, ext = os.path.splitext(filename)
                 filename = f"{base}-1{ext}"
             with open(filename, "w", encoding="utf-8", newline=newline_handling) as f:
                 f.write(gcode)
 
-        elif policy == "Open File Dialog on conflict":
+        elif policy.casefold() == "open file dialog on conflict":
             if os.path.isfile(filename):
                 dlg = QtGui.QFileDialog()
                 dlg.setFileMode(QtGui.QFileDialog.FileMode.AnyFile)
@@ -262,4 +262,4 @@ if FreeCAD.GuiUp:
     # register the FreeCAD command
     FreeCADGui.addCommand("CAM_Post", CommandPathPost())
 
-FreeCAD.Console.PrintLog("Loading PathPost... done\n")
+FreeCAD.Console.PrintLog("Loading PathPost… done\n")

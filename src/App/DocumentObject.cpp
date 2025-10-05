@@ -21,27 +21,24 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <stack>
 #include <memory>
 #include <map>
 #include <set>
 #include <vector>
 #include <string>
-#endif
 
-#include <App/DocumentObjectPy.h>
 #include <Base/Console.h>
 #include <Base/Matrix.h>
 #include <Base/Tools.h>
 #include <Base/Writer.h>
 
+#include "Expression.h"
 #include "Application.h"
 #include "ElementNamingUtils.h"
 #include "Document.h"
 #include "DocumentObject.h"
+#include "DocumentObjectPy.h"
 #include "DocumentObjectExtension.h"
 #include "DocumentObjectGroup.h"
 #include "GeoFeatureGroupExtension.h"
@@ -231,6 +228,19 @@ void DocumentObject::touch(bool noRecompute)
 void DocumentObject::freeze()
 {
     StatusBits.set(ObjectStatus::Freeze);
+
+    // store read-only property names
+    this->readOnlyProperties.clear();
+    std::vector<std::pair<const char*, Property*>> list;
+    static_cast<App::PropertyContainer*>(this)->getPropertyNamedList(list);
+    for (auto pair: list){
+        if (pair.second->isReadOnly()){
+            this->readOnlyProperties.push_back(pair.first);
+        } else {
+            pair.second->setReadOnly(true);
+        }
+    }
+
     // use the signalTouchedObject to refresh the Gui
     if (_pDoc) {
         _pDoc->signalTouchedObject(*this);
@@ -244,6 +254,17 @@ void DocumentObject::freeze()
 void DocumentObject::unfreeze(bool noRecompute)
 {
     StatusBits.reset(ObjectStatus::Freeze);
+
+    // reset read-only property status
+    std::vector<std::pair<const char*, Property*>> list;
+    static_cast<App::PropertyContainer*>(this)->getPropertyNamedList(list);
+
+    for (auto pair: list){
+        if (! std::count(readOnlyProperties.begin(), readOnlyProperties.end(), pair.first)){
+            pair.second->setReadOnly(false);
+        }
+    }
+
     touch(noRecompute);
 }
 
@@ -715,10 +736,33 @@ bool DocumentObject::removeDynamicProperty(const char* name)
 bool DocumentObject::renameDynamicProperty(Property* prop, const char* name)
 {
     std::string oldName = prop->getName();
+
+    auto expressions = ExpressionEngine.getExpressions();
+    std::vector<std::shared_ptr<Expression>> expressionsToMove;
+    std::vector<App::ObjectIdentifier> idsWithExprsToRemove;
+
+    for (const auto& [id, expr] : expressions) {
+        if (id.getProperty() == prop) {
+            idsWithExprsToRemove.push_back(id);
+            expressionsToMove.emplace_back(expr->copy());
+        }
+    }
+
+    for (const auto& it : idsWithExprsToRemove) {
+        ExpressionEngine.setValue(it, std::shared_ptr<Expression>());
+    }
+
     bool renamed = TransactionalObject::renameDynamicProperty(prop, name);
     if (renamed && _pDoc) {
         _pDoc->renamePropertyOfObject(this, prop, oldName.c_str());
     }
+
+
+    App::ObjectIdentifier idNewProp(prop->getContainer(), std::string(name));
+    for (auto& exprToMove : expressionsToMove) {
+        ExpressionEngine.setValue(idNewProp, exprToMove);
+    }
+
     return renamed;
 }
 
@@ -820,6 +864,10 @@ DocumentObject::onProposedLabelChange(std::string& newLabel)
 
 void DocumentObject::onEarlyChange(const Property* prop)
 {
+    if (isFreezed() && prop != &Visibility) {
+        return;
+    }
+
     if (GetApplication().isClosingAll()) {
         return;
     }

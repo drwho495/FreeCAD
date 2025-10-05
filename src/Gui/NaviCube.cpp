@@ -20,8 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
+#include <FCConfig.h>
+
 # include <algorithm>
 # include <numbers>
 # ifdef FC_OS_WIN32
@@ -45,7 +45,6 @@
 # include <QOpenGLTexture>
 # include <QOpenGLWidget>
 # include <QPainterPath>
-#endif
 
 #include <Base/Color.h>
 #include <Base/Tools.h>
@@ -1255,7 +1254,7 @@ NaviCubeDraggableCmd::NaviCubeDraggableCmd()
     : Command("NaviCubeDraggableCmd")
 {
     sGroup        = "";
-    sMenuText     = QT_TR_NOOP("Movable navigation cube");
+    sMenuText     = QT_TR_NOOP("Movable Navigation Cube");
     sToolTipText  = QT_TR_NOOP("Drag and place NaviCube");
     sWhatsThis    = "";
     sStatusTip    = sToolTipText;

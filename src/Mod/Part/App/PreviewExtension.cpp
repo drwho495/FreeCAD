@@ -23,8 +23,6 @@
 
 #include "PreviewExtension.h"
 
-#include "PreCompiled.h"
-
 #include <App/DocumentObject.h>
 
 EXTENSION_PROPERTY_SOURCE(Part::PreviewExtension, App::DocumentObjectExtension)

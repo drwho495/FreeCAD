@@ -20,8 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <cassert>
 # include <BRep_Tool.hxx>
 # include <BRepAdaptor_Curve.hxx>
@@ -65,7 +63,6 @@
 # include <Adaptor3d_HCurveOnSurface.hxx>
 # include <GeomAdaptor_HCurve.hxx>
 # endif
-#endif
 
 #include <Base/Exception.h>
 #include <Base/Vector3D.h>
@@ -795,18 +792,24 @@ bool Part::Tools::isShapeEmpty(const TopoShape& shape)
 
 bool Part::Tools::isShapeEmpty(const TopoDS_Shape& shape)
 {
-    // If shape is null we consider it as empty
-    if (shape.IsNull()) {
-        return true;
-    }
-
-    if (shape.ShapeType() == TopAbs_COMPOUND) {
+    static const auto isEveryShapeInCompoundEmpty = [](const TopoDS_Shape& shape) {
         for (TopoDS_Iterator it(shape); it.More(); it.Next()) {
             if (const TopoDS_Shape& sub = it.Value(); !isShapeEmpty(sub)) {
                 // Found a non-empty sub-shape
                 return false;
             }
         }
+
+        return true;
+    };
+
+    // If shape is null we consider it as empty
+    if (shape.IsNull()) {
+        return true;
+    }
+
+    if (shape.ShapeType() == TopAbs_COMPOUND) {
+        return isEveryShapeInCompoundEmpty(shape);
     }
 
     // To see if shape is non-empty we check if it has at least one vertex

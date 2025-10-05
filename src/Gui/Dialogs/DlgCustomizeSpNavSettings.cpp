@@ -20,7 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
 #include "Dialogs/DlgCustomizeSpNavSettings.h"
 #include "ui_DlgCustomizeSpNavSettings.h"
@@ -42,7 +41,7 @@ DlgCustomizeSpNavSettings::DlgCustomizeSpNavSettings(QWidget* parent)
     }
     if (!app->isSpaceballPresent()) {
         this->setWindowTitle(tr("Spaceball Motion"));
-        this->setMessage(tr("No Spaceball Present"));
+        this->setMessage(tr("No Spaceball present"));
         return;
     }
     this->init = true;
@@ -131,7 +130,7 @@ void DlgCustomizeSpNavSettings::changeEvent(QEvent* e)
             this->setWindowTitle(tr("Spaceball Motion"));
             QLabel* messageLabel = this->findChild<QLabel*>();
             if (messageLabel) {
-                messageLabel->setText(tr("No Spaceball Present"));
+                messageLabel->setText(tr("No Spaceball present"));
             }
         }
     }

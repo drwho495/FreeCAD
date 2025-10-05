@@ -10,12 +10,12 @@
     </message>
     <message>
       <location filename="../../CommandInsertRobot.cpp" line="241"/>
-      <source>Add tool</source>
-      <translation>Afegeix una eina</translation>
+      <source>Tool</source>
+      <translation>Eina</translation>
     </message>
     <message>
       <location filename="../../CommandInsertRobot.cpp" line="242"/>
-      <source>Add a tool shape to the robot</source>
+      <source>Adds a tool shape to the robot</source>
       <translation>Afegeix una forma d'eina al robot</translation>
     </message>
   </context>
@@ -28,13 +28,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="164"/>
-      <source>Place robot...</source>
-      <translation>Col·loca un robot...</translation>
+      <source>Place Robot</source>
+      <translation>Col·locar robot</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="165"/>
-      <source>Place a robot (experimental!)</source>
-      <translation>Col·loca un robot (experimental!)</translation>
+      <source>Places a robot in the scene</source>
+      <translation>Col·loca un robot a l'escena</translation>
     </message>
   </context>
   <context>
@@ -46,12 +46,12 @@
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="56"/>
-      <source>Create trajectory</source>
-      <translation>Crea la trajectòria</translation>
+      <source>Trajectory</source>
+      <translation type="unfinished">Trajectory</translation>
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="57"/>
-      <source>Create a new empty trajectory</source>
+      <source>Creates a new empty trajectory</source>
       <translation>Crea una nova trajectòria buida</translation>
     </message>
   </context>
@@ -64,13 +64,13 @@
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="361"/>
-      <source>Edge to Trajectory...</source>
-      <translation>Vora de la trajectòria...</translation>
+      <source>Edge to Trajectory</source>
+      <translation>Vora de trajectòria</translation>
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="362"/>
-      <source>Generate a Trajectory from a set of edges</source>
-      <translation>Genera la trajectòria d'un conjunt de vores</translation>
+      <source>Generates a trajectory from the selected edges</source>
+      <translation>Generar una trajectòria de les vores seleccionades</translation>
     </message>
   </context>
   <context>
@@ -82,13 +82,13 @@
     </message>
     <message>
       <location filename="../../CommandExport.cpp" line="47"/>
-      <source>Kuka compact subroutine...</source>
-      <translation>Kuka compacte subrutines...</translation>
+      <source>Kuka Compact Subroutine</source>
+      <translation>Subrutina Kuka Compact</translation>
     </message>
     <message>
       <location filename="../../CommandExport.cpp" line="48"/>
-      <source>Export the trajectory as a compact KRL subroutine.</source>
-      <translation>Exporta la trajectòria com un compacte subrutines KRL.</translation>
+      <source>Exports the trajectory as a compact KRL subroutine</source>
+      <translation>Exporta la trajectòria com una subrutina KRL compact</translation>
     </message>
   </context>
   <context>
@@ -100,13 +100,13 @@
     </message>
     <message>
       <location filename="../../CommandExport.cpp" line="122"/>
-      <source>Kuka full subroutine...</source>
-      <translation>Subrutina Kuka completa...</translation>
+      <source>Kuka Full Subroutine</source>
+      <translation>Subrutina Kuka completa</translation>
     </message>
     <message>
       <location filename="../../CommandExport.cpp" line="123"/>
-      <source>Export the trajectory as a full KRL subroutine.</source>
-      <translation>Exporta la trajectòria com una subrutina KRL.</translation>
+      <source>Exports the trajectory as a full KRL subroutine</source>
+      <translation>Exporta la trajectòria com una subrutina KRL completa</translation>
     </message>
   </context>
   <context>
@@ -123,8 +123,8 @@
     </message>
     <message>
       <location filename="../../CommandInsertRobot.cpp" line="194"/>
-      <source>Insert a Kuka IR125 into the document.</source>
-      <translation>Insereix un Kuka IR125 en el document.</translation>
+      <source>Inserts a Kuka IR125 robot into the scene</source>
+      <translation>Insereix un robot Kuka IR125 a l'escena</translation>
     </message>
   </context>
   <context>
@@ -141,8 +141,8 @@
     </message>
     <message>
       <location filename="../../CommandInsertRobot.cpp" line="99"/>
-      <source>Insert a Kuka IR16 into the document.</source>
-      <translation>Insereix un Kuka IR125 en el document.</translation>
+      <source>Inserts a Kuka IR16 robot into the scene</source>
+      <translation>Insereix un robot Kuka IR16 a l'escena</translation>
     </message>
   </context>
   <context>
@@ -159,8 +159,8 @@
     </message>
     <message>
       <location filename="../../CommandInsertRobot.cpp" line="147"/>
-      <source>Insert a Kuka IR210 into the document.</source>
-      <translation>Insereix un Kuka IR210 en el document.</translation>
+      <source>Inserts a Kuka IR210 robot into the scene</source>
+      <translation>Insereix un robot Kuka IR210 a l'escena</translation>
     </message>
   </context>
   <context>
@@ -177,8 +177,8 @@
     </message>
     <message>
       <location filename="../../CommandInsertRobot.cpp" line="48"/>
-      <source>Insert a Kuka IR500 into the document.</source>
-      <translation>Insereix un Kuka IR500 en el document.</translation>
+      <source>Inserts a Kuka IR500 into the document</source>
+      <translation>Insereix un Kuka IR500 al document</translation>
     </message>
   </context>
   <context>
@@ -190,13 +190,13 @@
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="90"/>
-      <source>Insert in trajectory</source>
-      <translation>Insereix en la trajectòria</translation>
+      <source>Insert in Trajectory</source>
+      <translation>Insereix a la trajectòria</translation>
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="91"/>
-      <source>Insert robot Tool location into trajectory</source>
-      <translation>Insereix ubicació d'eina del robot a trajectòria</translation>
+      <source>Inserts the robot tool location into the trajectory</source>
+      <translation>Insereix la posició de l'eina del robot a la trajectòria</translation>
     </message>
   </context>
   <context>
@@ -208,13 +208,13 @@
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="159"/>
-      <source>Insert in trajectory</source>
-      <translation>Insereix en la trajectòria</translation>
+      <source>Insert in Trajectory</source>
+      <translation>Insereix a la trajectòria</translation>
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="160"/>
-      <source>Insert preselection position into trajectory (W)</source>
-      <translation>Insereix la preselecció de posició en trajectòria (W)</translation>
+      <source>Inserts the preselection position into the trajectory (W)</source>
+      <translation>Insereix la posició de la preselecció a la trajectòria (W)</translation>
     </message>
   </context>
   <context>
@@ -226,9 +226,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="111"/>
+      <source>Move to Home</source>
+      <translation>Mou a la posició inicial</translation>
+    </message>
+    <message>
       <location filename="../../Command.cpp" line="112"/>
-      <source>Move to home</source>
-      <translation>Desplaça-ho a casa</translation>
+      <source>Moves to the home position</source>
+      <translation>Es mou a la posició inicial</translation>
     </message>
   </context>
   <context>
@@ -240,13 +244,13 @@
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="236"/>
-      <source>Set default orientation</source>
+      <source>Set Default Orientation</source>
       <translation>Estableix l'orientació per defecte</translation>
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="238"/>
-      <source>Set the default orientation for subsequent commands for waypoint creation</source>
-      <translation>Estableix l'orientació per defecte per a ordres posteriors per a la creació de fites</translation>
+      <source>Sets the default orientation for subsequent commands for waypoint creation</source>
+      <translation>Estableix l'orientació per defecte per a les ordres posteriors de creació de punts de camí</translation>
     </message>
   </context>
   <context>
@@ -258,13 +262,13 @@
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="280"/>
-      <source>Set default values</source>
+      <source>Set Default Values</source>
       <translation>Estableix els valors per defecte</translation>
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="281"/>
-      <source>Set the default values for speed, acceleration and continuity for subsequent commands of waypoint creation</source>
-      <translation>Estableix els valors per defecte de velocitat, acceleració i continuïtat per a ordres posteriors de creació de fites</translation>
+      <source>Sets the default values for speed, acceleration, and continuity for subsequent commands of waypoint creation</source>
+      <translation>Estableix els valors per defecte de velocitat, acceleració i continuïtat per a les ordres posteriors de creació de punts de camí</translation>
     </message>
   </context>
   <context>
@@ -276,45 +280,49 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="52"/>
+      <source>Set Home Position</source>
+      <translation>Estableix la posició inicial</translation>
+    </message>
+    <message>
       <location filename="../../Command.cpp" line="53"/>
-      <source>Set the home position</source>
-      <translation>Estableix la posició de casa</translation>
+      <source>Sets the home position</source>
+      <translation>Estableix la posició inicial</translation>
     </message>
   </context>
   <context>
     <name>CmdRobotSimulate</name>
     <message>
-      <location filename="../../Command.cpp" line="211"/>
+      <location filename="../../Command.cpp" line="212"/>
       <source>Robot</source>
       <translation>Robot</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="212"/>
-      <source>Simulate a trajectory</source>
-      <translation>Simula una trajectòria</translation>
+      <location filename="../../Command.cpp" line="213"/>
+      <source>Simulate Trajectory</source>
+      <translation>Simula la trajectòria</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="213"/>
-      <source>Run a simulation on a trajectory</source>
-      <translation>Executa una simulació en una trajectòria</translation>
+      <location filename="../../Command.cpp" line="214"/>
+      <source>Simulates robot movement along a selected trajectory</source>
+      <translation>Simula el moviment del robot al llarg d'una trajectòria seleccionada</translation>
     </message>
   </context>
   <context>
     <name>CmdRobotTrajectoryCompound</name>
     <message>
-      <location filename="../../CommandTrajectory.cpp" line="483"/>
+      <location filename="../../CommandTrajectory.cpp" line="482"/>
       <source>Robot</source>
       <translation>Robot</translation>
     </message>
     <message>
-      <location filename="../../CommandTrajectory.cpp" line="484"/>
-      <source>Trajectory compound...</source>
-      <translation>Compost de trajectòria...</translation>
+      <location filename="../../CommandTrajectory.cpp" line="483"/>
+      <source>Trajectory Compound</source>
+      <translation>Trajectòria composta</translation>
     </message>
     <message>
-      <location filename="../../CommandTrajectory.cpp" line="485"/>
-      <source>Group and connect some trajectories to one</source>
-      <translation>Agrupar i connectar algunes trajectòries a una</translation>
+      <location filename="../../CommandTrajectory.cpp" line="484"/>
+      <source>Groups and connects multiple trajectories into one</source>
+      <translation>Agrupa i connecta múltiples trajectòries en una de sola</translation>
     </message>
   </context>
   <context>
@@ -326,25 +334,25 @@
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="427"/>
-      <source>Dress-up trajectory...</source>
-      <translation>Modificació de la trajectòria...</translation>
+      <source>Dress-Up Trajectory</source>
+      <translation>Trajectòria superposada</translation>
     </message>
     <message>
-      <location filename="../../CommandTrajectory.cpp" line="429"/>
-      <source>Create a dress-up object which overrides some aspects of a trajectory</source>
-      <translation>Crea un objecte modificat que invalida alguns aspectes d'una trajectòria</translation>
+      <location filename="../../CommandTrajectory.cpp" line="428"/>
+      <source>Creates a dress-up object that overrides aspects of a trajectory</source>
+      <translation>Crea un objecte superposat que sobreescriu aspectes d'una trajectòria</translation>
     </message>
   </context>
   <context>
     <name>Gui::TaskView::TaskWatcherCommands</name>
     <message>
       <location filename="../../Workbench.cpp" line="51"/>
-      <source>Trajectory tools</source>
+      <source>Trajectory Tools</source>
       <translation>Eines de trajectòria</translation>
     </message>
     <message>
       <location filename="../../Workbench.cpp" line="52"/>
-      <source>Robot tools</source>
+      <source>Robot Tools</source>
       <translation>Eines de robot</translation>
     </message>
     <message>
@@ -356,16 +364,16 @@
   <context>
     <name>QObject</name>
     <message>
+      <location filename="../../Command.cpp" line="71"/>
+      <location filename="../../Command.cpp" line="130"/>
+      <location filename="../../Command.cpp" line="236"/>
+      <location filename="../../CommandExport.cpp" line="62"/>
+      <location filename="../../CommandExport.cpp" line="137"/>
       <location filename="../../CommandInsertRobot.cpp" line="260"/>
       <location filename="../../CommandTrajectory.cpp" line="106"/>
       <location filename="../../CommandTrajectory.cpp" line="173"/>
       <location filename="../../CommandTrajectory.cpp" line="192"/>
-      <location filename="../../CommandTrajectory.cpp" line="464"/>
-      <location filename="../../Command.cpp" line="71"/>
-      <location filename="../../Command.cpp" line="130"/>
-      <location filename="../../Command.cpp" line="235"/>
-      <location filename="../../CommandExport.cpp" line="62"/>
-      <location filename="../../CommandExport.cpp" line="137"/>
+      <location filename="../../CommandTrajectory.cpp" line="463"/>
       <source>Wrong selection</source>
       <translation>Selecció incorrecta</translation>
     </message>
@@ -380,20 +388,20 @@
       <translation>Selecciona un Robot</translation>
     </message>
     <message>
-      <location filename="../../CommandTrajectory.cpp" line="107"/>
-      <location filename="../../Command.cpp" line="236"/>
+      <location filename="../../Command.cpp" line="237"/>
       <location filename="../../CommandExport.cpp" line="63"/>
       <location filename="../../CommandExport.cpp" line="138"/>
+      <location filename="../../CommandTrajectory.cpp" line="107"/>
       <source>Select one Robot and one Trajectory object.</source>
       <translation>Selecciona un Robot i un objecte de trajectòria.</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="243"/>
+      <location filename="../../Command.cpp" line="244"/>
       <source>Trajectory not valid</source>
       <translation>Trajectòria no vàlida</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="244"/>
+      <location filename="../../Command.cpp" line="245"/>
       <source>You need at least two waypoints in a trajectory to simulate.</source>
       <translation>Necessiteu almenys dos punts de camí en una trajectòria per a la simulació.</translation>
     </message>
@@ -467,7 +475,7 @@
       <translation>acceleració: (per exemple, 1 m/s^2 o 3 cm/s^2)</translation>
     </message>
     <message>
-      <location filename="../../CommandTrajectory.cpp" line="465"/>
+      <location filename="../../CommandTrajectory.cpp" line="464"/>
       <source>Select the Trajectory which you want to dress up.</source>
       <translation>Seleccionar la trajectòria que vol modificar.</translation>
     </message>
@@ -477,14 +485,14 @@
       <translation>Modifica</translation>
     </message>
     <message>
-      <location filename="../../Workbench.cpp" line="74"/>
+      <location filename="../../Workbench.cpp" line="73"/>
       <source>No robot files installed</source>
       <translation>No hi ha fitxers de robot instal·lats</translation>
     </message>
     <message>
-      <location filename="../../Workbench.cpp" line="75"/>
-      <source>Please visit %1 and copy the files to %2</source>
-      <translation>Si us plau visiteu %1 i copieu els fitxers a %2</translation>
+      <location filename="../../Workbench.cpp" line="74"/>
+      <source>Visit %1 and copy the files to %2</source>
+      <translation>Visiteu %1 i copieu els fitxers a %2</translation>
     </message>
   </context>
   <context>
@@ -554,8 +562,8 @@
     </message>
     <message>
       <location filename="../../TaskEdge2TracParameter.ui" line="29"/>
-      <source>Hide / Show</source>
-      <translation>Amaga / Mostra</translation>
+      <source>Hide/Show</source>
+      <translation>Amaga/Mostra</translation>
     </message>
     <message>
       <location filename="../../TaskEdge2TracParameter.ui" line="47"/>
@@ -569,8 +577,8 @@
     </message>
     <message>
       <location filename="../../TaskEdge2TracParameter.ui" line="72"/>
-      <source>Sizing Value:</source>
-      <translation>Valor de la dimensió:</translation>
+      <source>Sizing Value</source>
+      <translation>Valor de mida</translation>
     </message>
     <message>
       <location filename="../../TaskEdge2TracParameter.ui" line="103"/>
@@ -753,8 +761,8 @@
     </message>
     <message>
       <location filename="../../TaskRobotMessages.ui" line="20"/>
-      <source>clear</source>
-      <translation>neteja</translation>
+      <source>Clear</source>
+      <translation>Neteja</translation>
     </message>
   </context>
   <context>
@@ -842,7 +850,7 @@
     <message>
       <location filename="../../TaskTrajectory.cpp" line="39"/>
       <source>Trajectory</source>
-      <translation type="unfinished">Trajectory</translation>
+      <translation>Trajectòria</translation>
     </message>
   </context>
   <context>
@@ -853,65 +861,65 @@
       <translation type="unfinished">Dress Up Parameter</translation>
     </message>
     <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="20"/>
-      <source>Speed &amp; Acceleration:</source>
-      <translation>Velocitat i acceleració:</translation>
-    </message>
-    <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="29"/>
-      <source>Speed:</source>
-      <translation>Velocitat:</translation>
-    </message>
-    <message>
       <location filename="../../TaskTrajectoryDressUpParameter.ui" line="55"/>
       <location filename="../../TaskTrajectoryDressUpParameter.ui" line="92"/>
       <source>Use</source>
       <translation>Utilitza</translation>
     </message>
     <message>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="20"/>
+      <source>Speed &amp; acceleration</source>
+      <translation>Velocitat i acceleració</translation>
+    </message>
+    <message>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="29"/>
+      <source>Speed</source>
+      <translation>Velocitat</translation>
+    </message>
+    <message>
       <location filename="../../TaskTrajectoryDressUpParameter.ui" line="66"/>
-      <source>Accel:</source>
-      <translation>Accel:</translation>
+      <source>Acceleration</source>
+      <translation>Acceleració</translation>
     </message>
     <message>
       <location filename="../../TaskTrajectoryDressUpParameter.ui" line="102"/>
-      <source>Don't change Cont</source>
-      <translation>No canviïs Cont</translation>
+      <source>Do not change continuous mode</source>
+      <translation>No canvieu el mode continu</translation>
     </message>
     <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="107"/>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="108"/>
       <source>Continues</source>
       <translation>Contínues</translation>
     </message>
     <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="112"/>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="113"/>
       <source>Discontinues</source>
       <translation>Discontínues</translation>
     </message>
     <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="127"/>
-      <source>Position and Orientation:</source>
-      <translation>Posició i Orientació:</translation>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="128"/>
+      <source>Position and orientation</source>
+      <translation>Posició i orientació</translation>
     </message>
     <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="159"/>
-      <source>Don't change Position &amp; Orientation</source>
-      <translation>No canvieu la posició ni l'orientació</translation>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="160"/>
+      <source>Do not change position &amp; orientation</source>
+      <translation>No canvieu la posició i l'orientació</translation>
     </message>
     <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="164"/>
-      <source>Use Orientation</source>
-      <translation>Utilitzar l'orientació</translation>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="165"/>
+      <source>Use orientation</source>
+      <translation>Utilitza l'orientació</translation>
     </message>
     <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="169"/>
-      <source>Add Position</source>
-      <translation>Afegeix la posició</translation>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="170"/>
+      <source>Add position</source>
+      <translation>Afegeix posició</translation>
     </message>
     <message>
-      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="174"/>
-      <source>Add Orientation</source>
-      <translation>Afegir l'orientació</translation>
+      <location filename="../../TaskTrajectoryDressUpParameter.ui" line="175"/>
+      <source>Add orientation</source>
+      <translation>Afegeix orientació</translation>
     </message>
   </context>
   <context>
@@ -923,18 +931,18 @@
     </message>
     <message>
       <location filename="../../Workbench.cpp" line="48"/>
-      <source>Insert Robots</source>
-      <translation>Insereix robots</translation>
+      <source>Insert Robot</source>
+      <translation>Insereix un Robot</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="50"/>
+      <source>Export Trajectory</source>
+      <translation>Exporta la trajectòria</translation>
     </message>
     <message>
       <location filename="../../Workbench.cpp" line="49"/>
       <source>&amp;Robot</source>
       <translation>&amp;Robot</translation>
-    </message>
-    <message>
-      <location filename="../../Workbench.cpp" line="50"/>
-      <source>Export trajectory</source>
-      <translation>Exporta la trajectòria</translation>
     </message>
   </context>
 </TS>

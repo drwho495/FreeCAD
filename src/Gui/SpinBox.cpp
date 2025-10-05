@@ -20,16 +20,12 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 # include <limits>
 # include <QKeyEvent>
 # include <QLineEdit>
 # include <QStyle>
 # include <QStyleOptionSpinBox>
 # include <QStylePainter>
-#endif
 
 #include <boost/math/special_functions/round.hpp>
 
@@ -40,6 +36,7 @@
 #include "Command.h"
 #include "Dialogs/DlgExpressionInput.h"
 #include "QuantitySpinBox_p.h"
+#include "Widgets.h"
 
 
 using namespace Gui;
@@ -205,7 +202,7 @@ void ExpressionSpinBox::openFormulaDialog()
 
     QPoint pos = spinbox->mapToGlobal(QPoint(0,0));
     box->move(pos-box->expressionPosition());
-    box->setExpressionInputSize(spinbox->width(), spinbox->height());
+    Gui::adjustDialogPosition(box);
 }
 
 bool ExpressionSpinBox::handleKeyEvent(const QString& text)

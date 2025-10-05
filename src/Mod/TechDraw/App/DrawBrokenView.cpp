@@ -41,10 +41,6 @@
 
 // ??? is option 1 actually working?  Not used in practice?
 
-
-#include "PreCompiled.h"    // NOLINT
-
-#ifndef _PreComp_
 #include <BRepAdaptor_Curve.hxx>
 #include <Mod/Part/App/FCBRepAlgoAPI_Cut.h>
 #include <BRepBndLib.hxx>
@@ -71,7 +67,6 @@
 #include <gp_Dir.hxx>
 #include <gp_Pln.hxx>
 #include <gp_Pnt.hxx>
-#endif
 
 #include <App/Document.h>
 #include <Base/BoundBox.h>
@@ -111,18 +106,18 @@ PROPERTY_SOURCE(TechDraw::DrawBrokenView, TechDraw::DrawViewPart)
 
 DrawBrokenView::DrawBrokenView()
 {
-    static const char* sgroup = "Broken View";
+    static const char* sgroup = "Broken view";
     constexpr double DefaultGapSizeMm{10.0};
 
     ADD_PROPERTY_TYPE(Breaks, (nullptr), sgroup, App::Prop_None,
-                      "Objects in the 3d view that define the start/end points and direction of breaks in this view.");
+                      "Objects in the 3D view that define the start/end points and direction of breaks in this view.");
     Breaks.setScope(App::LinkScope::Global);
     Breaks.setAllowExternal(true);
     ADD_PROPERTY_TYPE(Gap,
                       (DefaultGapSizeMm),
                       sgroup,
                       App::Prop_None,
-                      "The separation distance for breaks in this view (unscaled 3d length).");
+                      "The separation distance for breaks in this view (unscaled 3D length).");
 }
 
 
@@ -557,7 +552,7 @@ std::pair<Base::Vector3d, Base::Vector3d> DrawBrokenView::breakBoundsFromEdge(co
     }
 
     if (!DU::fpCompare(fabs(direction.Dot(stdY)), 1.0, EWTOLERANCE) ) {
-        Base::Console().message("DBV::breakBoundsFromEdge - direction is not X or Y\n");
+        Base::Console().message("DBV::breakBoundsFromEdge - direction is neither X nor Y\n");
         // TODO: throw? return nonsense?
     }
 

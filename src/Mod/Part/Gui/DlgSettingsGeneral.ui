@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>550</width>
-    <height>450</height>
+    <height>586</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox_2">
      <property name="title">
-      <string>Model settings</string>
+      <string>Model Settings</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
@@ -55,13 +55,29 @@
       <item row="2" column="0">
        <widget class="Gui::PrefCheckBox" name="checkSketchBaseRefine">
         <property name="text">
-         <string>Automatically refine model after sketch-based operation</string>
+         <string>Automatically refine model after applying operations</string>
         </property>
         <property name="checked">
          <bool>true</bool>
         </property>
         <property name="prefEntry" stdset="0">
          <cstring>RefineModel</cstring>
+        </property>
+        <property name="prefPath" stdset="0">
+         <cstring>Mod/PartDesign</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="Gui::PrefCheckBox" name="checkAllowCompoundBody">
+        <property name="text">
+         <string>Allow multiple solids in Part Design bodies by default</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+        <property name="prefEntry" stdset="0">
+         <cstring>AllowCompoundDefault</cstring>
         </property>
         <property name="prefPath" stdset="0">
          <cstring>Mod/PartDesign</cstring>
@@ -80,7 +96,7 @@
       <bool>false</bool>
      </property>
      <property name="title">
-      <string>Object naming</string>
+      <string>Object Naming</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="0">
@@ -108,42 +124,65 @@
       </size>
      </property>
      <property name="title">
-      <string>Features settings</string>
+      <string>Features Settings</string>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QVBoxLayout" name="verticalLayout_4">
       <item>
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Default profile type for holes</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Default profile type for holes</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Gui::PrefComboBox" name="comboDefaultProfileTypeForHole">
+          <property name="currentIndex">
+           <number>1</number>
+          </property>
+          <property name="prefEntry" stdset="0">
+           <cstring>defaultBaseTypeHole</cstring>
+          </property>
+          <property name="prefPath" stdset="0">
+           <cstring>Mod/PartDesign</cstring>
+          </property>
+          <item>
+           <property name="text">
+            <string>Circles and arcs</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Points, circles and arcs</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Points</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
-       <widget class="Gui::PrefComboBox" name="comboDefaultProfileTypeForHole">
-        <property name="currentIndex">
-         <number>1</number>
+       <widget class="Gui::PrefCheckBox" name="checkSwitchToTask">
+        <property name="toolTip">
+         <string>Automatically switch to the task panel when the Part Design workbench is activated</string>
+        </property>
+        <property name="text">
+         <string>Switch to task panel when entering Part Design workbench</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
         <property name="prefEntry" stdset="0">
-         <cstring>defaultBaseTypeHole</cstring>
+         <cstring>SwitchToTask</cstring>
         </property>
         <property name="prefPath" stdset="0">
          <cstring>Mod/PartDesign</cstring>
         </property>
-        <item>
-         <property name="text">
-          <string>Circles and arcs</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Points, circles and arcs</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Points</string>
-         </property>
-        </item>
        </widget>
       </item>
      </layout>
@@ -160,11 +199,11 @@
      <property name="flat">
       <bool>false</bool>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_3">
+     <layout class="QVBoxLayout" name="verticalLayout_31">
       <item>
        <widget class="Gui::PrefCheckBox" name="checkShowFinalPreview">
         <property name="text">
-         <string>Show final result by default when editing feature</string>
+         <string>Show final result by default when editing features</string>
         </property>
         <property name="prefEntry" stdset="0">
          <cstring>ShowFinal</cstring>
@@ -177,13 +216,29 @@
       <item>
        <widget class="Gui::PrefCheckBox" name="checkShowTransparentPreview">
         <property name="text">
-         <string>Show transparent preview overlay by default when editing feature</string>
+         <string>Show transparent preview overlay by default when editing features</string>
         </property>
         <property name="checked">
          <bool>true</bool>
         </property>
         <property name="prefEntry" stdset="0">
          <cstring>ShowTransparentPreview</cstring>
+        </property>
+        <property name="prefPath" stdset="0">
+         <cstring>Mod/PartDesign/Preview</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Gui::PrefCheckBox" name="checkShowProfilePreview">
+        <property name="text">
+         <string>Highlight the profile used to create features</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+        <property name="prefEntry" stdset="0">
+         <cstring>ShowProfilePreview</cstring>
         </property>
         <property name="prefPath" stdset="0">
          <cstring>Mod/PartDesign/Preview</cstring>
@@ -208,7 +263,7 @@
       <item>
        <widget class="QLabel" name="warningLabel">
         <property name="text">
-         <string>These settings are experimental and may result in decreased stability, more problems and undefined behaviors.</string>
+         <string>These settings are experimental and may result in decreased stability, problems and undefined behaviors</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -216,12 +271,28 @@
        </widget>
       </item>
       <item>
-       <widget class="Gui::PrefCheckBox" name="checkAllowCompoundBody">
+       <widget class="Gui::PrefCheckBox" name="enableGizmos">
         <property name="text">
-         <string>Allow multiple solids in Part Design Body by default (experimental)</string>
+         <string>Show interactive draggers when editing features</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
         <property name="prefEntry" stdset="0">
-         <cstring>AllowCompoundDefault</cstring>
+         <cstring>EnableGizmos</cstring>
+        </property>
+        <property name="prefPath" stdset="0">
+         <cstring>Mod/PartDesign</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Gui::PrefCheckBox" name="delayedGizmoUpdate">
+        <property name="text">
+         <string>Disable recompute while dragging</string>
+        </property>
+        <property name="prefEntry" stdset="0">
+         <cstring>DelayedGizmoUpdate</cstring>
         </property>
         <property name="prefPath" stdset="0">
          <cstring>Mod/PartDesign</cstring>

@@ -20,9 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <Inventor/errors/SoDebugError.h>
 #include <Inventor/errors/SoError.h>
@@ -38,13 +35,17 @@
 #include <QScreen>
 #include <QStatusBar>
 #include <QStyle>
+#include <QSurfaceFormat>
 #include <QTextStream>
 #include <QTimer>
 #include <QWindow>
-#endif
 
 #include <QLoggingCategory>
 #include <fmt/format.h>
+#include <list>
+#include <ranges>
+
+#include <FCConfig.h>
 
 #include <App/Document.h>
 #include <App/DocumentObjectPy.h>
@@ -141,6 +142,7 @@
 #include "QtWidgets.h"
 
 #include <OverlayManager.h>
+#include <ParamHandler.h>
 #include <Base/ServiceProvider.h>
 
 #ifdef BUILD_TRACY_FRAME_PROFILER
@@ -152,6 +154,7 @@ using namespace Gui::DockWnd;
 using namespace std;
 namespace sp = std::placeholders;
 
+FC_LOG_LEVEL_INIT("Gui")
 
 Application* Application::Instance = nullptr;
 
@@ -381,24 +384,54 @@ struct PyMethodDef FreeCADGui_methods[] = {
 
 void Application::initStyleParameterManager()
 {
+    static ParamHandlers handlers;
+
+    const auto deduceParametersFilePath = []() -> std::string {
+        const auto hMainWindowGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow");
+
+        if (const std::string& path = hMainWindowGrp->GetASCII("ThemeStyleParametersFile");
+            !path.empty()) {
+            return path;
+        }
+
+        return fmt::format("qss:parameters/{}.yaml", hMainWindowGrp->GetASCII("Theme", "Classic"));
+    };
+
+    auto themeParametersSource = new StyleParameters::YamlParameterSource(
+        deduceParametersFilePath(),
+        {.name = QT_TR_NOOP("Theme Parameters"),
+         .options = StyleParameters::ParameterSourceOption::UserEditable});
+
+    handlers.addDelayedHandler(
+        "BaseApp/Preferences/MainWindow",
+        {"ThemeStyleParametersFiles", "Theme"},
+        [themeParametersSource, deduceParametersFilePath, this](ParameterGrp::handle) {
+            themeParametersSource->changeFilePath(deduceParametersFilePath());
+            reloadStyleSheet();
+        });
+
     Base::registerServiceImplementation<StyleParameters::ParameterSource>(
         new StyleParameters::BuiltInParameterSource({.name = QT_TR_NOOP("Built-in Parameters")}));
 
-    Base::registerServiceImplementation<StyleParameters::ParameterSource>(
-        new StyleParameters::UserParameterSource(
-            App::GetApplication().GetParameterGroupByPath(
-                "User parameter:BaseApp/Preferences/Themes/Tokens"),
-            {.name = QT_TR_NOOP("Theme Parameters"),
-             .options = StyleParameters::ParameterSourceOption::UserEditable}));
-
+    // todo: left for compatibility with older theme versions, to be removed before release
     Base::registerServiceImplementation<StyleParameters::ParameterSource>(
         new StyleParameters::UserParameterSource(
             App::GetApplication().GetParameterGroupByPath(
                 "User parameter:BaseApp/Preferences/Themes/UserTokens"),
+            {.name = QT_TR_NOOP("Theme Parameters - Fallback"),
+             .options = StyleParameters::ParameterSourceOption::ReadOnly}));
+
+    Base::registerServiceImplementation<StyleParameters::ParameterSource>(themeParametersSource);
+
+    Base::registerServiceImplementation<StyleParameters::ParameterSource>(
+        new StyleParameters::UserParameterSource(
+            App::GetApplication().GetParameterGroupByPath(
+                "User parameter:BaseApp/Preferences/Themes/UserParameters"),
             {.name = QT_TR_NOOP("User Parameters"),
              .options = StyleParameters::ParameterSource::UserEditable}));
 
-    for (auto* source : Base::provideServiceImplementations<StyleParameters::ParameterSource>()) {
+    const auto sources = Base::provideServiceImplementations<StyleParameters::ParameterSource>();
+    for (auto* source : std::views::all(sources) | std::views::reverse) {
         d->styleParameterManager->addSource(source);
     }
 
@@ -447,10 +480,9 @@ Application::Application(bool GUIenabled)
                 0,
                 QLatin1String("Invalid system settings"),
                 QLatin1String(
-                    "Your system uses the same symbol for decimal point and group separator.\n\n"
-                    "This causes serious problems and makes the application fail to work "
-                    "properly.\n"
-                    "Go to the system configuration panel of the OS and fix this issue, please."));
+                    "The system locale uses the same symbol for the decimal point and the thousands separator.\n\n"
+                    "This may prevent the application from functioning correctly."
+                    "Go to the system configuration panel of the OS and fix this issue."));
             throw Base::RuntimeError("Invalid system settings");
         }
 #endif
@@ -860,6 +892,10 @@ void Application::exportTo(const char* FileName, const char* DocName, const char
     string unicodepath = Base::Tools::escapedUnicodeFromUtf8(File.filePath().c_str());
     unicodepath = Base::Tools::escapeEncodeFilename(unicodepath);
 
+    if (strcmp(Module, "Part") == 0) {
+        FC_WARN("Exporting with 'Part' is deprecated, use 'ImportGui' instead");
+    }
+
     if (Module) {
         try {
             std::vector<App::DocumentObject*> sel =
@@ -1053,10 +1089,10 @@ void Application::checkForRecomputes() {
     WaitCursor wc;
     wc.restoreCursor();
     auto res = QMessageBox::warning(getMainWindow(), QObject::tr("Recomputation required"),
-                                    QObject::tr("Some document(s) require recomputation for migration purposes. "
+                                    QObject::tr("Some documents require recomputation for migration purposes. "
                                                 "It is highly recommended to perform a recomputation before "
                                                 "any modification to avoid compatibility problems.\n\n"
-                                                "Do you want to recompute now?"),
+                                                "Recompute now?"),
                                     QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
     if (res != QMessageBox::Yes)
         return;
@@ -1071,8 +1107,8 @@ void Application::checkForRecomputes() {
     }
     if (hasError)
         QMessageBox::critical(getMainWindow(), QObject::tr("Recompute error"),
-                              QObject::tr("Failed to recompute some document(s).\n"
-                                          "Please check report view for more details."));
+                              QObject::tr("Failed to recompute some documents.\n"
+                                          "Check the report view for more details."));
 }
 
 void Application::checkPartialRestore(App::Document* doc)
@@ -2293,7 +2329,7 @@ void tryRunEventLoop(GUISingleApplication& mainApp)
     try {
         boost::interprocess::file_lock flock(filename.c_str());
         if (flock.try_lock()) {
-            Base::Console().log("Init: Executing event loop...\n");
+            Base::Console().log("Init: Executing event loop…\n");
             QApplication::exec();
 
             // Qt can't handle exceptions thrown from event handlers, so we need
@@ -2348,13 +2384,19 @@ void Application::runApplication()
 {
     StartupProcess::setupApplication();
 
+    QSurfaceFormat fmt;
+    fmt.setRenderableType(QSurfaceFormat::OpenGL);
+    fmt.setProfile(QSurfaceFormat::CompatibilityProfile);
+    fmt.setOption(QSurfaceFormat::DeprecatedFunctions, true);
+    QSurfaceFormat::setDefaultFormat(fmt);
+
     // A new QApplication
     Base::Console().log("Init: Creating Gui::Application and QApplication\n");
 
     int argc = App::Application::GetARGC();
     GUISingleApplication mainApp(argc, App::Application::GetARGV());
 
-#if defined(FC_OS_LINUX) || defined(FC_OS_BSD)
+#if (COIN_MAJOR_VERSION * 100 + COIN_MINOR_VERSION * 10 + COIN_MICRO_VERSION < 406) && (defined(FC_OS_LINUX) || defined(FC_OS_BSD))
     // If QT is running with native Wayland then inform Coin to use EGL
     if (QGuiApplication::platformName() == QString::fromStdString("wayland")) {
         setenv("COIN_EGL", "1", 1);

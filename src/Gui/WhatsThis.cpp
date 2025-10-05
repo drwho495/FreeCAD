@@ -21,11 +21,10 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
+
 # include <QApplication>
 # include <QWhatsThisClickedEvent>
-#endif
+
 
 #include "WhatsThis.h"
 #include "Action.h"
@@ -46,7 +45,7 @@ StdCmdDescription::StdCmdDescription()
   sMenuText     = QT_TR_NOOP("Des&cription");
   sToolTipText  = QT_TR_NOOP("Long description of commands");
   sWhatsThis    = "Std_DescriptionMode";
-  sStatusTip    = QT_TR_NOOP("Long description of commands");
+  sStatusTip    = sToolTipText;
   sAccel        = "F1";
 }
 

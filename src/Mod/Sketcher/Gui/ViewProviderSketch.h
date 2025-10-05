@@ -26,6 +26,7 @@
 #include <Inventor/SoRenderManager.h>
 #include <Inventor/sensors/SoNodeSensor.h>
 #include <QCoreApplication>
+#include <QMetaObject>
 #include <boost/signals2.hpp>
 #include <memory>
 
@@ -100,7 +101,7 @@ class DrawSketchHandler;
 using GeoList = Sketcher::GeoList;
 using GeoListFacade = Sketcher::GeoListFacade;
 
-class PartGuiExport SoSketchFaces: public PartGui::SoFCShape
+class SketcherGuiExport SoSketchFaces: public PartGui::SoFCShape
 {
     using inherited = SoFCShape;
     SO_NODE_HEADER(SoSketchFaces);
@@ -791,7 +792,7 @@ private:
     /** @name preselection functions */
     //@{
     /// helper to detect preselection
-    bool detectAndShowPreselection(SoPickedPoint* Point, const SbVec2s& cursorPos);
+    bool detectAndShowPreselection(SoPickedPoint* Point);
     int getPreselectPoint() const;
     int getPreselectCurve() const;
     int getPreselectCross() const;
@@ -956,6 +957,8 @@ private:
     boost::signals2::connection connectRedoDocument;
     boost::signals2::connection connectSolverUpdate;
 
+    QMetaObject::Connection screenChangeConnection;
+
     // modes while sketching
     SketchMode Mode;
 
@@ -991,6 +994,8 @@ private:
 
     SoNodeSensor cameraSensor;
     int viewOrientationFactor;  // stores if sketch viewed from front or back
+
+    bool blockContextMenu;
 };
 
 }  // namespace SketcherGui

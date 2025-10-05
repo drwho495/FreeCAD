@@ -4,19 +4,19 @@
   <context>
     <name>TestGui::UnitTest</name>
     <message>
-      <location filename="../../UnitTest.ui" line="17"/>
-      <source>FreeCAD UnitTest</source>
-      <translation>FreeCAD UnitTest</translation>
-    </message>
-    <message>
       <location filename="../../UnitTest.ui" line="32"/>
       <source>Test</source>
       <translation>Aufgabe</translation>
     </message>
     <message>
+      <location filename="../../UnitTest.ui" line="17"/>
+      <source>FreeCAD Unit Test</source>
+      <translation>FreeCAD-Unit-Test</translation>
+    </message>
+    <message>
       <location filename="../../UnitTest.ui" line="44"/>
-      <source>Select test name:</source>
-      <translation>Wähle Testaufgabe:</translation>
+      <source>Select test name</source>
+      <translation>Name des Tests auswählen</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="96"/>
@@ -65,28 +65,28 @@
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="188"/>
-      <source>Run:</source>
-      <translation>Durchlauf:</translation>
+      <source>Run</source>
+      <translation>Ausführen</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="205"/>
-      <source>Failures:</source>
-      <translation>Störungen:</translation>
+      <source>Failures</source>
+      <translation>Versagen</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="222"/>
-      <source>Errors:</source>
-      <translation>Fehler:</translation>
+      <source>Errors</source>
+      <translation>Fehler</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="239"/>
-      <source>Remaining:</source>
-      <translation>Verbleibend:</translation>
+      <source>Remaining</source>
+      <translation>Verbleibend</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="259"/>
-      <source>Failures and errors</source>
-      <translation>Störungen und Fehler</translation>
+      <source>Failures and Errors</source>
+      <translation>Versagen und Fehler</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="275"/>

@@ -4,19 +4,19 @@
   <context>
     <name>TestGui::UnitTest</name>
     <message>
-      <location filename="../../UnitTest.ui" line="17"/>
-      <source>FreeCAD UnitTest</source>
-      <translation>FreeCAD UnitTest</translation>
-    </message>
-    <message>
       <location filename="../../UnitTest.ui" line="32"/>
       <source>Test</source>
       <translation>Test</translation>
     </message>
     <message>
+      <location filename="../../UnitTest.ui" line="17"/>
+      <source>FreeCAD Unit Test</source>
+      <translation>Test unitari de FreeCAD</translation>
+    </message>
+    <message>
       <location filename="../../UnitTest.ui" line="44"/>
-      <source>Select test name:</source>
-      <translation>Seleccioni el nom del test:</translation>
+      <source>Select test name</source>
+      <translation>Seleccioni el nom del test</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="96"/>
@@ -65,27 +65,27 @@
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="188"/>
-      <source>Run:</source>
-      <translation>Executa:</translation>
+      <source>Run</source>
+      <translation>executa</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="205"/>
-      <source>Failures:</source>
-      <translation>Fallades:</translation>
+      <source>Failures</source>
+      <translation>Fallades</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="222"/>
-      <source>Errors:</source>
-      <translation>Errors:</translation>
+      <source>Errors</source>
+      <translation>Errors</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="239"/>
-      <source>Remaining:</source>
-      <translation>Restant:</translation>
+      <source>Remaining</source>
+      <translation>Restants</translation>
     </message>
     <message>
       <location filename="../../UnitTest.ui" line="259"/>
-      <source>Failures and errors</source>
+      <source>Failures and Errors</source>
       <translation>Fallades i errors</translation>
     </message>
     <message>

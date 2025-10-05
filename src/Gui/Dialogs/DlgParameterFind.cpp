@@ -20,11 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QMessageBox>
 #include <QPushButton>
-#endif
 
 #include "Dialogs/DlgParameterFind.h"
 #include "ui_DlgParameterFind.h"
@@ -308,7 +305,7 @@ void DlgParameterFind::accept()
         else {
             QMessageBox::warning(this,
                                  tr("Not found"),
-                                 tr("Can't find the text: %1").arg(opt.text));
+                                 tr("Cannot find the text: %1").arg(opt.text));
         }
     }
 }

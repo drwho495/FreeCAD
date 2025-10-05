@@ -20,19 +20,15 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 # include <QMessageBox>
 # include <QAction>
 # include <QMenu>
 # include <Inventor/nodes/SoSeparator.h>
 # include <Inventor/nodes/SoPickStyle.h>
 # include <BRep_Builder.hxx>
-#endif
 
 #include <Base/Exception.h>
+#include <Base/ServiceProvider.h>
 #include <App/Document.h>
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
@@ -48,9 +44,9 @@
 #include <Mod/Part/Gui/ViewProvider.h>
 #include <Mod/Part/Gui/ViewProviderExt.h>
 #include <Mod/Part/Gui/SoBrepEdgeSet.h>
-#include <Mod/Part/Gui/ViewProviderPreviewExtension.h>
 
 #include "TaskFeatureParameters.h"
+#include "StyleParameters.h"
 
 #include "ViewProvider.h"
 #include "ViewProviderPy.h"
@@ -78,13 +74,14 @@ void ViewProvider::attach(App::DocumentObject* pcObject)
 {
     ViewProviderPart::attach(pcObject);
 
-    if (auto addSubFeature = getObject<PartDesign::FeatureAddSub>()) {
-        const Base::Color green(0.0F, 1.0F, 0.6F);
-        const Base::Color red(1.0F, 0.0F, 0.0F);
+    auto* styleParameterManager = Base::provideService<Gui::StyleParameters::ParameterManager>();
 
+    if (auto addSubFeature = getObject<PartDesign::FeatureAddSub>()) {
         bool isAdditive = addSubFeature->getAddSubType() == PartDesign::FeatureAddSub::Additive;
 
-        PreviewColor.setValue(isAdditive ? green : red);
+        PreviewColor.setValue(
+            isAdditive ? styleParameterManager->resolve(StyleParameters::PreviewAdditiveColor)
+                       : styleParameterManager->resolve(StyleParameters::PreviewSubtractiveColor));
     }
 }
 
@@ -104,7 +101,8 @@ bool ViewProvider::doubleClicked()
 void ViewProvider::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
     QIcon iconObject = mergeGreyableOverlayIcons(Gui::BitmapFactory().pixmap("Part_ColorFace.svg"));
-    QAction* act = menu->addAction(iconObject, QObject::tr("Set colors..."), receiver, member);
+    QAction* act = menu->addAction(iconObject, QObject::tr("Set Face Colors"), receiver, member);
+
     act->setData(QVariant((int)ViewProvider::Color));
     // Call the extensions
     Gui::ViewProvider::setupContextMenu(menu, receiver, member);
@@ -134,7 +132,7 @@ bool ViewProvider::setEdit(int ModNum)
         if (dlg && !featureDlg) {
             QMessageBox msgBox(Gui::getMainWindow());
             msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
-            msgBox.setInformativeText(QObject::tr("Do you want to close this dialog?"));
+            msgBox.setInformativeText(QObject::tr("Close this dialog?"));
             msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
             msgBox.setDefaultButton(QMessageBox::Yes);
 
@@ -145,9 +143,16 @@ bool ViewProvider::setEdit(int ModNum)
             }
         }
 
-        previouslyShownViewProvider = dynamic_cast<ViewProvider*>(
-            Gui::Application::Instance->getViewProvider(getBodyViewProvider()->getShownFeature())
-        );
+        // This is handling for an erroneous case where features are for some reason placed outside
+        // the body container. That should never happen, but in some cases we find models with a
+        // problem like that.
+        if (ViewProviderBody* bodyViewProvider = getBodyViewProvider()) {
+            PartDesign::Feature* shownFeature = bodyViewProvider->getShownFeature();
+
+            previouslyShownViewProvider = freecad_cast<ViewProvider*>(
+                Gui::Application::Instance->getViewProvider(shownFeature)
+            );
+        }
 
         // clear the selection (convenience)
         Gui::Selection().clearSelection();
@@ -216,8 +221,15 @@ void ViewProvider::attachPreview()
 {
     ViewProviderPreviewExtension::attachPreview();
 
+    auto* styleParameterManager = Base::provideService<Gui::StyleParameters::ParameterManager>();
+
+    const double opacity = styleParameterManager->resolve(StyleParameters::PreviewToolOpacity).value;
+    const double lineWidth = styleParameterManager->resolve(StyleParameters::PreviewLineWidth).value;
+
+    pcPreviewShape->lineWidth = static_cast<float>(lineWidth);
+
     pcToolPreview = new PartGui::SoPreviewShape;
-    pcToolPreview->transparency = 0.95F;
+    pcToolPreview->transparency = 1.0F - static_cast<float>(opacity);
     pcToolPreview->color.connectFrom(&pcPreviewShape->color);
 
     pcPreviewRoot->addChild(pcToolPreview);
@@ -238,6 +250,15 @@ void ViewProvider::updatePreview()
         updatePreviewShape(toolShape, pcToolPreview);
     } else {
         updatePreviewShape({}, pcToolPreview);
+    }
+}
+
+void ViewProvider::makeChildrenVisible()
+{
+    for (const auto child : claimChildren()) {
+        if (auto vp = Gui::Application::Instance->getViewProvider(child)) {
+            vp->show();
+        }
     }
 }
 
@@ -332,6 +353,8 @@ bool ViewProvider::onDelete(const std::vector<std::string>&)
         FCMD_OBJ_CMD(body, "removeObject(" << Gui::Command::getObjectCmd(feature) << ')');
     }
 
+    makeChildrenVisible();
+
     return true;
 }
 
@@ -420,7 +443,8 @@ PyObject* ViewProvider::getPyObject()
     return pyViewObject;
 }
 
-ViewProviderBody* ViewProvider::getBodyViewProvider() {
+ViewProviderBody* ViewProvider::getBodyViewProvider()
+{
 
     auto body = PartDesign::Body::findBodyOf(getObject());
     auto doc = getDocument();
@@ -441,4 +465,3 @@ PROPERTY_SOURCE_TEMPLATE(PartDesignGui::ViewProviderPython, PartDesignGui::ViewP
 // explicit template instantiation
 template class PartDesignGuiExport ViewProviderFeaturePythonT<PartDesignGui::ViewProvider>;
 }
-

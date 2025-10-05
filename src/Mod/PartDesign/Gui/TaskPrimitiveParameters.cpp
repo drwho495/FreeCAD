@@ -20,13 +20,9 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 #include <limits>
+
 #include <QMessageBox>
-#endif
 
 #include <App/Document.h>
 #include <App/Origin.h>
@@ -48,7 +44,7 @@ using namespace PartDesignGui;
 
 // clang-format off
 TaskBoxPrimitives::TaskBoxPrimitives(ViewProviderPrimitive* vp, QWidget* parent)
-  : TaskBox(QPixmap(),tr("Primitive parameters"), true, parent)
+  : TaskBox(QPixmap(),tr("Primitive Parameters"), true, parent)
   , ui(new Ui_DlgPrimitives)
   , vp(vp)
 {

@@ -20,12 +20,9 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <cassert>
 #include <limits>
 #include <QApplication>
-#endif
 
 #include <View3DInventorViewer.h>
 #include <Utilities.h>
@@ -83,11 +80,11 @@ void alignGridLayoutColumns(const std::list<QGridLayout*>& layouts, unsigned col
 TaskTransform::TaskTransform(Gui::ViewProviderDragger* vp,
                              Gui::SoTransformDragger* dragger,
                              QWidget* parent,
-                             App::SubObjectPlacementProvider* subObjectPlacemenProvider,
+                             App::SubObjectPlacementProvider* subObjectPlacementProvider,
                              App::CenterOfMassProvider* centerOfMassProvider)
     : TaskBox(Gui::BitmapFactory().pixmap("Std_TransformManip.svg"), tr("Transform"), false, parent)
     , vp(vp)
-    , subObjectPlacementProvider(subObjectPlacemenProvider)
+    , subObjectPlacementProvider(subObjectPlacementProvider)
     , centerOfMassProvider(centerOfMassProvider)
     , dragger(dragger)
     , ui(new Ui_TaskTransformDialog)
@@ -172,7 +169,7 @@ void TaskTransform::loadPlacementModeItems() const
                                    QVariant::fromValue(PlacementMode::ObjectOrigin));
 
     if (centerOfMassProvider->ofDocumentObject(vp->getObject()).has_value()) {
-        ui->placementComboBox->addItem(tr("Center of mass / Centroid"),
+        ui->placementComboBox->addItem(tr("Center of mass / centroid"),
                                        QVariant::fromValue(PlacementMode::Centroid));
     }
 
@@ -397,15 +394,15 @@ void TaskTransform::setSelectionMode(SelectionMode mode)
 
     SoPickStyle* draggerPickStyle = SO_GET_PART(dragger, "pickStyle", SoPickStyle);
 
-    ui->pickTransformOriginButton->setText(tr("Pick reference"));
-    ui->alignToOtherObjectButton->setText(tr("Move to other object"));
+    ui->pickTransformOriginButton->setText(tr("Pick Reference"));
+    ui->alignToOtherObjectButton->setText(tr("Move to Other Object"));
 
     switch (mode) {
         case SelectionMode::SelectTransformOrigin:
             draggerPickStyle->style = SoPickStyle::UNPICKABLE;
             draggerPickStyle->setOverride(true);
             blockSelection(false);
-            ui->referenceLineEdit->setText(tr("Select face, edge or vertex..."));
+            ui->referenceLineEdit->setText(tr("Select face, edge, or vertex…"));
             ui->pickTransformOriginButton->setText(tr("Cancel"));
             break;
 

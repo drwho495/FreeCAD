@@ -21,15 +21,13 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 # include <QApplication>
 # include <QMenu>
 # include <QMessageBox>
 # include <TopExp.hxx>
 # include <TopTools_IndexedMapOfShape.hxx>
-#endif
+
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <App/Document.h>
@@ -94,7 +92,7 @@ bool ViewProviderShapeBinder::setEdit(int ModNum) {
         if (dlg && !sbDlg) {
             QMessageBox msgBox(Gui::getMainWindow());
             msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
-            msgBox.setInformativeText(QObject::tr("Do you want to close this dialog?"));
+            msgBox.setInformativeText(QObject::tr("Close this dialog?"));
             msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
             msgBox.setDefaultButton(QMessageBox::Yes);
             int ret = msgBox.exec();
@@ -202,7 +200,7 @@ void ViewProviderShapeBinder::setupContextMenu(QMenu* menu, QObject* receiver, c
     Q_UNUSED(member)
 
         QAction* act;
-    act = menu->addAction(QObject::tr("Edit shape binder"));
+    act = menu->addAction(QObject::tr("Edit Shape Binder"));
     act->setData(QVariant((int)ViewProvider::Default));
 
     Gui::ActionFunction* func = new Gui::ActionFunction(menu);
@@ -316,7 +314,7 @@ void ViewProviderSubShapeBinder::setupContextMenu(QMenu* menu, QObject* receiver
     QAction* act;
     act = menu->addAction(QObject::tr("Synchronize"), receiver, member);
     act->setData(QVariant((int)Synchronize));
-    act = menu->addAction(QObject::tr("Select bound object"), receiver, member);
+    act = menu->addAction(QObject::tr("Select Bound Object"), receiver, member);
     act->setData(QVariant((int)SelectObject));
     ViewProviderPart::setupContextMenu(menu, receiver, member);
 }

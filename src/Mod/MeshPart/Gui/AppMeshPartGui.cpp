@@ -20,7 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
@@ -74,7 +73,7 @@ PyMOD_INIT_FUNC(MeshPartGui)
     }
 
     PyObject* mod = MeshPartGui::initModule();
-    Base::Console().log("Loading GUI of MeshPart module... done\n");
+    Base::Console().log("Loading GUI of MeshPart module… done\n");
 
     // clang-format off
     // instantiating the commands

@@ -65,7 +65,7 @@ class Scale(gui_base_original.Modifier):
         return {"Pixmap": "Draft_Scale",
                 "Accel": "S, C",
                 "MenuText": QT_TRANSLATE_NOOP("Draft_Scale", "Scale"),
-                "ToolTip": QT_TRANSLATE_NOOP("Draft_Scale", "Scales the selected objects from a base point.\nSHIFT to constrain.")}
+                "ToolTip": QT_TRANSLATE_NOOP("Draft_Scale", "Scales the selected objects from a base point")}
 
     def Activated(self):
         """Execute when the command is called."""
@@ -130,11 +130,12 @@ class Scale(gui_base_original.Modifier):
                     ghosts.append(trackers.ghostTracker(shape))
         return ghosts
 
-    def scale_ghosts(self, x, y, z, rel):
+    def scale_ghosts(self, x, y, z, rel=False):
         """Scale the preview of the object."""
         delta = App.Vector(x, y, z)
-        if rel:
-            delta = self.wp.get_global_coords(delta)
+        # ScaleRelative option removed in v1.1 as it does not work properly:
+        # if rel:
+            # delta = self.wp.get_local_coords(delta)
         for ghost in self.ghosts:
             ghost.scale(delta)
         # calculate a correction factor depending on the scaling center
@@ -201,8 +202,9 @@ class Scale(gui_base_original.Modifier):
             return
 
         self.delta = App.Vector(sx, sy, sz)
-        if self.task.relative.isChecked():
-            self.delta = self.wp.get_global_coords(self.delta)
+        # ScaleRelative option removed in v1.1 as it does not work properly:
+        # if self.task.relative.isChecked():
+            # self.delta = self.wp.get_local_coords(self.delta)
         self.center = self.node[0]
         if self.task.isCopy.isChecked():
             cmd_name = translate("draft", "Copy")

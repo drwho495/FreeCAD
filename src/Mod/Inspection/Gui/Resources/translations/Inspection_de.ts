@@ -10,13 +10,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="75"/>
-      <source>Inspection...</source>
-      <translation>Kontrolle...</translation>
+      <source>Inspection…</source>
+      <translation>Prüfung…</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="76"/>
-      <source>Get distance information</source>
-      <translation>Entfernungsangaben abrufen</translation>
+      <source>Inspects distance information</source>
+      <translation>Prüft Entfernungs-Informationen</translation>
     </message>
   </context>
   <context>
@@ -28,14 +28,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="49"/>
-      <source>Visual inspection...</source>
-      <translation>Sichtkontrolle...</translation>
+      <source>Visual Inspection…</source>
+      <translation>Visuelle Prüfung…</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="50"/>
-      <location filename="../../Command.cpp" line="51"/>
-      <source>Visual inspection</source>
-      <translation>Sichtkontrolle</translation>
+      <source>Inspects the objects visually</source>
+      <translation>Prüft die Objekte visuell</translation>
     </message>
   </context>
   <context>
@@ -110,7 +109,7 @@
     </message>
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="564"/>
-      <source>Leave info mode</source>
+      <source>Leave Info Mode</source>
       <translation>Info-Modus verlassen</translation>
     </message>
     <message>

@@ -20,14 +20,13 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
+
 #include <QApplication>
 #include <QBuffer>
 #include <QImageWriter>
 #include <QMessageBox>
 #include <QTcpSocket>
-#endif
+
 
 #include <Base/Interpreter.h>
 #include <Base/Exception.h>
@@ -322,7 +321,7 @@ StdCmdPythonHelp::StdCmdPythonHelp()
     , server(nullptr)
 {
     sGroup = "Tools";
-    sMenuText = QT_TR_NOOP("Automatic Python &Modules Documentation");
+    sMenuText = QT_TR_NOOP("Python &Modules Documentation");
     sToolTipText = QT_TR_NOOP("Opens the Python Modules documentation");
     sWhatsThis = "Std_PythonHelp";
     sStatusTip = sToolTipText;

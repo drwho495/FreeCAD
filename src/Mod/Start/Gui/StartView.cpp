@@ -21,22 +21,21 @@
  *                                                                          *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 #include <QApplication>
 #include <QCheckBox>
 #include <QFrame>
 #include <QGridLayout>
 #include <QLabel>
 #include <QListView>
+#include <QMdiSubWindow>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QTimer>
 #include <QWidget>
 #include <QStackedWidget>
-#endif
+#include <QShowEvent>
 
 #include "StartView.h"
 #include "FileCardDelegate.h"
@@ -220,7 +219,7 @@ void StartView::configureNewFileButtons(QLayout* layout) const
                            QLatin1String(":/icons/AssemblyWorkbench.svg")}));
     auto draft = gsl::owner<NewFileButton*>(
         new NewFileButton({tr("2D Draft"),
-                           tr("Creates a 2D draft document"),
+                           tr("Creates a 2D Draft document"),
                            QLatin1String(":/icons/DraftWorkbench.svg")}));
     auto arch =
         gsl::owner<NewFileButton*>(new NewFileButton({tr("BIM/Architecture"),
@@ -247,6 +246,7 @@ void StartView::configureFileCardWidget(QListView* fileCardWidget)
 {
     auto delegate = gsl::owner<FileCardDelegate*>(new FileCardDelegate(fileCardWidget));
     fileCardWidget->setItemDelegate(delegate);
+
     fileCardWidget->setMinimumWidth(fileCardWidget->parentWidget()->width());
     //    fileCardWidget->setGridSize(
     //        fileCardWidget->itemDelegate()->sizeHint(QStyleOptionViewItem(),
@@ -291,13 +291,13 @@ void StartView::configureCustomFolderListWidget(QListView* customFolderListWidge
 }
 
 
-void StartView::newEmptyFile() const
+void StartView::newEmptyFile()
 {
     Gui::Application::Instance->commandManager().runCommandByName("Std_New");
     postStart(PostStartBehavior::switchWorkbench);
 }
 
-void StartView::newPartDesignFile() const
+void StartView::newPartDesignFile()
 {
     Gui::Application::Instance->commandManager().runCommandByName("Std_New");
     Gui::Application::Instance->activateWorkbench("PartDesignWorkbench");
@@ -305,7 +305,7 @@ void StartView::newPartDesignFile() const
     postStart(PostStartBehavior::doNotSwitchWorkbench);
 }
 
-void StartView::openExistingFile() const
+void StartView::openExistingFile()
 {
     auto originalDocument = Gui::Application::Instance->activeDocument();
     Gui::Application::Instance->commandManager().runCommandByName("Std_Open");
@@ -317,7 +317,7 @@ void StartView::openExistingFile() const
     }
 }
 
-void StartView::newAssemblyFile() const
+void StartView::newAssemblyFile()
 {
     Gui::Application::Instance->commandManager().runCommandByName("Std_New");
     Gui::Application::Instance->activateWorkbench("AssemblyWorkbench");
@@ -326,7 +326,7 @@ void StartView::newAssemblyFile() const
     postStart(PostStartBehavior::doNotSwitchWorkbench);
 }
 
-void StartView::newDraftFile() const
+void StartView::newDraftFile()
 {
     Gui::Application::Instance->commandManager().runCommandByName("Std_New");
     Gui::Application::Instance->activateWorkbench("DraftWorkbench");
@@ -334,7 +334,7 @@ void StartView::newDraftFile() const
     postStart(PostStartBehavior::doNotSwitchWorkbench);
 }
 
-void StartView::newArchFile() const
+void StartView::newArchFile()
 {
     Gui::Application::Instance->commandManager().runCommandByName("Std_New");
     try {
@@ -360,7 +360,7 @@ bool StartView::onHasMsg(const char* pMsg) const
     return MDIView::onHasMsg(pMsg);
 }
 
-void StartView::postStart(PostStartBehavior behavior) const
+void StartView::postStart(PostStartBehavior behavior)
 {
     auto hGrp = App::GetApplication().GetParameterGroupByPath(
         "User parameter:BaseApp/Preferences/Mod/Start");
@@ -376,9 +376,13 @@ void StartView::postStart(PostStartBehavior behavior) const
             Gui::Application::Instance->activateWorkbench(wb.c_str());
         }
     }
-    auto closeStart = hGrp->GetBool("closeStart", false);
-    if (closeStart) {
-        this->window()->close();
+    if (auto closeStart = hGrp->GetBool("closeStart", false)) {
+        for (QWidget* w = this; w != nullptr; w = w->parentWidget()) {
+            if (auto mdiSub = qobject_cast<QMdiSubWindow*>(w)) {
+                mdiSub->close();
+                return;
+            }
+        }
     }
 }
 
@@ -437,10 +441,46 @@ void StartView::changeEvent(QEvent* event)
             }
         }
     }
+
     if (event->type() == QEvent::LanguageChange) {
         this->retranslateUi();
     }
+
     Gui::MDIView::changeEvent(event);
+}
+
+void StartView::showEvent(QShowEvent* event)
+{
+    if (auto mainWindow = Gui::getMainWindow()) {
+        if (auto mdiArea = mainWindow->findChild<QMdiArea*>()) {
+            connect(mdiArea,
+                    &QMdiArea::subWindowActivated,
+                    this,
+                    &StartView::onMdiSubWindowActivated,
+                    Qt::UniqueConnection);
+        }
+    }
+    Gui::MDIView::showEvent(event);
+}
+
+void StartView::onMdiSubWindowActivated(QMdiSubWindow* subWindow)
+{
+    // check if start view is activated subwindow if yes, then enable updates
+    // so we can once again receive paint events
+    bool isOurWindow = subWindow && subWindow->isAncestorOf(this);
+    setListViewUpdatesEnabled(isOurWindow);
+}
+
+void StartView::setListViewUpdatesEnabled(bool enabled)
+{
+    // disable updates on all QListView widgets when inactive to prevent unnecessary paint events
+    QList<QListView*> listViews = findChildren<QListView*>();
+    for (QListView* listView : listViews) {
+        listView->setUpdatesEnabled(enabled);
+        if (listView->viewport()) {
+            listView->viewport()->setUpdatesEnabled(enabled);
+        }
+    }
 }
 
 void StartView::retranslateUi()

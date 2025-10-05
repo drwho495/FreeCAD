@@ -20,11 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
-#endif
 
 #include "Dialogs/DlgSettingsImageImp.h"
 #include "ui_DlgSettingsImage.h"
@@ -54,8 +51,8 @@ DlgSettingsImageImp::DlgSettingsImageImp(QWidget* parent)
     _height = height();
     _fRatio = (float)_width / (float)_height;
 
-    ui->comboMethod->addItem(tr("Offscreen (New)"), QByteArray("QtOffscreenRenderer"));
-    ui->comboMethod->addItem(tr("Offscreen (Old)"), QByteArray("CoinOffscreenRenderer"));
+    ui->comboMethod->addItem(tr("Offscreen (new)"), QByteArray("QtOffscreenRenderer"));
+    ui->comboMethod->addItem(tr("Offscreen (old)"), QByteArray("CoinOffscreenRenderer"));
     ui->comboMethod->addItem(tr("Framebuffer (custom)"), QByteArray("FramebufferObject"));
     ui->comboMethod->addItem(tr("Framebuffer (as is)"), QByteArray("GrabFramebuffer"));
 }

@@ -42,11 +42,11 @@ class BIM_IfcProperties:
         return {
             "Pixmap": "BIM_IfcProperties",
             "MenuText": QT_TRANSLATE_NOOP(
-                "BIM_IfcProperties", "Manage IFC properties..."
+                "BIM_IfcProperties", "Manage IFC Properties"
             ),
             "ToolTip": QT_TRANSLATE_NOOP(
                 "BIM_IfcProperties",
-                "Manage the different IFC properties of your BIM objects",
+                "Manages the different IFC properties of the BIM objects",
             ),
         }
 
@@ -55,6 +55,12 @@ class BIM_IfcProperties:
         return v
 
     def Activated(self):
+
+        # only raise the dialog if it is already open
+        if getattr(self, "form", None):
+            self.form.raise_()
+            return
+
         from PySide import QtGui
 
         try:
@@ -122,17 +128,17 @@ class BIM_IfcProperties:
         self.form.labelinfo.setText(
             self.form.labelinfo.text()
             + " "
-            + translate("BIM", "Custom properties sets can be defined in")
+            + translate("BIM", "Custom property sets can be defined in")
             + " "
             + custompath
         )
 
         # set combos
         self.form.comboProperty.addItems(
-            [translate("BIM", "Add property...")] + self.plabels
+            [translate("BIM", "Add property")] + self.plabels
         )
         self.form.comboPset.addItems(
-            [translate("BIM", "Add property set..."), translate("BIM", "New...")]
+            [translate("BIM", "Add property set"), translate("BIM", "New")]
             + self.psetkeys
         )
 
@@ -148,6 +154,7 @@ class BIM_IfcProperties:
             self.form.onlySelected.stateChanged.connect(self.onSelected)
             self.form.onlyMatches.stateChanged.connect(self.update)
         self.form.buttonBox.accepted.connect(self.accept)
+        self.form.buttonBox.rejected.connect(self.reject)
         self.form.searchField.currentIndexChanged.connect(self.update)
         self.form.searchField.editTextChanged.connect(self.update)
         self.form.comboProperty.currentIndexChanged.connect(self.addProperty)
@@ -427,6 +434,12 @@ class BIM_IfcProperties:
         if changed:
             FreeCAD.ActiveDocument.commitTransaction()
             FreeCAD.ActiveDocument.recompute()
+        return self.reject()
+
+    def reject(self):
+        self.form.hide()
+        del self.form
+        return True
 
     def getNativeIfcProperties(self, obj):
         props = {}

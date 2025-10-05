@@ -34,7 +34,7 @@ import FreeCAD as App
 import DraftVecUtils
 import draftutils.utils as utils
 
-from draftutils.messages import _wrn, _err
+from draftutils.messages import _err, _log
 from draftutils.translate import translate
 from draftobjects.draftlink import DraftLink
 
@@ -155,13 +155,13 @@ class PointArray(DraftLink):
             return
 
         if not hasattr(obj, "ExtraPlacement"):
-            _wrn("v0.19, " + obj.Label + ", " + translate("draft", "added 'ExtraPlacement' property"))
+            _log("v0.19, " + obj.Name + ", added 'ExtraPlacement' property")
         if hasattr(obj, "PointList"):
-            _wrn("v0.19, " + obj.Label + ", " + translate("draft", "migrated 'PointList' property to 'PointObject'"))
+            _log("v0.19, " + obj.Name + ", migrated 'PointList' property to 'PointObject'")
         if not hasattr(obj, "Fuse"):
-            _wrn("v1.0, " + obj.Label + ", " + translate("draft", "added 'Fuse' property"))
+            _log("v1.0, " + obj.Name + ", added 'Fuse' property")
         if not hasattr(obj, "PlacementList"):
-            _wrn("v1.1, " + obj.Label + ", " + translate("draft", "added hidden property 'PlacementList'"))
+            _log("v1.1, " + obj.Name + ", added hidden property 'PlacementList'")
 
         self.set_properties(obj)
         if hasattr(obj, "PointList"):
@@ -228,8 +228,8 @@ def build_placements(base_object, pt_list=None, placement=App.Placement()):
     """
     if not pt_list:
         _err(translate("Draft",
-                       "Point object doesn't have a discrete point, "
-                       "it cannot be used for an array."))
+                       "Point object does not have a discrete point, "
+                       "it cannot be used for an array"))
         return []
 
     pls = list()

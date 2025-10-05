@@ -20,9 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
+
 #include <cstdlib>
 #include <QApplication>
 #include <QClipboard>
@@ -34,7 +33,7 @@
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
 #include <QWaitCondition>
-#endif
+
 
 #include <App/Application.h>
 #include <App/Metadata.h>
@@ -187,7 +186,7 @@ static void renderDevBuildWarning(QPainter& painter,
 
     // Construct the lines of text and figure out how much space they need
     const auto devWarningLine1 = QObject::tr("WARNING: This is a development version.");
-    const auto devWarningLine2 = QObject::tr("Please do not use it in a production environment.");
+    const auto devWarningLine2 = QObject::tr("Do not use it in a production environment.");
     QFontMetrics fontMetrics(painter.font());  // Try to use the existing font
     int padding = QtTools::horizontalAdvance(fontMetrics, QLatin1String("M"));  // Arbitrary
     int line1Width = QtTools::horizontalAdvance(fontMetrics, devWarningLine1);

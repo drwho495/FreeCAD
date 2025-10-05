@@ -20,10 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QApplication>
-#endif
 
 #include <App/GroupExtension.h>
 #include <App/Document.h>
@@ -49,10 +46,10 @@ StdCmdPart::StdCmdPart()
   : Command("Std_Part")
 {
     sGroup        = "Structure";
-    sMenuText     = QT_TR_NOOP("Create part");
-    sToolTipText  = QT_TR_NOOP("A Part is a general purpose container to keep together a group of objects so that they "
-                               "act as a unit in the 3D view. It is meant to arrange objects that have a Part "
-                               "TopoShape, like Part Primitives, PartDesign Bodies, and other Parts.");
+    sMenuText     = QT_TR_NOOP("New Part");
+    sToolTipText  = QT_TR_NOOP("Creates a part, which is a general-purpose container to group objects so they "
+                               "act as a unit in the 3D view. It is intended to arrange objects that have a part "
+                               "TopoShape, like part primitives, Part Design bodies, and other parts.");
     sWhatsThis    = "Std_Part";
     sStatusTip    = sToolTipText;
     sPixmap       = "Geofeaturegroup";
@@ -104,9 +101,9 @@ StdCmdGroup::StdCmdGroup()
   : Command("Std_Group")
 {
     sGroup        = "Structure";
-    sMenuText     = QT_TR_NOOP("Create group");
-    sToolTipText = QT_TR_NOOP("A Group is a general purpose container to group objects in the "
-                              "Tree view, regardless of their data type. It is a simple folder to organize "
+    sMenuText     = QT_TR_NOOP("New Group");
+    sToolTipText = QT_TR_NOOP("Creates a group, which is a general-purpose container to group objects in the "
+                              "tree view, regardless of their data type. It is a simple folder to organize "
                               "the objects in a model.");
     sWhatsThis    = "Std_Group";
     sStatusTip    = sToolTipText;
@@ -166,9 +163,8 @@ StdCmdVarSet::StdCmdVarSet()
   : Command("Std_VarSet")
 {
     sGroup        = "Structure";
-    sMenuText     = QT_TR_NOOP("Create a variable set");
-    sToolTipText  = QT_TR_NOOP("A Variable Set is an object that maintains a set of properties to be used as "
-                               "variables.");
+    sMenuText     = QT_TR_NOOP("Variable Set");
+    sToolTipText  = QT_TR_NOOP("Creates a variable set, which is an object that maintains a set of properties to be used as variables");
     sWhatsThis    = "Std_VarSet";
     sStatusTip    = sToolTipText;
     sPixmap       = "VarSet";
@@ -184,6 +180,9 @@ void StdCmdVarSet::activated(int iMsg)
     VarSetName = getUniqueObjectName("VarSet");
     doCommand(Doc,"App.activeDocument().addObject('App::VarSet','%s')",VarSetName.c_str());
 
+    Gui::Document* docGui = Application::Instance->activeDocument();
+    App::Document* doc = docGui->getDocument();
+
     // add the varset to a group if it is selected
     auto sels = Selection().getSelectionEx(nullptr, App::DocumentObject::getClassTypeId(),
         ResolveMode::OldStyleElement, true);
@@ -191,11 +190,14 @@ void StdCmdVarSet::activated(int iMsg)
         App::DocumentObject* obj = sels[0].getObject();
         auto group = obj->getExtension<App::GroupExtension>();
         if (group) {
-            Gui::Document* docGui = Application::Instance->activeDocument();
-            App::Document* doc = docGui->getDocument();
             group->addObject(doc->getObject(VarSetName.c_str()));
         }
     }
+
+    // select the new varset
+    Selection().clearSelection();
+    Selection().addSelection(doc->getName(), VarSetName.c_str());
+
     commitCommand();
 
     doCommand(Doc, "App.ActiveDocument.getObject('%s').ViewObject.doubleClicked()", VarSetName.c_str());

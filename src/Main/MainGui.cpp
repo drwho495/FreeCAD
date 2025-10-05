@@ -28,10 +28,6 @@
 #include <dbghelp.h>
 #endif
 
-#ifdef _PreComp_
-#undef _PreComp_
-#endif
-
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif  // HAVE_CONFIG_H
@@ -190,13 +186,14 @@ int main(int argc, char** argv)
     App::Application::Config()["ExeName"] = "FreeCAD";
     App::Application::Config()["ExeVendor"] = "FreeCAD";
     App::Application::Config()["AppDataSkipVendor"] = "true";
-    App::Application::Config()["MaintainerUrl"] = "https://www.freecad.org/wiki/Main_Page";
+    App::Application::Config()["MaintainerUrl"] = "https://freecad.org";
 
     // set the banner (for logging and console)
     App::Application::Config()["CopyrightInfo"] = sBanner;
     App::Application::Config()["AppIcon"] = "freecad";
     App::Application::Config()["SplashScreen"] = "freecadsplash";
-    App::Application::Config()["AboutImage"] = "freecadabout";
+    App::Application::Config()["AboutImage"] =
+        App::Application::isDevelopmentVersion() ? "freecadaboutdev" : "freecadabout";
     App::Application::Config()["StartWorkbench"] = "PartDesignWorkbench";
     // App::Application::Config()["HiddenDockWindow"] = "Property editor";
     App::Application::Config()["SplashAlignment"] = "Bottom|Left";

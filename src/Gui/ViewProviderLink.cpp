@@ -20,9 +20,8 @@
  *                                                                          *
  ****************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
+
 # include <atomic>
 # include <cctype>
 # include <unordered_set>
@@ -54,7 +53,7 @@
 # include <QApplication>
 # include <QMenu>
 # include <QCheckBox>
-#endif
+
 
 #include <boost/range.hpp>
 #include <App/ElementNamingUtils.h>
@@ -403,6 +402,13 @@ public:
 
         for(int i=0,count=root->getNumChildren();i<count;++i) {
             SoNode *node = root->getChild(i);
+
+            // Exclude the linked object's pick style from the snapshot,
+            // so that the Link's own pick style is the only one in effect.
+            if (node->isOfType(SoPickStyle::getClassTypeId())) {
+                continue;
+            }
+
             if(node==pcLinked->getTransformNode()) {
                 if(type!=LinkView::SnapshotTransform)
                     pcSnapshot->addChild(node);
@@ -503,7 +509,7 @@ public:
     bool getElementPicked(bool addname, int type,
             const SoPickedPoint *pp, std::ostream &str) const
     {
-        if(!pp || !isLinked() || !pcLinked->isSelectable())
+        if(!pp || !isLinked())
             return false;
 
         if(addname)
@@ -1671,10 +1677,14 @@ ViewProviderLink::ViewProviderLink()
     DisplayMode.setStatus(App::Property::Status::Hidden, true);
 
     linkView = new LinkView;
+
+    pcPickStyle = new SoPickStyle;
+    pcPickStyle->ref();
 }
 
 ViewProviderLink::~ViewProviderLink()
 {
+    pcPickStyle->unref();
     linkView->setInvalid();
 }
 
@@ -1682,7 +1692,12 @@ bool ViewProviderLink::isSelectable() const {
     return Selectable.getValue();
 }
 
-void ViewProviderLink::attach(App::DocumentObject *pcObj) {
+void ViewProviderLink::attach(App::DocumentObject* pcObj)
+{
+    if (pcRoot->findChild(pcPickStyle) < 0) {
+        pcRoot->insertChild(pcPickStyle, 0);
+    }
+
     SoNode *node = linkView->getLinkRoot();
     node->setName(pcObj->getFullName().c_str());
     addDisplayMaskMode(node,"Link");
@@ -1744,7 +1759,12 @@ QPixmap ViewProviderLink::getOverlayPixmap() const {
         return BitmapFactory().pixmapFromSvg("LinkOverlay", QSizeF(px,px));
 }
 
-void ViewProviderLink::onChanged(const App::Property* prop) {
+void ViewProviderLink::onChanged(const App::Property* prop)
+{
+    if (prop == &Selectable) {
+        pcPickStyle->style = Selectable.getValue() ? SoPickStyle::SHAPE : SoPickStyle::UNPICKABLE;
+    }
+
     if(prop==&ChildViewProvider) {
         childVp = freecad_cast<ViewProviderDocumentObject*>(ChildViewProvider.getObject().get());
         if(childVp && getObject()) {
@@ -2059,18 +2079,57 @@ void ViewProviderLink::checkIcon(const App::LinkBaseExtension *ext) {
     }
 }
 
-void ViewProviderLink::applyMaterial() {
-    if(OverrideMaterial.getValue())
-        linkView->setMaterial(-1,&ShapeMaterial.getValue());
+void ViewProviderLink::applyMaterial()
+{
+    if (OverrideMaterial.getValue()) {
+        // Dispatch a generic Coin3D action to the linked object's scene graph.
+        // If the linked object is a Part shape, its SoBrepFaceSet node will
+        // handle this action and apply the color to all its faces.
+        // This is decoupled and respects the core/module architecture.
+
+        // 1. Get the material from our property.
+        const auto& material = ShapeMaterial.getValue();
+
+        // 2. Prepare the color for the rendering action. The action's ultimate
+        // consumer (SoBrepFaceSet) expects a Base::Color where .a is transparency,
+        // so we must perform the conversion here at the boundary.
+        Base::Color renderColor = material.diffuseColor;
+        renderColor.a = 1.0f - material.transparency;
+
+        // 3. Create a map with the "Face" wildcard to signify "all faces".
+        std::map<std::string, Base::Color> colorMap;
+        colorMap["Face"] = renderColor;
+
+        // 4. Create and dispatch the action. We use a secondary context action,
+        // which is the established mechanism for this kind of override.
+        SoSelectionElementAction action(SoSelectionElementAction::Color,
+                                        true);  // true for secondary
+        action.swapColors(colorMap);
+        linkView->getLinkRoot()->doAction(&action);
+
+        // 5. Ensure the old global override mechanism is not used.
+        linkView->setMaterial(-1, nullptr);
+    }
     else {
-        for(int i=0;i<linkView->getSize();++i) {
-            if(MaterialList.getSize()>i &&
-               OverrideMaterialList.getSize()>i && OverrideMaterialList[i])
-                linkView->setMaterial(i,&MaterialList[i]);
-            else
-                linkView->setMaterial(i,nullptr);
+        // OVERRIDE IS DISABLED:
+        // We must clear the per-face override we just applied.
+
+        // 1. Dispatch an empty Color action to clear the secondary context.
+        SoSelectionElementAction action(SoSelectionElementAction::Color, true);
+        linkView->getLinkRoot()->doAction(&action);
+
+        // 2. Re-apply any other material settings (e.g., for array elements,
+        // or clear the old global override if it was set).
+        linkView->setMaterial(-1, nullptr);
+        for (int i = 0; i < linkView->getSize(); ++i) {
+            if (MaterialList.getSize() > i && OverrideMaterialList.getSize() > i
+                && OverrideMaterialList[i]) {
+                linkView->setMaterial(i, &MaterialList[i]);
+            }
+            else {
+                linkView->setMaterial(i, nullptr);
+            }
         }
-        linkView->setMaterial(-1,nullptr);
     }
 }
 
@@ -2466,9 +2525,9 @@ void ViewProviderLink::setupContextMenu(QMenu* menu, QObject* receiver, const ch
         if (!src) src = ext->getLinkedObjectValue();
         if (src && !ext->getOnChangeCopyObjects(nullptr, src).empty()) {
             QAction *act = menu->addAction(
-                    QObject::tr("Setup configurable object"));
+                    QObject::tr("Setup Configurable Object"));
             act->setToolTip(QObject::tr(
-                        "Select which object to copy or exclude when configuration changes. "
+                        "Selects which object to copy or exclude when configuration changes. "
                         "All external linked objects are excluded by default."));
             act->setData(-1);
             if (!func) func = new Gui::ActionFunction(menu);
@@ -2483,10 +2542,9 @@ void ViewProviderLink::setupContextMenu(QMenu* menu, QObject* receiver, const ch
                         return;
                     DlgObjectSelection dlg({src}, excludes, getMainWindow());
                     dlg.setMessage(QObject::tr(
-                                "Please select which objects to copy when the configuration is changed"));
+                                "Select which objects to copy when the configuration is changed"));
                     auto box = new QCheckBox(QObject::tr("Apply to all"), &dlg);
-                    box->setToolTip(QObject::tr("Apply the setting to all links. Or, uncheck this\n"
-                                                "option to apply only to this link."));
+                    box->setToolTip(QObject::tr("Applies the setting to all links"));
                     box->setChecked(App::LinkParams::getCopyOnChangeApplyToAll());
                     dlg.addCheckBox(box);
                     if(dlg.exec()!=QDialog::Accepted)
@@ -2530,7 +2588,7 @@ void ViewProviderLink::setupContextMenu(QMenu* menu, QObject* receiver, const ch
         }
 
         if (ext->getLinkCopyOnChangeValue() == 0) {
-            auto submenu = menu->addMenu(QObject::tr("Copy on change"));
+            auto submenu = menu->addMenu(QObject::tr("Copy on Change"));
             auto act = submenu->addAction(QObject::tr("Enable"));
             act->setToolTip(QObject::tr(
                         "Enable auto copy of linked object when its configuration is changed"));
@@ -2547,7 +2605,7 @@ void ViewProviderLink::setupContextMenu(QMenu* menu, QObject* receiver, const ch
             });
             act = submenu->addAction(QObject::tr("Tracking"));
             act->setToolTip(QObject::tr(
-                        "Copy the linked object when its configuration is changed.\n"
+                        "Copies the linked object when its configuration is changed.\n"
                         "Also auto redo the copy if the original linked object is changed.\n"));
             act->setData(-1);
             func->trigger(act, [ext](){
@@ -2565,7 +2623,7 @@ void ViewProviderLink::setupContextMenu(QMenu* menu, QObject* receiver, const ch
     if (ext->getLinkCopyOnChangeValue() != 2
             && ext->getLinkCopyOnChangeValue() != 0) {
         QAction *act = menu->addAction(
-                QObject::tr("Disable copy on change"));
+                QObject::tr("Disable Copy on Change"));
         act->setData(-1);
         if (!func) func = new Gui::ActionFunction(menu);
         func->trigger(act, [ext](){
@@ -2580,10 +2638,10 @@ void ViewProviderLink::setupContextMenu(QMenu* menu, QObject* receiver, const ch
     }
 
     if (ext->isLinkMutated()) {
-        QAction* act = menu->addAction(QObject::tr("Refresh configurable object"));
+        QAction* act = menu->addAction(QObject::tr("Refresh Configurable Object"));
         act->setToolTip(QObject::tr(
-                    "Synchronize the original configurable source object by\n"
-                    "creating a new deep copy. Note that any changes made to\n"
+                    "Synchronizes the original configurable source object by\n"
+                    "creating a new deep copy. Any changes made to\n"
                     "the current copy will be lost.\n"));
         act->setData(-1);
         if (!func) func = new Gui::ActionFunction(menu);
@@ -2613,7 +2671,7 @@ void ViewProviderLink::_setupContextMenu(
             && ext->_getShowElementProperty()
             && ext->_getElementCountValue() > 1)
     {
-        auto action = menu->addAction(QObject::tr("Toggle array elements"), [ext] {
+        auto action = menu->addAction(QObject::tr("Toggle Array Elements"), [ext] {
             try {
                 App::AutoTransaction guard(QT_TRANSLATE_NOOP("Command", "Toggle array elements"));
                 ext->getShowElementProperty()->setValue(!ext->getShowElementValue());
@@ -2623,7 +2681,7 @@ void ViewProviderLink::_setupContextMenu(
             }
         });
         action->setToolTip(QObject::tr(
-                    "Change whether show each link array element as individual objects"));
+                    "Changes whether to show each link array element as individual objects"));
     }
 
     if((ext->getPlacementProperty() && !ext->getPlacementProperty()->isReadOnly())
@@ -2640,7 +2698,7 @@ void ViewProviderLink::_setupContextMenu(
         if (!found) {
             QIcon iconObject = mergeGreyableOverlayIcons(Gui::BitmapFactory().pixmap("Std_TransformManip.svg"));
             QAction* act = menu->addAction(iconObject, QObject::tr("Transform"), receiver, member);
-            act->setToolTip(QObject::tr("Transform at the origin of the placement"));
+            act->setToolTip(QObject::tr("Transforms the object at the origin of the placement"));
             act->setData(QVariant((int)ViewProvider::Transform));
         }
     }
@@ -2650,13 +2708,13 @@ void ViewProviderLink::_setupContextMenu(
         const auto actions = menu->actions();
         for(auto action : actions) {
             if(action->data().toInt() == ViewProvider::Color) {
-                action->setText(QObject::tr("Override colors..."));
+                action->setText(QObject::tr("Override Colors"));
                 found = true;
                 break;
             }
         }
         if(!found) {
-            QAction* act = menu->addAction(QObject::tr("Override colors..."), receiver, member);
+            QAction* act = menu->addAction(QObject::tr("Override Colors"), receiver, member);
             act->setData(QVariant((int)ViewProvider::Color));
         }
     }
@@ -2717,10 +2775,7 @@ bool ViewProviderLink::initDraggingPlacement() {
     dragCtx = std::make_unique<DraggerContext>();
 
     dragCtx->preTransform = doc->getEditingTransform();
-    doc->setEditingTransform(dragCtx->preTransform);
-
-    const auto &pla = ext->getPlacementProperty()?
-        ext->getPlacementValue():ext->getLinkPlacementValue();
+    const auto &pla = getPlacementProperty()->getValue();
 
     // Cancel out our own transformation from the editing transform, because
     // the dragger is meant to change our transformation.
@@ -2734,38 +2789,16 @@ bool ViewProviderLink::initDraggingPlacement() {
     dragCtx->bbox.ScaleY(scale.y);
     dragCtx->bbox.ScaleZ(scale.z);
 
-    auto modifier = QApplication::queryKeyboardModifiers();
-    // Determine the dragger base position
-    // if CTRL key is down, force to use bound box center,
-    // if SHIFT key is down, force to use origine,
-    // if not a sub link, use origine,
-    // else (e.g. group, array, sub link), use bound box center
-    if(modifier != Qt::ShiftModifier
-            && ((ext->getLinkedObjectValue() && !linkView->hasSubs())
-                || modifier == Qt::ControlModifier))
-    {
-        App::PropertyPlacement *propPla = nullptr;
-        if(ext->getLinkTransformValue() && ext->getLinkedObjectValue()) {
-            propPla = freecad_cast<App::PropertyPlacement*>(
-                    ext->getLinkedObjectValue()->getPropertyByName("Placement"));
-        }
-        if(propPla) {
-            dragCtx->initialPlacement = pla * propPla->getValue();
-            dragCtx->mat *= propPla->getValue().inverse().toMatrix();
-        } else
-            dragCtx->initialPlacement = pla;
-
+    App::PropertyPlacement *propPla = nullptr;
+    if(ext->getLinkTransformValue() && ext->getLinkedObjectValue()) {
+        propPla = freecad_cast<App::PropertyPlacement*>(
+                ext->getLinkedObjectValue()->getPropertyByName("Placement"));
+    }
+    if(propPla) {
+        dragCtx->initialPlacement = pla * propPla->getValue();
+        dragCtx->mat *= propPla->getValue().inverse().toMatrix();
     } else {
-        auto offset = dragCtx->bbox.GetCenter();
-
-        // This determines the initial placement of the dragger. We place it at the
-        // center of our bounding box.
-        dragCtx->initialPlacement = pla * Base::Placement(offset, Base::Rotation());
-
-        // dragCtx->mat is to transform the dragger placement to our own placement.
-        // Since the dragger is placed at the center, we set the transformation by
-        // moving the same amount in reverse direction.
-        dragCtx->mat.move(Vector3d() - offset);
+        dragCtx->initialPlacement = pla;
     }
 
     return true;
@@ -2874,6 +2907,8 @@ void ViewProviderLink::setEditViewer(Gui::View3DInventorViewer* viewer, int ModN
     }
 
     ViewProviderDragger::setEditViewer(viewer, ModNum);
+
+    viewer->setupEditingRoot(transformDragger, &dragCtx->preTransform);
 }
 
 void ViewProviderLink::unsetEditViewer(Gui::View3DInventorViewer* viewer)

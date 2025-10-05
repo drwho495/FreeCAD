@@ -10,12 +10,12 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="75"/>
-      <source>Inspection...</source>
-      <translation>Сверка...</translation>
+      <source>Inspection…</source>
+      <translation>Проверка…</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="76"/>
-      <source>Get distance information</source>
+      <source>Inspects distance information</source>
       <translation>Получить информацию о расстоянии</translation>
     </message>
   </context>
@@ -28,14 +28,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="49"/>
-      <source>Visual inspection...</source>
-      <translation>Визуальная сверка...</translation>
+      <source>Visual Inspection…</source>
+      <translation>Визуальная инспекция…</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="50"/>
-      <location filename="../../Command.cpp" line="51"/>
-      <source>Visual inspection</source>
-      <translation>Визуальная сверка</translation>
+      <source>Inspects the objects visually</source>
+      <translation>Инспектирует объекты визуально</translation>
     </message>
   </context>
   <context>
@@ -110,7 +109,7 @@
     </message>
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="564"/>
-      <source>Leave info mode</source>
+      <source>Leave Info Mode</source>
       <translation>Выйти из информационного режима</translation>
     </message>
     <message>

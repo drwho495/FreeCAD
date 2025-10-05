@@ -10,13 +10,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="75"/>
-      <source>Inspection...</source>
-      <translation>Inspecció...</translation>
+      <source>Inspection…</source>
+      <translation>Inspecció…</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="76"/>
-      <source>Get distance information</source>
-      <translation>Aconsegueix la informació de la distància</translation>
+      <source>Inspects distance information</source>
+      <translation>Inspecciona la informació de la distància</translation>
     </message>
   </context>
   <context>
@@ -28,14 +28,13 @@
     </message>
     <message>
       <location filename="../../Command.cpp" line="49"/>
-      <source>Visual inspection...</source>
-      <translation>Inspecció visual...</translation>
+      <source>Visual Inspection…</source>
+      <translation>Inspecció Visual…</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="50"/>
-      <location filename="../../Command.cpp" line="51"/>
-      <source>Visual inspection</source>
-      <translation>Inspecció visual</translation>
+      <source>Inspects the objects visually</source>
+      <translation>Inspecciona els objectes visualment</translation>
     </message>
   </context>
   <context>
@@ -110,8 +109,8 @@
     </message>
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="564"/>
-      <source>Leave info mode</source>
-      <translation>Surt del mode d'informació</translation>
+      <source>Leave Info Mode</source>
+      <translation>Surt del mode d'inspecció</translation>
     </message>
     <message>
       <location filename="../../ViewProviderInspection.cpp" line="695"/>

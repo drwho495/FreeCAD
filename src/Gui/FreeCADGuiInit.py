@@ -195,7 +195,7 @@ def InitApplications():
     # (additional module paths are already cached)
     ModDirs = FreeCAD.__ModDirs__
     #print ModDirs
-    Log('Init:   Searching modules...\n')
+    Log('Init:   Searching modules\n')
 
     def RunInitGuiPy(Dir) -> bool:
         InstallFile = os.path.join(Dir,"InitGui.py")
@@ -210,7 +210,18 @@ def InitApplications():
                 Log('-'*100+'\n')
                 Err('During initialization the error "' + str(inst) + '" occurred in '\
                     + InstallFile + '\n')
-                Err('Please look into the log file for further information\n')
+                Err('Look into the log file for further information\n')
+                mod_name = os.path.normpath(Dir).split(os.path.sep)[-1].lower()
+                if hasattr(FreeCAD,"__failed_mods__"):
+                    FreeCAD.__failed_mods__.append(mod_name)
+                else:
+                    FreeCAD.__failed_mods__ = [mod_name]
+                if mod_name not in FreeCAD.__fallback_mods__:
+                    Err("Could not evaluate module '" + mod_name + "' for fallbacks\n")
+                elif len(FreeCAD.__fallback_mods__[mod_name]) > 1:
+                    new_path = os.path.normpath(FreeCAD.__fallback_mods__[mod_name][-2])
+                    Err(f"A fallback module was found for module '{mod_name}': {new_path}\n")
+                    Err(f"Rename or remove {os.path.normpath(Dir)} to use the fallback module\n")
             else:
                 Log('Init:      Initializing ' + Dir + '... done\n')
                 return True

@@ -20,12 +20,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
+
 # include <QMenu>
 # include <QPlainTextEdit>
-#endif
+
 
 #include <App/Application.h>
 #include <Base/Type.h>
@@ -73,7 +72,7 @@ ViewProviderTextDocument::ViewProviderTextDocument()
 void ViewProviderTextDocument::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
     auto func = new Gui::ActionFunction(menu);
-    QAction* act = menu->addAction(QObject::tr("Edit text"));
+    QAction* act = menu->addAction(QObject::tr("Edit Text"));
     func->trigger(act, [this](){
         this->doubleClicked();
     });

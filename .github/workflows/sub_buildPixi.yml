@@ -49,14 +49,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ inputs.allowedToFail }}
     env:
-      CCACHE_DIR: ${{ github.workspace }}/ccache
-      CCACHE_CONFIGPATH: ${{ github.workspace }}/ccache/config
-      CCACHE_MAXSIZE: 1G
       CCACHE_COMPRESS: true
       CCACHE_COMPRESSLEVEL: 5
-      config: debug
-      builddir: ${{ github.workspace }}/build/debug/
+      CCACHE_CONFIGPATH: ${{ github.workspace }}/ccache/config
+      CCACHE_DIR: ${{ github.workspace }}/ccache
+      CCACHE_MAXSIZE: 1G
+      CCACHE_NODIRECT: true
+      CCACHE_NOHASHDIR: true
+      CCACHE_NOINODECACHE: true
+      CCACHE_SLOPPINESS: "include_file_ctime,include_file_mtime,pch_defines,time_macros"
+      builddir: ${{ github.workspace }}/build/release/
       cacheKey: pixi-${{ matrix.os }}
+      config: release
       logdir: ${{ github.workspace }}/logs/
       reportdir: ${{ github.workspace }}/report/
       reportfilename: ${{ inputs.artifactBasename }}-${{ matrix.os }}-report.md
@@ -71,7 +75,7 @@ jobs:
 
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+      uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
       with:
         egress-policy: audit
 
@@ -87,7 +91,7 @@ jobs:
         fi
 
     - name: Checkout
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
     - name: Add GCC Problem Matcher
       if: runner.os == 'Linux'
@@ -112,13 +116,15 @@ jobs:
         mkdir -p ${{ env.reportdir }}
         echo "reportFile=${{ env.reportfilename }}" >> $GITHUB_OUTPUT
 
-    - uses: prefix-dev/setup-pixi@8ca4608ef7f4daeb54f5205b20d0b7cb42f11143 # v0.8.14
+    - uses: prefix-dev/setup-pixi@194d461b21b6c5717c722ffc597fa91ed2ff29fa # v0.9.1
       with:
         pixi-version: v0.48.1
         cache: false
 
     - name: Restore Compiler Cache
-      uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      id: cache-restore
+      if: always()
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ${{ env.CCACHE_DIR }}
         key: FC-${{ env.cacheKey }}-${{ github.ref }}-${{ github.run_id }}
@@ -141,6 +147,7 @@ jobs:
         pixi run build-${{ env.config }}
 
     - name: Print ccache statistics after Build
+      if: always()
       run: |
         pixi run ccache -s
 
@@ -200,8 +207,9 @@ jobs:
         reportFile: ${{env.reportdir}}${{ env.reportfilename }}
 
     - name: Save Compiler Cache
+      id: cache-save
       if: always()
-      uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ${{ env.CCACHE_DIR }}
         key: FC-${{ env.cacheKey }}-${{ github.ref }}-${{ github.run_id }}

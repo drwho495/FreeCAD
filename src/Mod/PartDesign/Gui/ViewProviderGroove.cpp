@@ -21,11 +21,9 @@
  ******************************************************************************/
 
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 # include <QMenu>
-#endif
+
 
 #include "TaskRevolutionParameters.h"
 #include "ViewProviderGroove.h"
@@ -43,7 +41,7 @@ ViewProviderGroove::~ViewProviderGroove() = default;
 
 void ViewProviderGroove::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
-    addDefaultAction(menu, QObject::tr("Edit groove"));
+    addDefaultAction(menu, QObject::tr("Edit Groove"));
     PartDesignGui::ViewProviderSketchBased::setupContextMenu(menu, receiver, member);
 }
 
