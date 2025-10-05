@@ -26,7 +26,15 @@
 
 name: FreeCAD master CI
 
-on: [workflow_dispatch, push, pull_request, merge_group]
+#on: [workflow_dispatch, push, pull_request, merge_group]
+on:
+  push:
+    branches: [ "add-complex-find" ]
+  pull_request:
+    branches: [ "add-complex-find" ]
+  merge_group:
+    branches: [ "add-complex-find" ]
+  workflow_dispatch:
 
 concurrency:
   group: FC-CI-${{ github.head_ref || github.run_id }}
