@@ -596,7 +596,7 @@ MappedName ElementMap::setElementName(const IndexedName& element,
         if (res) {
             return res;
         }
-        const int maxAttempts {100};
+        const int maxAttempts {100}; // this is a magic number. what is it doing?
         if (++i == maxAttempts) {
             FC_ERR("unresolved duplicate element mapping '"  // NOLINT
                    << name << ' ' << element << '/' << existing);
@@ -758,15 +758,7 @@ MappedName ElementMap::renameDuplicateElement(int index,
                                               long masterTag) const
 {
     int idx {0};
-#ifdef FC_DEBUG
     idx = index;
-#else
-    static std::random_device _RD;
-    static std::mt19937 _RGEN(_RD());
-    static std::uniform_int_distribution<> _RDIST(1, 10000);
-    (void)index;
-    idx = _RDIST(_RGEN);
-#endif
     std::ostringstream ss;
     ss << ELEMENT_MAP_PREFIX << 'D' << std::hex << idx;
     MappedName renamed(name);
