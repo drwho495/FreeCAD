@@ -110,7 +110,10 @@ void Mirroring::onChanged(const App::Property* prop)
     Part::Feature::onChanged(prop);
 }
 
-void Mirroring::handleChangedPropertyType(Base::XMLReader &reader, const char *TypeName, App::Property *prop)
+void Mirroring::handleChangedPropertyType(
+    Base::XMLReader& reader,
+    const char* TypeName,
+    App::Property* prop)
 {
     if (prop == &Base && strcmp(TypeName, "App::PropertyVector") == 0) {
         App::PropertyVector v;
