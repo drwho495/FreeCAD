@@ -367,11 +367,7 @@ def extract_type_and_number(element_name):
 
 
 def findElementClosestVertex(ref, mousePos):
-    print(f"ref: {ref}")
-
     element_name = getElementName(ref[1][0])
-
-    print(f"element_name: {element_name}")
 
     if element_name == "":
         return ""
