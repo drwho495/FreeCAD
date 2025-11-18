@@ -1,5 +1,5 @@
 > [!IMPORTANT]
-> Bleeding edge FreeCAD development builds for testing bugfixes, regressions, and recently implemented features. Do not use in a production environment.
+> FreeCAD++ is a fork with various features created by me and others for testing what will hopefully represent what 1.2 will look like.
 
 
 ### How-to use
