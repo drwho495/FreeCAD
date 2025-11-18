@@ -1254,12 +1254,16 @@ ElementMap::ToponamingElement ElementMap::compileToponamingElement(MappedName na
         element.unfilteredSplitSections.erase(element.unfilteredSplitSections.begin());
     }
 
-    if (element.splitSections.empty() && !element.unfilteredSplitSections.empty()) {
-        element.splitSections = element.unfilteredSplitSections;
-    }
+    // if (element.splitSections.empty() && !element.unfilteredSplitSections.empty()) {
+        // element.splitSections = element.unfilteredSplitSections;
+    // }
 
-    // for (const auto &sec : element.splitSections) {
-    //     FC_WARN("section: " << sec.stringData << " post: " << sec.postfix << " opcode: " << sec.opcode << " num: " << sec.postfixNumber << " eltype: " << sec.elementType);
+    // if (element.dehashedName == "g6;SKT;:H12cc,E;:M;FUS;:H-12cd:7,E" || element.dehashedName == "g6;SKT;:H12cc,E;:M;FUS;:H-12cd:7,E;:M;CHF;:H12cd:7,E") {
+        // for (const auto &sec : element.splitSections) {
+            // FC_WARN("section: " << sec.stringData << " post: \"" << sec.postfix << "\" opcode: " << sec.opcode << " num: " << sec.postfixNumber << " eltype: " << sec.elementType);
+        // }
+
+        // FC_WARN("\n\n");
     // }
 
     return element;
@@ -1290,7 +1294,6 @@ bool ElementMap::checkGeoIDsLists(std::vector<ElementMap::geoID> &list1, std::ve
 }
 
 MappedElement ElementMap::complexFind(const MappedName& name) const {
-    // FC_WARN("start complex find");
     ToponamingElement originalElement = compileToponamingElement(name);
     ToponamingElement loopElement = ToponamingElement();
     MappedElement foundName = MappedElement();
@@ -1312,6 +1315,7 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
 
         if (originalElement.splitSections.size() != loopElement.splitSections.size()) {
+            // if (loopElement.dehashedName == "g6;SKT;:H12cc,E;:M;FUS;:H-12cd:7,E") FC_WARN("fail in split size");
             continue;
         }
 
@@ -1360,7 +1364,7 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
 
         int tagOccurences = 0;
 
-        // the sections of the two elements to check against should already by the same size
+        // the sections of the two elements to check against should already be the same size
         for (int i = 0; i < originalElement.splitSections.size(); i++) {
             if ((originalElement.splitSections[i].opcode != loopElement.splitSections[i].opcode)) {
                 sectionCheck = false;
@@ -1483,7 +1487,6 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
             }
 
             if (!removedSectionsCheck) {
-                FC_WARN("skip: " << loopElement.dehashedName);
                 continue;
             }
         }
@@ -1500,8 +1503,8 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         // do a "score" check to see if the number of filtered out tags is smaller in the name found here
         // is smaller than that of the already found name. -1 is checked first, because that indicates that
         // foundName had never been set.
-        int currentUnfilteredSizeDifference = abs(static_cast<int>(originalElement.unfilteredSplitSections.size() 
-                                                  - loopElement.unfilteredSplitSections.size()));
+        // int currentUnfilteredSizeDifference = abs(static_cast<int>(originalElement.unfilteredSplitSections.size() 
+                                                //   - loopElement.unfilteredSplitSections.size()));
 
         if (foundName == MappedElement() || currentFeatureHistory == 0 || foundFeatureHistory == -1 && currentFeatureHistory == 1) {
             foundName = MappedElement(loopName.first, loopName.second);
@@ -1509,9 +1512,12 @@ MappedElement ElementMap::complexFind(const MappedName& name) const {
         }
     }
 
-    FC_WARN("finish complex find, found feature history: " << foundFeatureHistory);
-    FC_WARN("original: " << originalElement.dehashedName);
-    FC_WARN("found:    " << foundName.name);
+    if (foundName.name.size()) {
+        FC_LOG("finish complex find, found feature history: " << foundFeatureHistory);
+        FC_LOG("original: " << originalElement.dehashedName);
+        FC_LOG("found:    " << foundName.name);
+    }
+
     return foundName;
 }
 
