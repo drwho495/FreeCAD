@@ -34,7 +34,7 @@ jobs:
           export BUILD_TAG=weekly-$(date "+%Y.%m.%d")
           echo "BUILD_TAG=${BUILD_TAG}" >> "$GITHUB_ENV"
           echo "build_tag=${BUILD_TAG}" >> "$GITHUB_OUTPUT"
-          gh release create ${BUILD_TAG} --title "Development Build ${BUILD_TAG}" -F .github/workflows/weekly-build-notes.md --prerelease || true
+          gh release create ${BUILD_TAG} --title "FreeCAD++ Release ${BUILD_TAG}" -F .github/workflows/weekly-build-notes.md || true
 
       - name: Upload Source
         id: upload_source
