@@ -1575,7 +1575,7 @@ class TaskAssemblyCreateJoint(QtCore.QObject):
             Gui.Control.closeDialog()
 
     def handleInitialSelection(self):
-        selection = Gui.Selection.getSelectionEx("*", 0)
+        selection = Gui.Selection.getSelectionEx()
         if not selection:
             return
         for sel in selection:

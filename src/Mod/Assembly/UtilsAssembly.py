@@ -120,7 +120,7 @@ def number_of_components_in(assembly):
 def isLink(obj):
     # If element count is not 0, then its a link group in which case the Link
     # is a container and it's the LinkElement that is linking to external doc.
-    return (obj.TypeId == "App::Link" and obj.ElementCount == 0) or obj.TypeId == "App::LinkElement"
+    return obj != None and (obj.TypeId == "App::Link" and obj.ElementCount == 0) or obj.TypeId == "App::LinkElement"
 
 
 def isLinkGroup(obj):
@@ -139,59 +139,10 @@ def getObject(ref, returnTopObject = False):
     # or           "LinkOrAssembly1.LinkOrPart1.LinkOrBody.pad.Edge16"
     # or           "Assembly.LinkOrAssembly1.LinkOrPart1.LinkOrBody.Local_CS.X"
     # We want either LinkOrBody or LinkOrBox or Local_CS.
-    names = sub_name.split(".")
+    obj = ref[0].Document.getObject(sub_name.split(".")[-2])
 
-    if len(names) < 2:
-        return None
-
-    doc = ref[0].Document
-    for i, obj_name in enumerate(names):
-        obj = doc.getObject(obj_name)
-
-        if obj is None:
-            return None
-
-        # the last is the element name. So if we are at the last but one name, then it must be the selected
-        if i == len(names) - 2: # this is the top object
-            return obj
-
-        if obj.TypeId in {"App::Part", "Assembly::AssemblyObject"} or isLinkGroup(obj):
-            continue
-
-        elif obj.isDerivedFrom("App::LocalCoordinateSystem") and not returnTopObject:
-            # 2 cases possible, either we have the LCS itself: "part.LCS."
-            # or we have a datum: "part.LCS.X_Axis"
-            if i + 1 < len(names):
-                obj2 = None
-                for obji in obj.OutList:
-                    if obji.Name == names[i + 1]:
-                        obj2 = obji
-                        break
-                if obj2 and obj2.isDerivedFrom("App::DatumElement"):
-                    return obj2
-
-        elif obj.isDerivedFrom("App::DatumElement") and not returnTopObject:
-            return obj
-
-        elif obj.TypeId == "PartDesign::Body" and not returnTopObject:
-            return process_body(obj, obj, names, i)
-
-        elif obj.isDerivedFrom("Part::Feature") and not returnTopObject:
-            # primitive, fastener, gear ...
-            return obj
-
-        elif isLink(obj):
-            linked_obj = obj.getLinkedObject()
-            if linked_obj.TypeId == "PartDesign::Body" and not returnTopObject:
-                return process_body(linked_obj, obj, names, i)
-            elif linked_obj.isDerivedFrom("Part::Feature") and not returnTopObject:
-                return obj
-            else:
-                doc = linked_obj.Document # this needs to get run for `returnTopObject`!
-                continue
-
-    return None
-
+    if obj != None:
+        return obj
 
 def process_body(body, returnObj, names, i):
     # If there's a next name, it could either be elementName, in which case we can return the Body.
@@ -358,10 +309,6 @@ def getElementName(full_name):
     # We want either Edge16.
     parts = full_name.split(".")
 
-    if len(parts) < 2:
-        # At minimum "Box.edge16". It shouldn't be shorter
-        return ""
-
     # case of PartDesign datums : CoordinateSystem, point, line, plane
     if parts[-1] in {"X", "Y", "Z", "Point", "Line", "Plane"}:
         return ""
@@ -420,7 +367,12 @@ def extract_type_and_number(element_name):
 
 
 def findElementClosestVertex(ref, mousePos):
+    print(f"ref: {ref}")
+
     element_name = getElementName(ref[1][0])
+
+    print(f"element_name: {element_name}")
+
     if element_name == "":
         return ""
 
