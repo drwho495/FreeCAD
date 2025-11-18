@@ -74,6 +74,10 @@ if(BUILD_CAM)
     add_subdirectory(CAM)
 endif(BUILD_CAM)
 
+if(BUILD_CONSTRAINTDESIGN)
+    add_subdirectory(ConstraintDesign-wb)
+endif(BUILD_CONSTRAINTDESIGN)
+
 if(BUILD_PLOT)
   add_subdirectory(Plot)
 endif(BUILD_PLOT)

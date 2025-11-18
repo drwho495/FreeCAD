@@ -97,6 +97,7 @@ public:
         , ConstraintNbr(ConstNbr)
     {
         this->setFlags(this->flags() | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
+        setData(Qt::UserRole, ConstNbr);
 
         updateVirtualSpaceStatus();
     }
@@ -1553,18 +1554,13 @@ bool TaskSketcherConstraints::doSetVisible(const std::vector<int>& constrIds, bo
 
     std::string constrIdList = stream.str();
 
-    Gui::Command::openCommand(
-            QT_TRANSLATE_NOOP("Command", "Update constraint's visibility"));
     try {
         Gui::cmdAppObjectArgs(sketch,
             "setVisibility(%s, %s)",
             constrIdList,
             isVisible ? "True" : "False");
-        Gui::Command::commitCommand();
     }
     catch (const Base::Exception& e) {
-        Gui::Command::abortCommand();
-
         Gui::TranslatedUserError(
             sketch, tr("Error"), tr("Impossible to update visibility:") + QLatin1String(" ") + QLatin1String(e.what()));
         return false;

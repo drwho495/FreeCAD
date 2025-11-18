@@ -110,78 +110,6 @@
     </message>
   </context>
   <context>
-    <name>CmdRobotInsertKukaIR125</name>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="190"/>
-      <source>Robot</source>
-      <translation>机器人</translation>
-    </message>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="191"/>
-      <source>Kuka IR125</source>
-      <translation>库卡 IR125</translation>
-    </message>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="192"/>
-      <source>Inserts a Kuka IR125 robot into the scene</source>
-      <translation>将库卡 IR125 机器人插入场景</translation>
-    </message>
-  </context>
-  <context>
-    <name>CmdRobotInsertKukaIR16</name>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="95"/>
-      <source>Robot</source>
-      <translation>机器人</translation>
-    </message>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="96"/>
-      <source>Kuka IR16</source>
-      <translation>库卡 IR16</translation>
-    </message>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="97"/>
-      <source>Inserts a Kuka IR16 robot into the scene</source>
-      <translation>将库卡 IR16 机器人插入场景</translation>
-    </message>
-  </context>
-  <context>
-    <name>CmdRobotInsertKukaIR210</name>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="143"/>
-      <source>Robot</source>
-      <translation>机器人</translation>
-    </message>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="144"/>
-      <source>Kuka IR210</source>
-      <translation>库卡 IR210</translation>
-    </message>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="145"/>
-      <source>Inserts a Kuka IR210 robot into the scene</source>
-      <translation>将库卡 IR210 机器人插入场景</translation>
-    </message>
-  </context>
-  <context>
-    <name>CmdRobotInsertKukaIR500</name>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="44"/>
-      <source>Robot</source>
-      <translation>机器人</translation>
-    </message>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="45"/>
-      <source>Kuka IR500</source>
-      <translation>库卡 IR500</translation>
-    </message>
-    <message>
-      <location filename="../../CommandInsertRobot.cpp" line="46"/>
-      <source>Inserts a Kuka IR500 into the document</source>
-      <translation>将库卡 IR500 插入文档</translation>
-    </message>
-  </context>
-  <context>
     <name>CmdRobotInsertWaypoint</name>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="87"/>
@@ -364,12 +292,12 @@
   <context>
     <name>QObject</name>
     <message>
+      <location filename="../../CommandInsertRobot.cpp" line="258"/>
+      <location filename="../../CommandExport.cpp" line="60"/>
+      <location filename="../../CommandExport.cpp" line="135"/>
       <location filename="../../Command.cpp" line="69"/>
       <location filename="../../Command.cpp" line="128"/>
       <location filename="../../Command.cpp" line="234"/>
-      <location filename="../../CommandExport.cpp" line="60"/>
-      <location filename="../../CommandExport.cpp" line="135"/>
-      <location filename="../../CommandInsertRobot.cpp" line="258"/>
       <location filename="../../CommandTrajectory.cpp" line="104"/>
       <location filename="../../CommandTrajectory.cpp" line="171"/>
       <location filename="../../CommandTrajectory.cpp" line="190"/>
@@ -388,9 +316,9 @@
       <translation>选择一个机器人</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="235"/>
       <location filename="../../CommandExport.cpp" line="61"/>
       <location filename="../../CommandExport.cpp" line="136"/>
+      <location filename="../../Command.cpp" line="235"/>
       <location filename="../../CommandTrajectory.cpp" line="105"/>
       <source>Select one Robot and one Trajectory object.</source>
       <translation>选择一个机器人和一个轨迹对象.</translation>
@@ -483,16 +411,6 @@
       <location filename="../../ViewProviderTrajectory.cpp" line="142"/>
       <source>Modify</source>
       <translation>修改</translation>
-    </message>
-    <message>
-      <location filename="../../Workbench.cpp" line="71"/>
-      <source>No robot files installed</source>
-      <translation>未安装机器人文件</translation>
-    </message>
-    <message>
-      <location filename="../../Workbench.cpp" line="72"/>
-      <source>Visit %1 and copy the files to %2</source>
-      <translation>访问 %1 并将文件复制到 %2</translation>
     </message>
   </context>
   <context>
@@ -904,7 +822,7 @@
     <message>
       <location filename="../../TaskTrajectoryDressUpParameter.ui" line="160"/>
       <source>Do not change position &amp; orientation</source>
-      <translation type="unfinished">Do not change position &amp; orientation</translation>
+      <translation>不要改变位置和方向</translation>
     </message>
     <message>
       <location filename="../../TaskTrajectoryDressUpParameter.ui" line="165"/>
