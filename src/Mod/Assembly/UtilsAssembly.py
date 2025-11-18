@@ -120,14 +120,14 @@ def number_of_components_in(assembly):
 def isLink(obj):
     # If element count is not 0, then its a link group in which case the Link
     # is a container and it's the LinkElement that is linking to external doc.
-    return (obj.TypeId == "App::Link" and obj.ElementCount == 0) or obj.TypeId == "App::LinkElement"
+    return obj != None and (obj.TypeId == "App::Link" and obj.ElementCount == 0) or obj.TypeId == "App::LinkElement"
 
 
 def isLinkGroup(obj):
     return obj.TypeId == "App::Link" and obj.ElementCount > 0
 
 
-def getObject(ref):
+def getObject(ref, returnTopObject = False):
     if len(ref) != 2:
         return None
     subs = ref[1]
@@ -139,59 +139,10 @@ def getObject(ref):
     # or           "LinkOrAssembly1.LinkOrPart1.LinkOrBody.pad.Edge16"
     # or           "Assembly.LinkOrAssembly1.LinkOrPart1.LinkOrBody.Local_CS.X"
     # We want either LinkOrBody or LinkOrBox or Local_CS.
-    names = sub_name.split(".")
+    obj = ref[0].Document.getObject(sub_name.split(".")[-2])
 
-    if len(names) < 2:
-        return None
-
-    doc = ref[0].Document
-    for i, obj_name in enumerate(names):
-        obj = doc.getObject(obj_name)
-
-        if obj is None:
-            return None
-
-        # the last is the element name. So if we are at the last but one name, then it must be the selected
-        if i == len(names) - 2:
-            return obj
-
-        if obj.TypeId in {"App::Part", "Assembly::AssemblyObject"} or isLinkGroup(obj):
-            continue
-
-        elif obj.isDerivedFrom("App::LocalCoordinateSystem"):
-            # 2 cases possible, either we have the LCS itself: "part.LCS."
-            # or we have a datum: "part.LCS.X_Axis"
-            if i + 1 < len(names):
-                obj2 = None
-                for obji in obj.OutList:
-                    if obji.Name == names[i + 1]:
-                        obj2 = obji
-                        break
-                if obj2 and obj2.isDerivedFrom("App::DatumElement"):
-                    return obj2
-
-        elif obj.isDerivedFrom("App::DatumElement"):
-            return obj
-
-        elif obj.TypeId == "PartDesign::Body":
-            return process_body(obj, obj, names, i)
-
-        elif obj.isDerivedFrom("Part::Feature"):
-            # primitive, fastener, gear ...
-            return obj
-
-        elif isLink(obj):
-            linked_obj = obj.getLinkedObject()
-            if linked_obj.TypeId == "PartDesign::Body":
-                return process_body(linked_obj, obj, names, i)
-            elif linked_obj.isDerivedFrom("Part::Feature"):
-                return obj
-            else:
-                doc = linked_obj.Document
-                continue
-
-    return None
-
+    if obj != None:
+        return obj
 
 def process_body(body, returnObj, names, i):
     # If there's a next name, it could either be elementName, in which case we can return the Body.
@@ -336,7 +287,7 @@ def getGlobalPlacement(ref, targetObj=None):
         return App.Placement()
 
     if targetObj is None:  # If no targetObj is given, we consider it's the getObject(ref)
-        targetObj = getObject(ref)
+        targetObj = getObject(ref, True) # we need the top object to fix the bad placement bug
         if targetObj is None:
             return App.Placement()
 
@@ -357,10 +308,6 @@ def getElementName(full_name):
     # full_name is "Assembly.Assembly1.Assembly2.Assembly3.Box.Edge16"
     # We want either Edge16.
     parts = full_name.split(".")
-
-    if len(parts) < 2:
-        # At minimum "Box.edge16". It shouldn't be shorter
-        return ""
 
     # case of PartDesign datums : CoordinateSystem, point, line, plane
     if parts[-1] in {"X", "Y", "Z", "Point", "Line", "Plane"}:
@@ -421,6 +368,7 @@ def extract_type_and_number(element_name):
 
 def findElementClosestVertex(ref, mousePos):
     element_name = getElementName(ref[1][0])
+
     if element_name == "":
         return ""
 
@@ -948,7 +896,7 @@ So here we want to find a placement that corresponds to a local coordinate syste
 def findPlacement(ref, ignoreVertex=False):
     if not isRefValid(ref, 2):
         return App.Placement()
-    obj = getObject(ref)
+    obj = getObject(ref, True)
     if not obj:
         return App.Placement()
 
@@ -989,8 +937,7 @@ def findPlacement(ref, ignoreVertex=False):
         if vtx_type == "Edge" or ignoreVertex:
             # In this case the wanted vertex is the center.
             if curve.TypeId == "Part::GeomCircle":
-                center_point = curve.Location
-                plc.Base = (center_point.x, center_point.y, center_point.z)
+                plc.Base = curve.Location
             elif curve.TypeId == "Part::GeomLine":
                 edge_points = getPointsFromVertexes(edge.Vertexes)
                 line_middle = (edge_points[0] + edge_points[1]) * 0.5
@@ -1005,6 +952,7 @@ def findPlacement(ref, ignoreVertex=False):
         # Then we find the Rotation
         if curve.TypeId == "Part::GeomCircle":
             plc.Rotation = App.Rotation(curve.Rotation)
+            # print(f"plc rotation euler: {plc.Rotation.toEulerAngles("XYZ")}")
 
         if curve.TypeId == "Part::GeomLine":
             isLine = True
