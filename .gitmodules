@@ -10,3 +10,6 @@
 [submodule "src/Mod/AddonManager"]
 	path = src/Mod/AddonManager
 	url = https://github.com/FreeCAD/AddonManager.git
+[submodule "src/Mod/ConstraintDesign-wb"]
+	path = src/Mod/ConstraintDesign-wb
+	url = https://github.com/drwho495/constraintdesign-wb
