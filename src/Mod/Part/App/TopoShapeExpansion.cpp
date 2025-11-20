@@ -278,6 +278,22 @@ TopoDS_Shape TopoShape::located(const TopoDS_Shape& tds, const gp_Trsf& transfer
 void TopoShape::operator=(const TopoShape& sh)
 {
     if (this != &sh) {
+        if (!_lastShapeCache) {
+            const TopoShape& setLastShape = sh.getLastShape();
+
+            if (setLastShape.isNull()) {
+                _lastShapeCache = std::make_shared<TopoShapeCache>(_Shape);
+            } else {
+                _lastShapeCache = std::make_shared<TopoShapeCache>(setLastShape.getShape());
+                _lastShapeCache->cachedElementMap = setLastShape.elementMap();
+            }
+        }
+
+        if (_lastShapeCache && !_Shape.IsNull()) {
+            _lastShapeCache->shape = _Shape;
+            _lastShapeCache->cachedElementMap = elementMap();
+        }
+
         this->setShape(sh._Shape, true);
         this->Tag = sh.Tag;
         this->Hasher = sh.Hasher;
@@ -6139,6 +6155,19 @@ Data::MappedElement TopoShape::chooseMatchingSubShapeByPlaneOrLine(
         }
     }
     return result;
+}
+
+TopoShape TopoShape::getLastShape() const {
+    if (this->_lastShapeCache) {
+        TopoShape retShape = TopoShape(0);
+
+        retShape.setShape(this->_lastShapeCache->shape);
+        retShape.resetElementMap(this->_lastShapeCache->cachedElementMap);
+
+        return retShape;
+    }
+
+    return TopoShape();
 }
 
 }  // namespace Part

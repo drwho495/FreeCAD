@@ -126,6 +126,8 @@ public:
 
     TopLoc_Location getLocation() const;
 
+    static Data::MappedElement searchByConnectedElements(TopoShape newShape, TopoShape oldShape, const Data::MappedName &name);
+
     DocumentObject* getSubObject(
         const char* subname,
         PyObject** pyObj,

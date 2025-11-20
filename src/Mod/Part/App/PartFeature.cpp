@@ -151,6 +151,111 @@ void Feature::copyMaterial(App::DocumentObject* link)
     }
 }
 
+std::vector<Data::MappedElement> getCommonAncestors(TopoShape searchShape, std::vector<TopoShape> subElements) {
+    std::vector<int> foundAncestors;
+    std::vector<Data::MappedElement> commonAncestors;
+    std::vector<Data::MappedElement> filteredCommonAncestors;
+
+    for (const auto& subElement : subElements) {
+        std::vector<Part::TopoShape> vertexes = subElement.getSubTopoShapes(TopAbs_VERTEX);
+
+        for (const auto &vertex : vertexes) {
+            std::vector<int> ancestors = searchShape.findAncestors(vertex.getShape(), TopAbs_EDGE);
+            std::vector<int> filteredAncestors;
+
+            for (const auto &ancestor : ancestors) {
+                if (std::find(filteredAncestors.begin(), filteredAncestors.end(), ancestor) == filteredAncestors.end()) {
+                    filteredAncestors.push_back(ancestor);
+                    foundAncestors.push_back(ancestor);
+
+                    if (std::count(foundAncestors.begin(), foundAncestors.end(), ancestor) == (subElements.size())) {
+                        std::ostringstream elementNameString;
+
+                        elementNameString << "Edge";
+                        elementNameString << ancestor;
+
+                        commonAncestors.push_back(searchShape.getElementName(elementNameString.str().c_str()));
+                    }
+                }
+            }
+        }
+    }
+
+    for (const auto& commonAncestor : commonAncestors) {
+        TopoShape ancestorShape = searchShape.getSubTopoShape(commonAncestor.index.toString().c_str());
+
+        if (std::find(subElements.begin(), subElements.end(), ancestorShape) == subElements.end()) {
+            filteredCommonAncestors.push_back(commonAncestor);
+        }
+    }
+
+    return filteredCommonAncestors;
+}
+
+Data::MappedElement Feature::searchByConnectedElements(TopoShape newShape, TopoShape oldShape, const Data::MappedName &name) {
+    // first try to look in the shape for the right element before using geometry checks to find it.
+    Data::MappedElement newShapeSubElement = newShape.getElementName(name.toString().c_str());
+
+    if (newShapeSubElement.index.toString().size()) {
+        return newShapeSubElement;
+    }
+
+    // we didn't find the subelement in the shape, so we will now attempt to locate it by using connected geometry that is
+    // actually properly mapped in `newShape`
+    //
+    // find the name in the old iteration of the shape
+
+    Data::MappedElement oldShapeSubElement = oldShape.getElementName(name.toString().c_str());
+
+    if (!oldShapeSubElement.index.toString().size()) {
+        return Data::MappedElement();
+    }
+
+    TopoShape oldElement = oldShape.getSubTopoShape(oldShapeSubElement.index.toString().c_str());
+
+    if (oldElement.shapeType() == TopAbs_EDGE) {
+        std::vector<Part::TopoShape> oldElementVertexes = oldElement.getSubTopoShapes(TopAbs_VERTEX);
+        std::vector<Part::TopoShape> newEdgeAncestors;
+        std::vector<int> foundAncestors;
+
+        for (const auto &vertex : oldElementVertexes) {
+            std::vector<int> ancestors = oldShape.findAncestors(vertex.getShape(), TopAbs_EDGE);
+
+            for (const auto &ancestor : ancestors) {
+                auto ancestorFind = std::find(foundAncestors.begin(), foundAncestors.end(), ancestor);
+
+                if (ancestorFind == foundAncestors.end()) {
+                    std::ostringstream elementNameString;
+
+                    elementNameString << "Edge";
+                    elementNameString << ancestor;
+
+                    foundAncestors.push_back(ancestor);
+                    Data::MappedElement ancestorName = oldShape.getElementName(elementNameString.str().c_str());
+                    Data::MappedElement newName = newShape.getElementName(ancestorName.name.toString().c_str());
+
+                    if (newName.index.toString().size()) {
+                        newEdgeAncestors.push_back(newShape.getSubTopoShape(newName.index.toString().c_str()));
+                    }
+                }
+            }
+        }
+
+        std::vector<Data::MappedElement> commonAncestors = getCommonAncestors(newShape, newEdgeAncestors);
+
+        // filter the ancestors to find one that can't be traced back to the oldShape
+
+        for (const auto& ancestor : commonAncestors) {
+            if (!oldShape.getElementName(ancestor.name.toString().c_str()).index.toString().size()) {
+                FC_WARN("found final ancestor: " << ancestor.index.toString() << " | " << ancestor.name.toString());
+                return ancestor;
+            }
+        }
+    }
+
+    return Data::MappedElement();
+}
+
 /**
  * Override getElementName to support the Export type.  Other calls are passed to the original
  * method
@@ -354,6 +459,14 @@ App::ElementNamePair Feature::getExportElementName(TopoShape shape, const char* 
                     auto newMapped = TopoShape::chooseMatchingSubShapeByPlaneOrLine(shape, searchShape);
                     if (!newMapped.name.empty()) {
                         mapped = newMapped;
+                    } else {
+                        TopoShape newShape = this->Shape.getShape();
+                        
+                        newMapped = searchByConnectedElements(newShape, newShape.getLastShape(), mapped.name);
+
+                        if (!newMapped.name.empty()) {
+                            mapped = newMapped;
+                        }
                     }
                 }
                 for (auto& name : names) {

@@ -2842,7 +2842,10 @@ public:
         const char* op
     );
 
-    /* Toponaming migration, February 2014:
+    /// This gets the shape from the _lastShapeCache to compare the last shape to the current shape.
+    TopoShape getLastShape() const;
+
+    /* Toponaming migration, February 2024:
      * Note that the specialized versions of makeElementShape for operations that do not
      * inherit from BRepBuilderAPI_MakeShape  ( like BRepBuilderAPI_Sewing ) have been removed.
      * Rather than restore them, code that calls them should be changed to call
@@ -2858,6 +2861,7 @@ public:
 private:
     // Cache storage
     mutable std::shared_ptr<TopoShapeCache> _parentCache;
+    mutable std::shared_ptr<TopoShapeCache> _lastShapeCache;
     mutable std::shared_ptr<TopoShapeCache> _cache;
     mutable TopLoc_Location _subLocation;
 
