@@ -151,7 +151,7 @@ void Feature::copyMaterial(App::DocumentObject* link)
     }
 }
 
-std::vector<Data::MappedElement> getCommonAncestors(TopoShape searchShape, std::vector<TopoShape> subElements, int recursionCount) {
+std::vector<Data::MappedElement> getCommonAncestors(TopoShape searchShape, std::vector<TopoShape> subElements, TopAbs_ShapeEnum type, int recursionCount) {
     std::vector<int> foundAncestors;
     std::vector<Data::MappedElement> commonAncestors;
     std::vector<Data::MappedElement> filteredCommonAncestors;
@@ -160,7 +160,7 @@ std::vector<Data::MappedElement> getCommonAncestors(TopoShape searchShape, std::
         std::vector<Part::TopoShape> vertexes = subElement.getSubTopoShapes(TopAbs_VERTEX);
 
         for (const auto &vertex : vertexes) {
-            std::vector<int> ancestors = searchShape.findAncestors(vertex.getShape(), TopAbs_EDGE);
+            std::vector<int> ancestors = searchShape.findAncestors(vertex.getShape(), type);
             std::vector<int> filteredAncestors;
 
             for (const auto &ancestor : ancestors) {
@@ -171,7 +171,7 @@ std::vector<Data::MappedElement> getCommonAncestors(TopoShape searchShape, std::
                     if (std::count(foundAncestors.begin(), foundAncestors.end(), ancestor) == (subElements.size())) {
                         std::ostringstream elementNameString;
 
-                        elementNameString << "Edge";
+                        elementNameString << (type == TopAbs_EDGE ? "Edge" : "Face");
                         elementNameString << ancestor;
 
                         commonAncestors.push_back(searchShape.getElementName(elementNameString.str().c_str()));
@@ -193,28 +193,42 @@ std::vector<Data::MappedElement> getCommonAncestors(TopoShape searchShape, std::
 }
 
 std::vector<Part::TopoShape> getRelatedAncestors(TopoShape searchShape, TopoShape remapShape, TopoShape subElement, int recursionCount) {
-    std::vector<Part::TopoShape> vertexes = subElement.getSubTopoShapes(TopAbs_VERTEX);
     std::vector<Part::TopoShape> returnList;
-    std::vector<int> foundAncestors;
 
-    for (const auto &vertex : vertexes) {
-        std::vector<int> ancestors = searchShape.findAncestors(vertex.getShape(), TopAbs_EDGE);
+    if (subElement.shapeType() == TopAbs_EDGE) {
+        std::vector<Part::TopoShape> vertexes = subElement.getSubTopoShapes(TopAbs_VERTEX);
+        std::vector<int> foundAncestors;
 
-        for (const auto &ancestor : ancestors) {
-            if (std::find(foundAncestors.begin(), foundAncestors.end(), ancestor) == foundAncestors.end()) {
-                std::ostringstream elementNameString;
+        for (const auto &vertex : vertexes) {
+            std::vector<int> ancestors = searchShape.findAncestors(vertex.getShape(), TopAbs_EDGE);
 
-                elementNameString << "Edge";
-                elementNameString << ancestor;
+            for (const auto &ancestor : ancestors) {
+                if (std::find(foundAncestors.begin(), foundAncestors.end(), ancestor) == foundAncestors.end()) {
+                    std::ostringstream elementNameString;
 
-                foundAncestors.push_back(ancestor);
+                    elementNameString << "Edge";
+                    elementNameString << ancestor;
 
-                Data::MappedElement ancestorName = searchShape.getElementName(elementNameString.str().c_str());
-                Data::MappedElement newName = remapShape.getElementName(ancestorName.name.toString().c_str());
+                    foundAncestors.push_back(ancestor);
 
-                if (newName.index.toString().size()) {
-                    returnList.push_back(remapShape.getSubTopoShape(newName.index.toString().c_str()));
+                    Data::MappedElement ancestorName = searchShape.getElementName(elementNameString.str().c_str());
+                    Data::MappedElement newName = remapShape.getElementName(ancestorName.name.toString().c_str());
+
+                    if (newName.index.toString().size()) {
+                        returnList.push_back(remapShape.getSubTopoShape(newName.index.toString().c_str()));
+                    }
                 }
+            }
+        }
+    } else if (subElement.shapeType() == TopAbs_FACE) {
+        std::vector<TopoShape> foundEdges = subElement.getSubTopoShapes(TopAbs_EDGE);
+
+        for (const auto& edge : foundEdges) {
+            // individual edge shapes always store their element names in an element map with the key of "Edge1"
+            Data::MappedElement remappedEdgeName = remapShape.getElementName(edge.getElementName("Edge1").name.toString().c_str());
+
+            if (remappedEdgeName.index.toString().size()) {
+                returnList.push_back(remapShape.getSubTopoShape(remappedEdgeName.index.toString().c_str()));
             }
         }
     }
@@ -243,15 +257,20 @@ Data::MappedElement Feature::searchByConnectedElements(TopoShape newShape, TopoS
 
     TopoShape oldElement = oldShape.getSubTopoShape(oldShapeSubElement.index.toString().c_str());
 
-    if (oldElement.shapeType() == TopAbs_EDGE) {
+    if (oldElement.shapeType() == TopAbs_EDGE || oldElement.shapeType() == TopAbs_FACE) {
         std::vector<TopoShape> newEdgeAncestors = getRelatedAncestors(oldShape, newShape, oldElement, recursionCount);
-        std::vector<Data::MappedElement> commonAncestors = getCommonAncestors(newShape, newEdgeAncestors, recursionCount);
+        std::vector<Data::MappedElement> commonAncestors = getCommonAncestors(newShape, newEdgeAncestors, oldElement.shapeType(), recursionCount);
 
         // filter the ancestors to find one that can't be traced back to the oldShape
 
         for (const auto& ancestor : commonAncestors) {
             if (!oldShape.getElementName(ancestor.name.toString().c_str()).index.toString().size()) {
-                FC_LOG("Search by connected elements resolved: " << ancestor.index.toString() << " | " << ancestor.name.toString());
+                Base::Console().log("Search by connected elements resolved: ");
+                Base::Console().log(ancestor.index.toString().c_str());
+                Base::Console().log(" | ");
+                Base::Console().log(ancestor.name.toString().c_str());
+                Base::Console().log("\n");
+
                 return ancestor;
             }
         }
