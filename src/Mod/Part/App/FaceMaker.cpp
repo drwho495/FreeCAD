@@ -247,7 +247,8 @@ void Part::FaceMaker::postBuild()
             names.push_back(e.name);
             sids += e.sids;
             if (namesUsed.insert(e.name).second) {
-                if (++nameCount >= minElementNames) {
+                nameCount++;
+                if (minElementNames != -1 && nameCount >= minElementNames) {
                     break;
                 }
             }
