@@ -314,6 +314,7 @@ App::DocumentObjectExecReturn* Mirroring::execute()
         auto shape = Feature::getTopoShape(link, ShapeOption::ResolveLink | ShapeOption::Transform);
         if (shape.isNull()) {
             Standard_Failure::Raise("Cannot mirror empty shape");
+        }
         this->Shape.setValue(TopoShape(0, getDocument()->getStringHasher()).makeElementMirror(shape,ax2));
         copyMaterial(link);
 

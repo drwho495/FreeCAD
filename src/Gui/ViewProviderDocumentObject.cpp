@@ -358,7 +358,7 @@ void ViewProviderDocumentObject::attach(App::DocumentObject* pcObj)
     pcObject = pcObj;
 
     if (pcObj && pcObj->isAttachedToDocument()
-        && Visibility.getValue() != pcObj->Visibility.getValue())
+        && Visibility.getValue() != pcObj->Visibility.getValue()) {
         pcObj->Visibility.setValue(Visibility.getValue());
     }
 
