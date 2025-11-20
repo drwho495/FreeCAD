@@ -157,10 +157,16 @@ std::vector<Data::MappedElement> getCommonAncestors(TopoShape searchShape, std::
     std::vector<Data::MappedElement> filteredCommonAncestors;
 
     for (const auto& subElement : subElements) {
-        std::vector<Part::TopoShape> vertexes = subElement.getSubTopoShapes(TopAbs_VERTEX);
+        std::vector<Part::TopoShape> checkElements;
 
-        for (const auto &vertex : vertexes) {
-            std::vector<int> ancestors = searchShape.findAncestors(vertex.getShape(), type);
+        if (type == TopAbs_EDGE) {
+            checkElements = subElement.getSubTopoShapes(TopAbs_VERTEX);
+        } else if (type == TopAbs_FACE) {
+            checkElements.push_back(subElement);
+        }
+
+        for (const auto &checkElement : checkElements) {
+            std::vector<int> ancestors = searchShape.findAncestors(checkElement.getShape(), type);
             std::vector<int> filteredAncestors;
 
             for (const auto &ancestor : ancestors) {
