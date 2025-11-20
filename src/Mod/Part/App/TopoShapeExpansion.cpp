@@ -278,20 +278,21 @@ TopoDS_Shape TopoShape::located(const TopoDS_Shape& tds, const gp_Trsf& transfer
 void TopoShape::operator=(const TopoShape& sh)
 {
     if (this != &sh) {
-        if (!_lastShapeCache) {
+        if (!lastShape.IsNull()) {
+            if (!_Shape.IsNull()) {
+                lastShape = _Shape;
+                lastElementMap = elementMap();
+            }
+        } else {
             const TopoShape& setLastShape = sh.getLastShape();
 
             if (setLastShape.isNull()) {
-                _lastShapeCache = std::make_shared<TopoShapeCache>(_Shape);
+                lastShape = _Shape;
+                lastElementMap = elementMap();
             } else {
-                _lastShapeCache = std::make_shared<TopoShapeCache>(setLastShape.getShape());
-                _lastShapeCache->cachedElementMap = setLastShape.elementMap();
+                lastShape = setLastShape.getShape();
+                lastElementMap = setLastShape.elementMap();
             }
-        }
-
-        if (_lastShapeCache && !_Shape.IsNull()) {
-            _lastShapeCache->shape = _Shape;
-            _lastShapeCache->cachedElementMap = elementMap();
         }
 
         this->setShape(sh._Shape, true);
@@ -6158,16 +6159,12 @@ Data::MappedElement TopoShape::chooseMatchingSubShapeByPlaneOrLine(
 }
 
 TopoShape TopoShape::getLastShape() const {
-    if (this->_lastShapeCache) {
-        TopoShape retShape = TopoShape(0);
+    TopoShape retShape = TopoShape(0);
 
-        retShape.setShape(this->_lastShapeCache->shape);
-        retShape.resetElementMap(this->_lastShapeCache->cachedElementMap);
+    retShape.setShape(lastShape);
+    retShape.resetElementMap(lastElementMap);
 
-        return retShape;
-    }
-
-    return TopoShape();
+    return retShape;
 }
 
 }  // namespace Part

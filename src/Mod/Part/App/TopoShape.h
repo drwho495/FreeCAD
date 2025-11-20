@@ -2842,7 +2842,7 @@ public:
         const char* op
     );
 
-    /// This gets the shape from the _lastShapeCache to compare the last shape to the current shape.
+    /// This gets a stored copy of an older version of this shape for resolving TNPs.
     TopoShape getLastShape() const;
 
     /* Toponaming migration, February 2024:
@@ -2861,9 +2861,11 @@ public:
 private:
     // Cache storage
     mutable std::shared_ptr<TopoShapeCache> _parentCache;
-    mutable std::shared_ptr<TopoShapeCache> _lastShapeCache;
     mutable std::shared_ptr<TopoShapeCache> _cache;
     mutable TopLoc_Location _subLocation;
+
+    TopoDS_Shape lastShape = TopoDS_Shape();
+    Data::ElementMapPtr lastElementMap;
 
     /** Helper class to ensure synchronization of element map and cache
      *

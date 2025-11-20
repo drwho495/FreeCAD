@@ -126,7 +126,7 @@ public:
 
     TopLoc_Location getLocation() const;
 
-    static Data::MappedElement searchByConnectedElements(TopoShape newShape, TopoShape oldShape, const Data::MappedName &name);
+    static Data::MappedElement searchByConnectedElements(TopoShape newShape, TopoShape oldShape, const Data::MappedName &name, int recursionCount = 0);
 
     DocumentObject* getSubObject(
         const char* subname,
