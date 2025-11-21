@@ -1348,6 +1348,7 @@ class MakeJointSelGate:
             return False
 
         ref = [obj, [sub]]
+        print(f"allow ref: {ref}")
         sel_obj = UtilsAssembly.getObject(ref)
 
         if UtilsAssembly.isLink(sel_obj):
@@ -1575,7 +1576,7 @@ class TaskAssemblyCreateJoint(QtCore.QObject):
             Gui.Control.closeDialog()
 
     def handleInitialSelection(self):
-        selection = Gui.Selection.getSelectionEx()
+        selection = Gui.Selection.getSelectionEx("*", 0)
         if not selection:
             return
         for sel in selection:

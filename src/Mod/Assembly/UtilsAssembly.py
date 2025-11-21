@@ -139,10 +139,58 @@ def getObject(ref, returnTopObject = False):
     # or           "LinkOrAssembly1.LinkOrPart1.LinkOrBody.pad.Edge16"
     # or           "Assembly.LinkOrAssembly1.LinkOrPart1.LinkOrBody.Local_CS.X"
     # We want either LinkOrBody or LinkOrBox or Local_CS.
-    obj = ref[0].Document.getObject(sub_name.split(".")[-2])
+    names = sub_name.split(".")
 
-    if obj != None:
-        return obj
+    if len(names) < 2:
+        return None
+
+    doc = ref[0].Document
+    for i, obj_name in enumerate(names):
+        obj = doc.getObject(obj_name)
+
+        if obj is None:
+            return None
+
+        # the last is the element name. So if we are at the last but one name, then it must be the selected
+        if i == len(names) - 2:
+            return obj
+
+        if obj.TypeId in {"App::Part", "Assembly::AssemblyObject"} or isLinkGroup(obj):
+            continue
+
+        elif obj.isDerivedFrom("App::LocalCoordinateSystem"):
+            # 2 cases possible, either we have the LCS itself: "part.LCS."
+            # or we have a datum: "part.LCS.X_Axis"
+            if i + 1 < len(names):
+                obj2 = None
+                for obji in obj.OutList:
+                    if obji.Name == names[i + 1]:
+                        obj2 = obji
+                        break
+                if obj2 and obj2.isDerivedFrom("App::DatumElement"):
+                    return obj2
+
+        elif obj.isDerivedFrom("App::DatumElement"):
+            return obj
+
+        elif obj.TypeId == "PartDesign::Body":
+            return process_body(obj, obj, names, i)
+
+        elif obj.isDerivedFrom("Part::Feature"):
+            # primitive, fastener, gear ...
+            return obj
+
+        elif isLink(obj):
+            linked_obj = obj.getLinkedObject()
+            if linked_obj.TypeId == "PartDesign::Body":
+                return process_body(linked_obj, obj, names, i)
+            elif linked_obj.isDerivedFrom("Part::Feature"):
+                return obj
+            else:
+                doc = linked_obj.Document
+                continue
+
+    return None
 
 def process_body(body, returnObj, names, i):
     # If there's a next name, it could either be elementName, in which case we can return the Body.
