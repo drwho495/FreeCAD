@@ -269,15 +269,34 @@ Data::MappedElement Feature::searchByConnectedElements(TopoShape newShape, TopoS
 
         // filter the ancestors to find one that can't be traced back to the oldShape
 
-        for (const auto& ancestor : commonAncestors) {
-            if (!oldShape.getElementName(ancestor.name.toString().c_str()).index.toString().size()) {
-                Base::Console().log("Search by connected elements resolved: ");
-                Base::Console().log(ancestor.index.toString().c_str());
-                Base::Console().log(" | ");
-                Base::Console().log(ancestor.name.toString().c_str());
-                Base::Console().log("\n");
+        if (commonAncestors.size() == 1) {
+            Base::Console().log("Search by connected elements resolved: ");
+            Base::Console().log(commonAncestors[0].index.toString().c_str());
+            Base::Console().log(" | ");
+            Base::Console().log(commonAncestors[0].name.toString().c_str());
+            Base::Console().log(" | found connected ancestor size: ");
+            Base::Console().log(std::to_string(commonAncestors.size()).c_str());
+            Base::Console().log("\n");
 
-                return ancestor;
+            return commonAncestors[0];
+        } else if (commonAncestors.size()) {
+            for (const auto& commonAncestor : commonAncestors) {
+                std::vector<TopoShape> relatedAncestors = getRelatedAncestors(newShape, oldShape, newShape.getSubTopoShape(commonAncestor.name.toString().c_str()), recursionCount);
+                std::vector<Data::MappedElement> subCommonAncestors = getCommonAncestors(oldShape, relatedAncestors, oldElement.shapeType(), recursionCount);
+
+                for (const auto& subCommonAncestor : subCommonAncestors) {
+                    if (subCommonAncestor.name == name) {
+                        Base::Console().log("Search by connected elements resolved: ");
+                        Base::Console().log(commonAncestor.index.toString().c_str());
+                        Base::Console().log(" | ");
+                        Base::Console().log(commonAncestor.name.toString().c_str());
+                        Base::Console().log(" | found connected ancestor size: ");
+                        Base::Console().log(std::to_string(commonAncestors.size()).c_str());
+                        Base::Console().log("\n");
+
+                        return commonAncestor;
+                    }
+                }
             }
         }
     }
