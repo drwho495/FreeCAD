@@ -576,7 +576,6 @@ SET(Part_SRCS
     TopoShapeExpansion.cpp
     TopoShapeMapper.h
     TopoShapeMapper.cpp
-    TopoShapeOpCode.h
     edgecluster.cpp
     edgecluster.h
     MeasureClient.cpp

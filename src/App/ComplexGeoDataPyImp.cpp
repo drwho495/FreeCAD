@@ -340,7 +340,6 @@ PyObject* ComplexGeoDataPy::getElementIndexedName(PyObject* args) const
         return NULL;
     }
 
-    ElementIDRefs ids;
     Data::MappedElement res =
         getComplexGeoDataPtr()->getElementName(input, PyObject_IsTrue(returnID) ? &ids : nullptr);
     std::string s;
@@ -364,7 +363,6 @@ PyObject* ComplexGeoDataPy::getElementMappedName(PyObject* args) const
         return NULL;
     }
 
-    ElementIDRefs ids;
     Data::MappedElement res =
         getComplexGeoDataPtr()->getElementName(input, PyObject_IsTrue(returnID) ? &ids : nullptr);
     std::string s;
@@ -403,7 +401,6 @@ PyObject* ComplexGeoDataPy::setElementName(PyObject* args, PyObject* kwds)
                                        &tag)) {
         return NULL;
     }
-    ElementIDRefs sids;
     if (pySid != Py_None) {
         if (PyObject_TypeCheck(pySid, &App::StringIDPy::Type)) {
             sids.push_back(static_cast<App::StringIDPy*>(pySid)->getStringIDPtr());

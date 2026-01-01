@@ -123,7 +123,6 @@ public:
     MappedName setElementName(const IndexedName& element,
                               const MappedName& name,
                               long masterTag,
-                              const ElementIDRefs* sid = nullptr,
                               bool overwrite = false);
 
     /* Generates a new MappedName from the current details.
@@ -136,7 +135,6 @@ public:
     void encodeElementName(char element_type,
                            MappedName& name,
                            std::ostringstream& ss,
-                           ElementIDRefs* sids,
                            long masterTag,
                            const char* postfix = nullptr,
                            long tag = 0,
@@ -152,11 +150,11 @@ public:
 
     bool empty() const;
 
-    IndexedName find(const MappedName& name, ElementIDRefs* sids = nullptr) const;
+    // IndexedName find(const MappedName& name, ElementIDRefs* sids = nullptr) const;
 
-    MappedName find(const IndexedName& idx, ElementIDRefs* sids = nullptr) const;
+    // MappedName find(const IndexedName& idx, ElementIDRefs* sids = nullptr) const;
 
-    std::vector<std::pair<MappedName, ElementIDRefs>> findAll(const IndexedName& idx) const;
+    std::vector<MappedName> findAll(const IndexedName& idx) const;
 
     // prefix searching is disabled, as TopoShape::getRelatedElement() is
     // deprecated in favor of GeoFeature::getRelatedElement(). Besides, there
@@ -184,7 +182,6 @@ public:
         long tag;
         ElementMapPtr elementMap;
         QByteArray postfix;
-        ElementIDRefs sids;
 
         // prefix() has been moved to ElementNamingUtils.h
     };
@@ -244,7 +241,6 @@ private:
      */
     MappedName addName(MappedName& name,
                        const IndexedName& idx,
-                       const ElementIDRefs& sids,
                        bool overwrite,
                        IndexedName* existing);
 
@@ -257,29 +253,17 @@ private:
 
     /* Note: the original proc passed `ComplexGeoData& master` for getting the `Tag`,
      *   now it just passes `long masterTag`.*/
-    MappedName renameDuplicateElement(int index,
-                                      const IndexedName& element,
-                                      const IndexedName& element2,
-                                      const MappedName& name,
-                                      ElementIDRefs& sids,
-                                      long masterTag) const;
-
-    /** Convenience method to hash the main element name
-     *
-     * @param name: main element name
-     * @param sid: store any output string ID references
-     * @return the hashed element name;
-     */
-    MappedName hashElementName(const MappedName& name, ElementIDRefs& sids) const;
-
-    /// Reverse hashElementName()
-    MappedName dehashElementName(const MappedName& name) const;
+    // MappedName renameDuplicateElement(int index,
+    //                                   const IndexedName& element,
+    //                                   const IndexedName& element2,
+    //                                   const MappedName& name,
+    //                                   long masterTag) const;
 
     // FIXME duplicate code? as in copy/paste
-    const MappedNameRef* findMappedRef(const IndexedName& idx) const;
-    MappedNameRef* findMappedRef(const IndexedName& idx);
+    // const MappedNameRef* findMappedRef(const IndexedName& idx) const;
+    // MappedNameRef* findMappedRef(const IndexedName& idx);
 
-    MappedNameRef& mappedRef(const IndexedName& idx);
+    // MappedNameRef& mappedRef(const IndexedName& idx);
 
     void collectChildMaps(std::map<const ElementMap*, int>& childMapSet,
                           std::vector<const ElementMap*>& childMaps,

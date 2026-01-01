@@ -326,6 +326,8 @@ SET(FreeCADApp_HPP_SRCS
     Enumeration.h
     IndexedName.h
     MappedName.h
+    MappedSection.h
+    MappingDataStructures.h
     MappedElement.h
     Material.h
     MeasureManager.h

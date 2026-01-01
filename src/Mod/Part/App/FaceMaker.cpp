@@ -185,12 +185,10 @@ struct ElementName
 {
     long tag;
     Data::MappedName name;
-    Data::ElementIDRefs sids;
 
-    ElementName(long t, const Data::MappedName& n, const Data::ElementIDRefs& sids)
+    ElementName(long t, const Data::MappedName& n)
         : tag(t)
         , name(n)
-        , sids(sids)
     {}
 
     inline bool operator<(const ElementName& other) const
@@ -238,7 +236,6 @@ void Part::FaceMaker::postBuild()
         }
 
         std::vector<Data::MappedName> names;
-        Data::ElementIDRefs sids;
         // To avoid name collision, we keep track of any used names to make sure
         // to use at least 'minElementNames' number of unused element names to
         // generate the face name.
@@ -256,8 +253,7 @@ void Part::FaceMaker::postBuild()
             Data::IndexedName::fromConst("Face", index),
             names,
             op,
-            nullptr,
-            &sids
+            nullptr
         );
     }
     this->myTopoShape.initCache(true);

@@ -224,8 +224,7 @@ size_t ComplexGeoData::getElementMapSize(bool flush) const
 }
 
 MappedName ComplexGeoData::getMappedName(const IndexedName& element,
-                                         bool allowUnmapped,
-                                         ElementIDRefs* sid) const
+                                         bool allowUnmapped) const
 {
     if (!element) {
         return {};
@@ -238,14 +237,14 @@ MappedName ComplexGeoData::getMappedName(const IndexedName& element,
         return {};
     }
 
-    MappedName name = _elementMap->find(element, sid);
+    MappedName name = _elementMap->find(element);
     if (allowUnmapped && !name) {
         return MappedName(element);
     }
     return name;
 }
 
-IndexedName ComplexGeoData::getIndexedName(const MappedName& name, ElementIDRefs* sid) const
+IndexedName ComplexGeoData::getIndexedName(const MappedName& name) const
 {
     flushElementMap();
     if (!name) {
@@ -259,7 +258,7 @@ IndexedName ComplexGeoData::getIndexedName(const MappedName& name, ElementIDRefs
 }
 
 Data::MappedElement
-ComplexGeoData::getElementName(const char* name, ElementIDRefs* sid, bool copy) const
+ComplexGeoData::getElementName(const char* name, bool copy) const
 {
     IndexedName element(name, getElementTypes());
     if (element) {
@@ -287,7 +286,7 @@ ComplexGeoData::getElementName(const char* name, ElementIDRefs* sid, bool copy) 
     return result;
 }
 
-std::vector<std::pair<MappedName, ElementIDRefs>>
+std::vector<MappedName>
 ComplexGeoData::getElementMappedNames(const IndexedName& element, bool needUnmapped) const
 {
     flushElementMap();
@@ -301,7 +300,7 @@ ComplexGeoData::getElementMappedNames(const IndexedName& element, bool needUnmap
     if (!needUnmapped) {
         return {};
     }
-    return {std::make_pair(MappedName(element), ElementIDRefs())};
+    return {MappedName(element)};
 }
 
 ElementMapPtr ComplexGeoData::resetElementMap(ElementMapPtr elementMap)
@@ -526,7 +525,6 @@ void ComplexGeoData::readElements(Base::XMLReader& reader, size_t count)
 
     for (size_t i = 0; i < count; ++i) {
         reader.readElement("Element");
-        ElementIDRefs sids;
         if (reader.hasAttribute("sid")) {
             if (!Hasher) {
                 if (!warned) {
@@ -577,7 +575,6 @@ void ComplexGeoData::restoreStream(std::istream& stream, std::size_t count)
     const auto& types = getElementTypes();
     try {
         for (size_t i = 0; i < count; ++i) {
-            ElementIDRefs sids;
             std::size_t sCount = 0;
             if (!(stream >> value >> key >> sCount)) {
                 // NOLINTNEXTLINE

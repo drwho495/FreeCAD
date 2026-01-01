@@ -104,7 +104,7 @@
 #include "TopoShapeShellPy.h"
 #include "TopoShapeSolidPy.h"
 #include "TopoShapeWirePy.h"
-#include "TopoShapeOpCode.h"
+#include "MappingDataStructures.h"
 #include "TopoShapeMapper.h"
 
 #ifdef FCUseFreeType
@@ -1135,7 +1135,7 @@ private:
             throw Py::Exception();
         }
         return shape2pyshape(
-            Part::TopoShape().makeElementBoolean(Part::OpCodes::Shell, getPyShapes(obj), op)
+            Part::TopoShape().makeElementBoolean(Data::OperationCode::Shell, getPyShapes(obj), op)
         );
     }
     Py::Object makeFace(const Py::Tuple& args, const Py::Dict& kwds)
@@ -2324,13 +2324,13 @@ private:
             for (TopTools_ListIteratorOfListOfShape it(d); it.More(); it.Next()) {
                 TopoShape s(0, sources.front().Hasher);
                 list1.append(shape2pyshape(
-                    s.makeShapeWithElementMap(it.Value(), mapper, sources, Part::OpCodes::Split)
+                    s.makeShapeWithElementMap(it.Value(), mapper, sources, Part::OperationCode::Split)
                 ));
             }
             for (TopTools_ListIteratorOfListOfShape it(l); it.More(); it.Next()) {
                 TopoShape s(0, sources.front().Hasher);
                 list2.append(shape2pyshape(
-                    s.makeShapeWithElementMap(it.Value(), mapper, sources, Part::OpCodes::Split)
+                    s.makeShapeWithElementMap(it.Value(), mapper, sources, Part::OperationCode::Split)
                 ));
             }
             Py::Tuple tuple(2);

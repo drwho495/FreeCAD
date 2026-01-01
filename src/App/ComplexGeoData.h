@@ -218,7 +218,7 @@ public:
      *
      * @return Returns an indexed name.
      */
-    IndexedName getIndexedName(const MappedName& name, ElementIDRefs* sid = nullptr) const;
+    IndexedName getIndexedName(const MappedName& name) const;
 
     /** Get element mapped name
      *
@@ -230,8 +230,7 @@ public:
      * @return Returns the mapped name.
      */
     MappedName getMappedName(const IndexedName& element,
-                             bool allowUnmapped = false,
-                             ElementIDRefs* sid = nullptr) const;
+                             bool allowUnmapped = false) const;
 
     /** Return a pair of indexed name and mapped name
      *
@@ -251,7 +250,7 @@ public:
      * mapped name.
      */
     MappedElement
-    getElementName(const char* name, ElementIDRefs* sid = nullptr, bool copy = false) const;
+    getElementName(const char* name, bool copy = false) const;
 
     /** Add a sub-element name mapping.
      *
@@ -274,7 +273,6 @@ public:
     MappedName setElementName(const IndexedName& element,
                               const MappedName& name,
                               long masterTag,
-                              const ElementIDRefs* sid = nullptr,
                               bool overwrite = false)
     {
         return _elementMap->setElementName(element, name, masterTag, sid, overwrite);
@@ -294,7 +292,7 @@ public:
      * @return a list of mapped names of the give element along with their
      * associated string ID references
      */
-    std::vector<std::pair<MappedName, ElementIDRefs>>
+    std::vector<MappedName>
     getElementMappedNames(const IndexedName& element, bool needUnmapped = false) const;
 
     /// Hash the child element map postfixes to shorten element name from hierarchical maps
