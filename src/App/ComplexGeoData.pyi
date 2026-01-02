@@ -9,7 +9,6 @@ from Base.Vector import Vector
 from Base.Placement import Placement
 from Base.Rotation import Rotation
 from Base.Matrix import Matrix
-from StringHasher import StringHasher
 from typing import Any, Final
 
 
@@ -145,9 +144,6 @@ class ComplexGeoData(Persistence):
 
     Tag: int = 0
     """Geometry Tag"""
-
-    Hasher: StringHasher = ...
-    """Get/Set the string hasher of this object"""
 
     ElementMapSize: Final[int] = 0
     """Get the current element map size"""

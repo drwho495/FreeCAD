@@ -18,7 +18,10 @@ namespace Data
 {
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-// class MappedName;
+class MappedName;
+
+constexpr const char SECTION_DELIMINATOR = ';';
+constexpr const char SECTION_SAVE_FORMAT[] = "OpCode;MapModifier;HistoryModifier;IterationTag;ReferenceIDs;LinkedNames;ElementType;Index;TNoSE;DeletedNames;IsForkedElement";
 
 class AppExport MappedSection
 {
@@ -30,11 +33,11 @@ public:
                   enum HistoryModifier historyModifier,
                   int iterationTag,
                   std::vector<std::string> referenceIDs,
-                  std::vector<MappedName> linkedNames,
+                  std::vector<std::unique_ptr<MappedName>> linkedNames,
                   std::string elementType,
                   int index,
                   int totalNumberOfSectionElements,
-                  std::vector<MappedName> deletedNames,
+                  std::vector<std::unique_ptr<MappedName>> deletedNames,
                   bool isForkedElement)
     {
         this->opCode = opCode;
@@ -42,40 +45,46 @@ public:
         this->historyModifier = historyModifier;
         this->iterationTag = iterationTag;
         this->referenceIDs = referenceIDs;
-        this->setLinkedNames(linkedNames);
+        this->copyLinkedNames(linkedNames);
         this->elementType = elementType;
         this->index = index;
         this->totalNumberOfSectionElements = totalNumberOfSectionElements;
-        this->setDeletedNames(deletedNames);
+        this->copyDeletedNames(deletedNames);
         this->isForkedElement = isForkedElement;
     }
 
-    void setLinkedNames(std::vector<MappedName> newLinkedNames) {
-        for (const MappedName &linkedName : newLinkedNames) {
-            this->linkedNames.push_back(std::make_unique<MappedName>(linkedName));
+    void copyLinkedNames(std::vector<std::unique_ptr<MappedName>> newLinkedNames) {
+        for (auto &linkedName : newLinkedNames) {
+            this->linkedNames.push_back(std::make_unique<MappedName>(*linkedName));
         }
     }
 
-    void setDeletedNames(std::vector<MappedName> newDeletedNames) {
-        for (const MappedName &deletedName : newDeletedNames) {
-            this->deletedNames.push_back(std::make_unique<MappedName>(deletedName));
+    void copyDeletedNames(std::vector<std::unique_ptr<MappedName>> newDeletedNames) {
+        for (auto &deletedName : newDeletedNames) {
+            this->deletedNames.push_back(std::make_unique<MappedName>(*deletedName));
         }
     }
 
-    enum OperationCode opCode;
-    enum MapModifier mapModifier;
-    enum HistoryModifier historyModifier;
-    int iterationTag;
-    std::vector<std::string> referenceIDs;
-    std::vector<std::unique_ptr<MappedName>> linkedNames;
-    std::string elementType;
+    std::string toString() const;
+
+    bool operator==(MappedSection &otherSection) const {
+        return otherSection.toString() == toString();
+    }
+
+    enum OperationCode opCode = OperationCode::Maker;
+    enum MapModifier mapModifier = MapModifier::Source;
+    enum HistoryModifier historyModifier = HistoryModifier::New;
+    int iterationTag = 0;
+    std::vector<std::string> referenceIDs {};
+    std::vector<std::unique_ptr<MappedName>> linkedNames {};
+    std::string elementType = "";
     int index = 0;
 
     // these variables do not change the history of an element, they are just used in searching algorithms
     // to improve the quality of their outputs. they are not to be used in equality checks!
-    int totalNumberOfSectionElements;
-    std::vector<std::unique_ptr<MappedName>> deletedNames;
-    bool isForkedElement;
+    int totalNumberOfSectionElements = 0;
+    std::vector<std::unique_ptr<MappedName>> deletedNames {};
+    bool isForkedElement = false;
 };
 
 

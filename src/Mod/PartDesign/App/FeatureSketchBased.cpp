@@ -275,7 +275,6 @@ TopoShape ProfileBased::getTopoShapeVerifiedFace(
                     shape = shape.makeElementWires();
                 }
                 if (shape.hasSubShape(TopAbs_WIRE)) {
-                    shape.Hasher = getDocument()->getStringHasher();
                     if (allowOpen) {
                         std::vector<TopoShape> openwires;
                         std::vector<TopoShape> wires;

@@ -857,14 +857,6 @@ void SubShapeBinder::update(SubShapeBinder::UpdateOption options)
         int idx = -1;
         for (auto& shape : shapes) {
             ++idx;
-            if (shape.Hasher && shape.getElementMapSize()
-                && shape.Hasher != getDocument()->getStringHasher()) {
-                ss.str("");
-                ss << Data::POSTFIX_EXTERNAL_TAG << Data::ComplexGeoData::elementMapPrefix()
-                   << Part::OpCodes::Shapebinder << ':' << shapeOwners[idx].first << ':'
-                   << shapeOwners[idx].second;
-                shape.reTagElementMap(-getID(), getDocument()->getStringHasher(), ss.str().c_str());
-            }
             if (!shape.hasSubShape(TopAbs_FACE) && shape.hasSubShape(TopAbs_EDGE)) {
                 shape = shape.makeElementCopy();
             }
@@ -877,13 +869,6 @@ void SubShapeBinder::update(SubShapeBinder::UpdateOption options)
             for (size_t i = 0; i < shapes.size(); ++i) {
                 auto& shape = shapes[i];
                 shape = shape.makeElementTransform(*shapeMats[i]);
-                // if(shape.Hasher
-                //         && shape.getElementMapSize()
-                //         && shape.Hasher != getDocument()->getStringHasher())
-                // {
-                //     shape.reTagElementMap(getID(),
-                //             getDocument()->getStringHasher(),TOPOP_SHAPEBINDER);
-                // }
             }
         }
 

@@ -43,7 +43,6 @@
 
 #include <App/DocumentObject.h>
 #include <App/DocumentObserver.h>
-#include <App/StringHasher.h>
 #include <App/ExportInfo.h>
 #include <Base/UniqueNameManager.h>
 
@@ -65,7 +64,6 @@ using Path = std::vector<size_t>;
 
 namespace App
 {
-using HasherMap = boost::bimap<StringHasherRef, int>;
 class Transaction;
 
 // Pimpl class
@@ -95,12 +93,9 @@ struct DocumentP
     unsigned int UndoMemSize {0};
     unsigned int UndoMaxStackSize {20};
     std::string programVersion;
-    mutable HasherMap hashers;
     std::multimap<const App::DocumentObject*, std::unique_ptr<App::DocumentObjectExecReturn>>
         _RecomputeLog;
     ExportInfo exportInfo;
-
-    StringHasherRef Hasher {new StringHasher};
 
     Document::PreRecomputeHook _preRecomputeHook;
 
@@ -168,7 +163,6 @@ struct DocumentP
     topologicalSort(const std::vector<App::DocumentObject*>& objects) const;
     static std::vector<App::DocumentObject*>
     partialTopologicalSort(const std::vector<App::DocumentObject*>& objects);
-    static void checkStringHasher(const Base::XMLReader& reader);
 };
 
 }  // namespace App

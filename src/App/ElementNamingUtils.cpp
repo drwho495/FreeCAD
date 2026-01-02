@@ -2,6 +2,7 @@
 
 #include "ElementNamingUtils.h"
 #include <boost/algorithm/string/predicate.hpp>
+#include <unordered_set>
 
 
 const char* Data::isMappedElement(const char* name)
@@ -112,6 +113,31 @@ bool Data::hasMissingElement(const char* subname)
 const char* Data::hasMappedElementName(const char* subname)
 {
     return isMappedElement(findElementName(subname));
+}
+
+std::string Data::escapeChars(
+    const std::string& inputString,
+    const std::unordered_set<char>& charsToEscape)
+{
+    std::string result;
+    result.reserve(inputString.size() * 2);
+
+    for (size_t i = 0; i < inputString.size(); ++i) {
+        char c = inputString[i];
+
+        bool is_target = charsToEscape.count(c) != 0;
+        bool already_escaped =
+            i > 0 && inputString[i - 1] == '\\' &&
+            (i < 2 || inputString[i - 2] != '\\');
+
+        if (is_target && !already_escaped) {
+            result.push_back('\\');
+        }
+
+        result.push_back(c);
+    }
+
+    return result;
 }
 
 const std::string Data::indexSuffix(int index, const char* label)

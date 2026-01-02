@@ -24,8 +24,9 @@
 
 #include <unordered_set>
 
-#include "MappedName.h"
+#include "MappedSection.h"
 #include "MappingDataStructures.h"
+#include "ElementNamingUtils.h"
 
 #include "Base/Console.h"
 
@@ -33,37 +34,56 @@
 #include <boost/iostreams/stream.hpp>
 
 
-FC_LOG_LEVEL_INIT("MappedName", true, 2);  // NOLINT
+FC_LOG_LEVEL_INIT("MappedSection", true, 2);  // NOLINT
 
 namespace Data
 {
-    std::string MappedName::toString() const {
+    std::string MappedSection::toString() const {
         std::ostringstream ss;
         std::ostringstream saveName;
-        int stringLength = strlen(MAPPED_NAME_FORMAT);
+        std::unordered_set<char> unsafeChars;
+
+        int stringLength = strlen(SECTION_SAVE_FORMAT);
+
+        unsafeChars.insert(SECTION_DELIMINATOR);
+        unsafeChars.insert(':');
         
         for (int i = 0; i < stringLength; i++) {
-            if (MAPPED_NAME_FORMAT[i] != MAPPED_NAME_DELIMINATOR) {
-                saveName << MAPPED_NAME_FORMAT[i];
+            if (SECTION_SAVE_FORMAT[i] != SECTION_DELIMINATOR) {
+                saveName << SECTION_SAVE_FORMAT[i];
             }
 
             bool endOfString = ((i + 1) == stringLength);
             
-            if (MAPPED_NAME_FORMAT[i] == MAPPED_NAME_DELIMINATOR || endOfString) {
+            if (SECTION_SAVE_FORMAT[i] == SECTION_DELIMINATOR || endOfString) {
                 std::string saveNameStr = saveName.str();
+                std::ostringstream newSection;
 
-                if (saveNameStr == "ElementMapVersion") {
-                    ss << ELEMENT_MAP_VERSION;
-                } else if (saveNameStr == "DuplicateCount") {
-                    ss << duplicateCount;
-                } else if (saveNameStr == "MappedSection") {
-                    for (const auto &section : sections) {
-                        ss << section->toString();
-                    }
+                if (saveNameStr == "OpCode") {
+                    newSection << static_cast<int>(opCode);
+                } else if (saveNameStr == "MapModifier") {
+                    newSection << static_cast<int>(mapModifier);
+                } else if (saveNameStr == "HistoryModifier") {
+                    newSection << static_cast<int>(historyModifier);
+                } else if (saveNameStr == "IterationTag") {
+                    newSection << iterationTag;
+                } else if (saveNameStr == "ReferenceIDs") {
+                    std::string separator = ",";
+
+                    newSection << std::accumulate(referenceIDs.begin(), referenceIDs.end(), std::string(""),
+                            [&separator](const std::string& a, const std::string& b) -> std::string {
+                                if (a.empty()) {
+                                    return b;
+                                } else {
+                                    return a + separator + b;
+                                }
+                            });
                 }
 
+                ss << escapeChars(newSection.str(), unsafeChars);
+
                 if (!endOfString) {
-                    ss << MAPPED_NAME_DELIMINATOR;
+                    ss << SECTION_DELIMINATOR;
                 }
 
                 saveName.clear();

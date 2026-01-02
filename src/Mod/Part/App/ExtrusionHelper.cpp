@@ -574,8 +574,7 @@ void ExtrusionHelper::createTaperedPrismOffset(
 void ExtrusionHelper::makeElementDraft(
     const ExtrusionParameters& params,
     const TopoShape& _shape,
-    std::vector<TopoShape>& drafts,
-    App::StringHasherRef hasher
+    std::vector<TopoShape>& drafts
 )
 {
     double distanceFwd = tan(params.taperAngleFwd) * params.lengthFwd;

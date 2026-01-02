@@ -209,7 +209,7 @@ App::DocumentObjectExecReturn* Revolution::execute()
             TopLoc_Location loc(mov);
             sourceShape.setShape(sourceShape.getShape().Moved(loc));
         }
-        TopoShape revolve(0, getDocument()->getStringHasher());
+        TopoShape revolve(0);
         revolve.makeElementRevolve(
             sourceShape,
             revAx,

@@ -401,7 +401,7 @@ void SketchObject::buildShape()
         Shape.setValue(Part::TopoShape());
         return;
     }
-    Part::TopoShape result(0, getDocument()->getStringHasher());
+    Part::TopoShape result(0);
     if (vertices.empty()) {
         // Notice here we supply op code Part::OpCodes::Sketch to makEWires().
         result.makeElementWires(shapes, Part::OpCodes::Sketch);
@@ -472,7 +472,7 @@ Part::TopoShape SketchObject::buildInternals(const Part::TopoShape &edges) const
         joiner.setTightBound(true);
         joiner.setMergeEdges(true);
         joiner.addShape(edges);
-        Part::TopoShape result(getID(), getDocument()->getStringHasher());
+        Part::TopoShape result(getID());
         if (!joiner.Shape().IsNull()) {
             joiner.getResultWires(result, "SKF");
             result = result.makeElementFace(result.getSubTopoShapes(TopAbs_WIRE),
@@ -481,7 +481,7 @@ Part::TopoShape SketchObject::buildInternals(const Part::TopoShape &edges) const
                     /*pln*/nullptr
             );
         }
-        Part::TopoShape openWires(getID(), getDocument()->getStringHasher());
+        Part::TopoShape openWires(getID());
         joiner.getOpenWires(openWires, "SKF");
         if (openWires.isNull()) {
             return result;  // No open wires, return either face or empty toposhape
@@ -10784,10 +10784,11 @@ void SketchObject::onSketchRestore()
             if (ExternalGeo.getSize() < 2)
                 initExternalGeo();
             for(auto &key : externalGeoRef) {
-                long id = getDocument()->getStringHasher()->getID(key.c_str()).value();
-                if(geoLastId < id)
-                    geoLastId = id;
-                externalGeoRefMap[key].push_back(id);
+                // TODO: reimplement eventually (currently just removing the string hasher)
+                // long id = getDocument()->getStringHasher()->getID(key.c_str()).value();
+                // if(geoLastId < id)
+                //     geoLastId = id;
+                // externalGeoRefMap[key].push_back(id);
             }
             rebuildExternalGeometry();
             if(ExternalGeometry.getSize()+2!=ExternalGeo.getSize())

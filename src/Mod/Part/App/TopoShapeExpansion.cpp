@@ -6049,7 +6049,7 @@ long TopoShape::isElementGenerated(const Data::MappedName& _name, int depth) con
     return res;
 }
 
-void TopoShape::reTagElementMap(long tag, App::StringHasherRef hasher, const char* postfix)
+void TopoShape::reTagElementMap(long tag, const char* postfix)
 {
     if (!tag) {
         FC_WARN("invalid shape tag for re-tagging");

@@ -689,7 +689,7 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
         }
 
         // --- Combine generated prisms (all in global CS) ---
-        TopoShape prism(0, getDocument()->getStringHasher());
+        TopoShape prism(0);
         if (prisms.empty()) {
             return new App::DocumentObjectExecReturn(
                 QT_TRANSLATE_NOOP("Exception", "No extrusion geometry was generated.")
@@ -730,7 +730,7 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
             prism.Tag = -this->getID();
 
             // Let's call algorithm computing a fuse operation:
-            TopoShape result(0, getDocument()->getStringHasher());
+            TopoShape result(0);
             try {
                 const char* maker;
                 switch (getAddSubType()) {
@@ -833,7 +833,7 @@ TopoShape FeatureExtrude::generateSingleExtrusionSide(
     const TopoShape& base
 )
 {
-    TopoShape prism(0, getDocument()->getStringHasher());
+    TopoShape prism(0);
 
     if (method == "UpToFirst" || method == "UpToLast" || method == "UpToFace"
         || method == "UpToShape") {
@@ -917,8 +917,7 @@ TopoShape FeatureExtrude::generateSingleExtrusionSide(
             Part::ExtrusionHelper::makeElementDraft(
                 params,
                 sketchshape,
-                drafts,
-                getDocument()->getStringHasher()
+                drafts
             );
             if (drafts.empty()) {
                 return prism;

@@ -186,8 +186,6 @@ App::DocumentObjectExecReturn* Pipe::execute()
         base = TopoShape();
     }
 
-    auto hasher = getDocument()->getStringHasher();
-
     try {
         // setup the location
         this->positionByPrevious();
@@ -396,7 +394,7 @@ App::DocumentObjectExecReturn* Pipe::execute()
             }
         }
 
-        TopoShape result(0, hasher);
+        TopoShape result(0);
         if (!frontwires.empty() || !backwires.empty()) {
             BRepBuilderAPI_Sewing sewer;
             sewer.SetTolerance(Precision::Confusion());
@@ -491,7 +489,7 @@ App::DocumentObjectExecReturn* Pipe::execute()
             return App::DocumentObject::StdReturn;
         }
 
-        TopoShape boolOp(0, getDocument()->getStringHasher());
+        TopoShape boolOp(0);
         const char* maker;
         switch (getAddSubType()) {
             case Additive:

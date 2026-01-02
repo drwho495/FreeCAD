@@ -513,9 +513,6 @@ static std::vector<std::pair<long, Data::MappedName>> getElementSource(
         // It is possible the name does not belong to the shape, e.g. when user
         // changes modeling order in PartDesign. So we try to assign the
         // document hasher here in case getElementHistory() needs to de-hash
-        if (!shape.Hasher && owner) {
-            shape.Hasher = owner->getDocument()->getStringHasher();
-        }
         long tag = shape.getElementHistory(ret.back().second, &original, &history);
         if (!tag) {
             break;
@@ -980,7 +977,6 @@ static TopoShape _getTopoShape(
     App::DocumentObject* linked = nullptr;
     App::DocumentObject* owner = nullptr;
     Base::Matrix4D linkMat;
-    App::StringHasherRef hasher;
     long tag;
     {
         Base::PyGILStateLocker lock;
@@ -989,7 +985,6 @@ static TopoShape _getTopoShape(
             return shape;
         }
         tag = owner->getID();
-        hasher = owner->getDocument()->getStringHasher();
         linked = owner->getLinkedObject(true, &linkMat, false);
         if (pmat) {
             if (options.testFlag(ShapeOption::ResolveLink) && obj != owner) {
@@ -1119,7 +1114,7 @@ static TopoShape _getTopoShape(
         if (canCache(owner) && PropertyShapeCache::getShape(owner, shape)) {
             bool scaled = shape.transformShape(mat, false, true);
             if (owner->getDocument() != obj->getDocument()) {
-                shape.reTagElementMap(obj->getID(), obj->getDocument()->getStringHasher());
+                shape.reTagElementMap(obj->getID());
                 PropertyShapeCache::setShape(obj, shape, subname);
             }
             else if (scaled || (linked != owner && linkMat.hasScale() != Base::ScaleType::NoScaling)) {
@@ -1172,7 +1167,7 @@ static TopoShape _getTopoShape(
             if (linked && linked != owner) {
                 baseShape = Feature::getTopoShape(linked, ShapeOption::NoFlag);
                 if (!link->getShowElementValue()) {
-                    baseShape.reTagElementMap(owner->getID(), owner->getDocument()->getStringHasher());
+                    baseShape.reTagElementMap(owner->getID());
                 }
             }
         }
@@ -1249,7 +1244,7 @@ static TopoShape _getTopoShape(
                 }
                 else {
                     shape = baseShape.makeElementTransform(mat);
-                    shape.reTagElementMap(subObj->getID(), subObj->getDocument()->getStringHasher());
+                    shape.reTagElementMap(subObj->getID());
                 }
             }
             shapes.push_back(shape);
@@ -1270,7 +1265,7 @@ static TopoShape _getTopoShape(
     if (owner != obj) {
         bool scaled = shape.transformShape(mat, false, true);
         if (owner->getDocument() != obj->getDocument()) {
-            shape.reTagElementMap(obj->getID(), obj->getDocument()->getStringHasher());
+            shape.reTagElementMap(obj->getID());
             scaled = true;  // force cache
         }
         if (canCache(obj) && scaled) {

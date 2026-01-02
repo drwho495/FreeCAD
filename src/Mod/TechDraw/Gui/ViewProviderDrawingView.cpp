@@ -558,7 +558,7 @@ void ViewProviderDrawingView::fixColorAlphaValues()
 //! true if document toBeChecked was written by a program with version >= minMajor.minMinor.
 //! note that we can not check point releases as only the major and minor are recorded in the Document.xml
 //! file.
-//! (ex <Document SchemaVersion="4" ProgramVersion="1.2R44322 +1 (Git)" FileVersion="1" StringHasher="1">)
+//! (ex <Document SchemaVersion="4" ProgramVersion="1.2R44322 +1 (Git)" FileVersion="1">)
 bool ViewProviderDrawingView::checkMiniumumDocumentVersion(App::Document* toBeChecked,
                                                            int minMajor,
                                                            int minMinor)

@@ -67,7 +67,6 @@
 #include <TopTools_ListOfShape.hxx>
 
 #include <App/PropertyStandard.h>
-#include <App/StringHasherPy.h>
 #include <Base/FileInfo.h>
 #include <Base/GeometryPyCXX.h>
 #include <Base/MatrixPy.h>
@@ -164,17 +163,13 @@ int TopoShapePy::PyInit(PyObject* args, PyObject* keywds)
             kwlist,
             &pcObj,
             &op,
-            &tag,
-            &App::StringHasherPy::Type,
-            &pyHasher
+            &tag
         )) {
         return -1;
     }
     auto& self = *getTopoShapePtr();
     self.Tag = tag;
-    if (pyHasher) {
-        self.Hasher = static_cast<App::StringHasherPy*>(pyHasher)->getStringHasherPtr();
-    }
+
     auto shapes = getPyShapes(pcObj);
     PY_TRY
     {
@@ -213,7 +208,6 @@ PyObject* TopoShapePy::copy(PyObject* args) const
             args,
             "|sO!O!O!",
             &op,
-            &App::StringHasherPy::Type,
             &pyHasher,
             &PyBool_Type,
             &copyGeom,
@@ -227,10 +221,6 @@ PyObject* TopoShapePy::copy(PyObject* args) const
     }
     if (op && !op[0]) {
         op = nullptr;
-    }
-    App::StringHasherRef hasher;
-    if (pyHasher) {
-        hasher = static_cast<App::StringHasherPy*>(pyHasher)->getStringHasherPtr();
     }
     auto& self = *getTopoShapePtr();
     return Py::new_reference_to(shape2pyshape(

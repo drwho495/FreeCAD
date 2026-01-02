@@ -104,8 +104,7 @@ public:
     static void makeElementDraft(
         const ExtrusionParameters& params,
         const TopoShape&,
-        std::vector<TopoShape>&,
-        App::StringHasherRef hasher
+        std::vector<TopoShape>&
     );
 };
 

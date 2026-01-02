@@ -391,7 +391,7 @@ App::DocumentObjectExecReturn* Extrusion::execute()
 
     try {
         ExtrusionParameters params = computeFinalParameters();
-        TopoShape result(0, getDocument()->getStringHasher());
+        TopoShape result(0);
 
         extrudeShape(
             result,

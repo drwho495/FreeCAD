@@ -284,13 +284,11 @@ class PartExport TopoShape: public Data::ComplexGeoData
 public:
     TopoShape(
         long Tag = 0,  // NOLINT google-explicit-constructor
-        App::StringHasherRef hasher = App::StringHasherRef(),
         const TopoDS_Shape& shape = TopoDS_Shape()
     );  // Cannot be made explicit
     TopoShape(
         const TopoDS_Shape&,  // NOLINT google-explicit-constructor
         long Tag = 0,
-        App::StringHasherRef hasher = App::StringHasherRef()
     );  // Cannot be made explicit
     TopoShape(const TopoShape&);
     ~TopoShape() override;
@@ -1630,7 +1628,6 @@ public:
 
     void reTagElementMap(
         long tag,  // NOLINT google-default-arguments
-        App::StringHasherRef hasher,
         const char* postfix = nullptr
     ) override;
 

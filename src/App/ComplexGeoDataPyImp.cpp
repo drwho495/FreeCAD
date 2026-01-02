@@ -25,13 +25,10 @@
 #include <memory>
 
 #include "ComplexGeoData.h"
-#include "StringHasher.h"
 
 // inclusion of the generated files (generated out of ComplexGeoDataPy.xml)
 #include <App/ComplexGeoDataPy.h>
 #include <App/ComplexGeoDataPy.cpp>
-#include <App/StringHasherPy.h>
-#include <App/StringIDPy.h>
 #include <Base/BoundBoxPy.h>
 #include <Base/MatrixPy.h>
 #include <Base/PlacementPy.h>
@@ -401,26 +398,26 @@ PyObject* ComplexGeoDataPy::setElementName(PyObject* args, PyObject* kwds)
                                        &tag)) {
         return NULL;
     }
-    if (pySid != Py_None) {
-        if (PyObject_TypeCheck(pySid, &App::StringIDPy::Type)) {
-            sids.push_back(static_cast<App::StringIDPy*>(pySid)->getStringIDPtr());
-        }
-        else if (PySequence_Check(pySid)) {
-            Py::Sequence seq(pySid);
-            for (auto it = seq.begin(); it != seq.end(); ++it) {
-                auto ptr = (*it).ptr();
-                if (PyObject_TypeCheck(ptr, &App::StringIDPy::Type)) {
-                    sids.push_back(static_cast<App::StringIDPy*>(ptr)->getStringIDPtr());
-                }
-                else {
-                    throw Py::TypeError("expect StringID in sid sequence");
-                }
-            }
-        }
-        else {
-            throw Py::TypeError("expect sid to contain either StringID or sequence of StringID");
-        }
-    }
+    // if (pySid != Py_None) {
+        // if (PyObject_TypeCheck(pySid, &App::StringIDPy::Type)) {
+        //     sids.push_back(static_cast<App::StringIDPy*>(pySid)->getStringIDPtr());
+        // }
+        // else if (PySequence_Check(pySid)) {
+        //     Py::Sequence seq(pySid);
+        //     for (auto it = seq.begin(); it != seq.end(); ++it) {
+        //         auto ptr = (*it).ptr();
+        //         if (PyObject_TypeCheck(ptr, &App::StringIDPy::Type)) {
+        //             sids.push_back(static_cast<App::StringIDPy*>(ptr)->getStringIDPtr());
+        //         }
+        //         else {
+        //             throw Py::TypeError("expect StringID in sid sequence");
+        //         }
+        //     }
+        // }
+        // else {
+        //     throw Py::TypeError("expect sid to contain either StringID or sequence of StringID");
+        // }
+    // }
     PY_TRY
     {
         Data::IndexedName index(element, getComplexGeoDataPtr()->getElementTypes());
@@ -439,15 +436,6 @@ PyObject* ComplexGeoDataPy::setElementName(PyObject* args, PyObject* kwds)
         return Py::new_reference_to(Py::String(res.toString(0)));
     }
     PY_CATCH
-}
-
-Py::Object ComplexGeoDataPy::getHasher() const
-{
-    auto self = getComplexGeoDataPtr();
-    if (!self->Hasher) {
-        return Py::None();
-    }
-    return Py::Object(self->Hasher->getPyObject(), true);
 }
 
 Py::Dict ComplexGeoDataPy::getElementMap() const
@@ -508,28 +496,6 @@ Py::Dict ComplexGeoDataPy::getElementReverseMap() const
 Py::Long ComplexGeoDataPy::getElementMapSize() const
 {
     return Py::Long((long)getComplexGeoDataPtr()->getElementMapSize());
-}
-
-void ComplexGeoDataPy::setHasher(Py::Object obj)
-{
-    auto self = getComplexGeoDataPtr();
-    if (obj.isNone()) {
-        if (self->Hasher) {
-            self->Hasher = App::StringHasherRef();
-            self->resetElementMap();
-        }
-    }
-    else if (PyObject_TypeCheck(obj.ptr(), &App::StringHasherPy::Type)) {
-        App::StringHasherRef ref(
-            static_cast<App::StringHasherPy*>(obj.ptr())->getStringHasherPtr());
-        if (self->Hasher != ref) {
-            self->Hasher = ref;
-            self->resetElementMap();
-        }
-    }
-    else {
-        throw Py::TypeError("invalid type");
-    }
 }
 
 Py::Object ComplexGeoDataPy::getBoundBox() const

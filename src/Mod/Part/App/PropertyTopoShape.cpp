@@ -76,16 +76,10 @@ void PropertyPartShape::setValue(const TopoShape& sh)
 
         auto tag = obj->getID();
         if (_Shape.Tag && tag != _Shape.Tag) {
-            auto hasher = _Shape.Hasher ? _Shape.Hasher : obj->getDocument()->getStringHasher();
-
-            _Shape.reTagElementMap(tag, hasher);
+            _Shape.reTagElementMap(tag);
         }
         else {
             _Shape.Tag = obj->getID();
-        }
-        if (!_Shape.Hasher && _Shape.hasChildElementMap()) {
-            _Shape.Hasher = obj->getDocument()->getStringHasher();
-            _Shape.hashChildMaps();
         }
     }
     hasSetValue();
@@ -193,15 +187,12 @@ void PropertyPartShape::setPyObject(PyObject* value)
             if (shape.Tag || shape.getElementMapSize()) {
                 // We can't trust the meaning of the input shape tag, so we
                 // remap anyway
-                TopoShape res(owner->getID(), owner->getDocument()->getStringHasher(), shape.getShape());
+                TopoShape res(owner->getID(), shape.getShape());
                 res.mapSubElement(shape);
                 shape = res;
             }
             else {
                 shape.Tag = owner->getID();
-                if (shape.Hasher) {  // TODO: This null guard added during TNP transition
-                    shape.Hasher->clear();
-                }
             }
         }
         setValue(shape);
@@ -355,7 +346,6 @@ void PropertyPartShape::beforeSave() const
     _SaveHasher = false;
     auto owner = freecad_cast<App::DocumentObject*>(getContainer());
     if (owner && !_Shape.isNull() && _Shape.getElementMapSize() > 0) {
-        auto ret = owner->getDocument()->addStringHasher(_Shape.Hasher);
         _HasherIndex = ret.second;
         _SaveHasher = ret.first;
         _Shape.beforeSave();
@@ -464,13 +454,6 @@ void PropertyPartShape::Restore(Base::XMLReader& reader)
     }
 
     reader.readEndElement("Part");
-
-    if (owner && hasher_idx >= 0) {
-        _Shape.Hasher = owner->getDocument()->getStringHasher(hasher_idx);
-        if (save_hasher) {
-            _Shape.Hasher->Restore(reader);
-        }
-    }
 
     if (has_ver) {
         // The file name here is not used for restore, but just a way to get

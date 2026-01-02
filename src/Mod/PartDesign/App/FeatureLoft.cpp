@@ -174,8 +174,6 @@ App::DocumentObjectExecReturn* Loft::execute()
     catch (const Base::Exception&) {
     }
 
-    auto hasher = getDocument()->getStringHasher();
-
     try {
         // setup the location
         this->positionByPrevious();
@@ -338,7 +336,7 @@ App::DocumentObjectExecReturn* Loft::execute()
         }
 
         result.Tag = -getID();
-        TopoShape boolOp(0, getDocument()->getStringHasher());
+        TopoShape boolOp(0);
 
         const char* maker;
         switch (getAddSubType()) {

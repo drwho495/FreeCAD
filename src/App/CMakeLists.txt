@@ -103,8 +103,6 @@ generate_from_py(SuppressibleExtension)
 generate_from_py(Metadata)
 generate_from_py(OriginGroupExtension)
 generate_from_py(Part)
-generate_from_py(StringHasher)
-generate_from_py(StringID)
 
 generate_from_py(ComplexGeoData)
 generate_from_py(PropertyContainer)
@@ -134,8 +132,6 @@ SET(FreeCADApp_Pyi_SRCS
     ComplexGeoData.pyi
     Material.pyi
     MeasureManager.pyi
-    StringHasher.pyi
-    StringID.pyi
 )
 SOURCE_GROUP("Pyi" FILES ${FreeCADApp_Pyi_SRCS})
 
@@ -307,9 +303,6 @@ SET(FreeCADApp_CPP_SRCS
     ElementNamingUtils.cpp
     SafeMode.cpp
     Services.cpp
-    StringHasher.cpp
-    StringHasherPyImp.cpp
-    StringIDPyImp.cpp
 )
 
 SET(FreeCADApp_HPP_SRCS
@@ -334,7 +327,6 @@ SET(FreeCADApp_HPP_SRCS
     Metadata.h
     ElementNamingUtils.h
     Services.h
-    StringHasher.h
 )
 
 # auto-generate resource file with all available translations

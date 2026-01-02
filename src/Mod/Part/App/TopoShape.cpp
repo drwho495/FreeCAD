@@ -275,18 +275,16 @@ TYPESYSTEM_SOURCE(Part::TopoShape, Data::ComplexGeoData)
 
 TopoShape::~TopoShape() = default;
 
-TopoShape::TopoShape(long tag, App::StringHasherRef hasher, const TopoDS_Shape& shape)
+TopoShape::TopoShape(long tag, const TopoDS_Shape& shape)
     : _Shape(*this, shape)
 {
-    Tag = tag;
     Hasher = hasher;
 }
 
-TopoShape::TopoShape(const TopoDS_Shape& shape, long tag, App::StringHasherRef hasher)
+TopoShape::TopoShape(const TopoDS_Shape& shape, long tag)
     : _Shape(*this, shape)
 {
     Tag = tag;
-    Hasher = hasher;
 }
 
 TopoShape::TopoShape(const TopoShape& shape)

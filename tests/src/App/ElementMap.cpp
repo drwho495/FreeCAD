@@ -13,7 +13,7 @@
 class LessComplexPart
 {
 public:
-    LessComplexPart(long tag, const std::string& nameStr, App::StringHasherRef hasher)
+    LessComplexPart(long tag, const std::string& nameStr)
         : elementMapPtr(std::make_shared<Data::ElementMap>())
         , Tag(tag)
         , name(nameStr)
@@ -27,7 +27,6 @@ public:
         Data::IndexedName face4("Face", 4);
         Data::IndexedName face5("Face", 5);
         Data::IndexedName face6("Face", 6);
-        elementMapPtr->hasher = hasher;
         elementMapPtr->setElementName(face1, Data::MappedName(face1), Tag);
         elementMapPtr->setElementName(face2, Data::MappedName(face2), Tag);
         elementMapPtr->setElementName(face3, Data::MappedName(face3), Tag);
@@ -54,7 +53,6 @@ protected:
         _docName = App::GetApplication().getUniqueDocumentName("test");
         App::GetApplication().newDocument(_docName.c_str(), "testUser");
         _sids = &_sid;
-        _hasher = Base::Reference<App::StringHasher>(new App::StringHasher);
         ASSERT_EQ(_hasher.getRefCount(), 1);
     }
 
@@ -64,9 +62,6 @@ protected:
     }
 
     std::string _docName;
-    Data::ElementIDRefs _sid;
-    QVector<App::StringIDRef>* _sids;
-    App::StringHasherRef _hasher;
 };
 
 TEST_F(ElementMapTest, defaultConstruction)

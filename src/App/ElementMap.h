@@ -30,7 +30,6 @@
 
 #include "Application.h"
 #include "MappedElement.h"
-#include "StringHasher.h"
 
 #include <cstring>
 #include <deque>
@@ -44,21 +43,6 @@ namespace Data
 
 class ElementMap;
 using ElementMapPtr = std::shared_ptr<ElementMap>;
-
-/** Element trace callback
- *
- * The callback has the following call signature
- *  (const std::string &name, size_t offset, long encodedTag, long tag) -> bool
- *
- * @param name: the current element name.
- * @param offset: the offset skipping the encoded element name for the next iteration.
- * @param encodedTag: the tag encoded inside the current element, which is usually the tag
- *                    of the previous step in the shape history.
- * @param tag: the tag of the current shape element.
- *
- * @sa traceElement()
- */
-typedef std::function<bool(const MappedName&, int, long, long)> TraceCallback;
 
 /* This class provides for ComplexGeoData's ability to provide proper naming.
  * Specifically, ComplexGeoData uses this class for it's `_id` property.
@@ -85,7 +69,7 @@ public:
      * @param hasherRef where all the StringID needed to build the map are stored.
      */
     // FIXME this should be made part of \c save, to achieve symmetry with the restore method
-    void beforeSave(const ::App::StringHasherRef& hasherRef) const;
+    // void beforeSave(const ::App::StringHasherRef& hasherRef) const;
 
     /** Serialize this map. Calls \c collectChildMaps to get \c childMapSet and
      * \c postfixMap, then calls the other (private) save function with those parameters.
@@ -99,7 +83,7 @@ public:
      * @param hasherRef: where all the StringIDs are stored
      * @param stream: stream to deserialize
      */
-    ElementMapPtr restore(::App::StringHasherRef hasherRef, std::istream& stream);
+    ElementMapPtr restore(std::istream& stream);
 
 
     /** Add a sub-element name mapping.
@@ -125,21 +109,6 @@ public:
                               long masterTag,
                               bool overwrite = false);
 
-    /* Generates a new MappedName from the current details.
-     *
-     * The result is streamed to `ss` and stored in `name`.
-     *
-     * Note: the original proc was in the context of ComplexGeoData, which provided `Tag` access,
-     *   now you must pass in `long masterTag` explicitly.
-     */
-    void encodeElementName(char element_type,
-                           MappedName& name,
-                           std::ostringstream& ss,
-                           long masterTag,
-                           const char* postfix = nullptr,
-                           long tag = 0,
-                           bool forceTag = false) const;
-
     /// Remove \c name from the map
     void erase(const MappedName& name);
 
@@ -150,19 +119,11 @@ public:
 
     bool empty() const;
 
-    // IndexedName find(const MappedName& name, ElementIDRefs* sids = nullptr) const;
+    IndexedName find(const MappedName& name) const;
 
-    // MappedName find(const IndexedName& idx, ElementIDRefs* sids = nullptr) const;
+    MappedName find(const IndexedName& idx) const;
 
     std::vector<MappedName> findAll(const IndexedName& idx) const;
-
-    // prefix searching is disabled, as TopoShape::getRelatedElement() is
-    // deprecated in favor of GeoFeature::getRelatedElement(). Besides, there
-    // is efficient way to support child element map if we were to implement
-    // prefix search.
-#if 0
-    std::vector<MappedElement> findAllStartsWith(const char *prefix) const;
-#endif
 
     bool hasChildElementMap() const;
 
@@ -174,23 +135,13 @@ public:
      */
     void hashChildMaps(long masterTag);
 
-    struct AppExport MappedChildElements
-    {
-        IndexedName indexedName;
-        int count;
-        int offset;
-        long tag;
-        ElementMapPtr elementMap;
-        QByteArray postfix;
-
-        // prefix() has been moved to ElementNamingUtils.h
-    };
-
     /* Note: the original addChildElements passed `ComplexGeoData& master` for getting the `Tag`,
      *   now it just passes `long masterTag`.*/
-    void addChildElements(long masterTag, const std::vector<MappedChildElements>& children);
+    void addChildElements(long masterTag, std::unordered_map<IndexedName, ElementMapPtr, IndexedNameHasher>& children);
 
-    std::vector<MappedChildElements> getChildElements() const;
+    void addChildElement(long masterTag, IndexedName indexedName, ElementMapPtr childMap);
+
+    std::unordered_map<IndexedName, ElementMapPtr, IndexedNameHasher> getChildElements() const;
 
     std::vector<MappedElement> getAll() const;
 
@@ -205,8 +156,7 @@ public:
      * @param cb: trace callback with call signature.
      * @sa TraceCallback
      */
-    void traceElement(const MappedName& name, long masterTag, TraceCallback cb) const;
-
+    // void traceElement(const MappedName& name, long masterTag, TraceCallback cb) const;
 
 private:
     /** Serialize this map
@@ -225,8 +175,7 @@ private:
      * @param childMaps: where all child element maps are stored
      * @param postfixes. where all postfixes are stored
      */
-    ElementMapPtr restore(::App::StringHasherRef hasherRef,
-                          std::istream& stream,
+    ElementMapPtr restore(std::istream& stream,
                           std::vector<ElementMapPtr>& childMaps,
                           const std::vector<std::string>& postfixes);
 
@@ -244,20 +193,11 @@ private:
                        bool overwrite,
                        IndexedName* existing);
 
-    /** Utility function that adds \c postfix to \c postfixMap, and to \c postfixes
-     * if it was not present in the map.
-     */
-    static void addPostfix(const QByteArray& postfix,
-                           std::map<QByteArray, int>& postfixMap,
-                           std::vector<QByteArray>& postfixes);
-
     /* Note: the original proc passed `ComplexGeoData& master` for getting the `Tag`,
      *   now it just passes `long masterTag`.*/
-    // MappedName renameDuplicateElement(int index,
-    //                                   const IndexedName& element,
-    //                                   const IndexedName& element2,
-    //                                   const MappedName& name,
-    //                                   long masterTag) const;
+    MappedName renameDuplicateElement(const IndexedName& element,
+                                      const IndexedName& element2,
+                                      const MappedName& name) const;
 
     // FIXME duplicate code? as in copy/paste
     // const MappedNameRef* findMappedRef(const IndexedName& idx) const;
@@ -279,16 +219,6 @@ private:
         }
     };
 
-    struct IndexedElements
-    {
-        std::deque<MappedNameRef> names;
-        std::map<int, MappedChildElements> children;
-    };
-
-    std::map<const char*, IndexedElements, CStringComp> indexedNames;
-
-    std::map<MappedName, IndexedName, std::less<>> mappedNames;
-
     struct ChildMapInfo
     {
         int index = 0;
@@ -296,16 +226,10 @@ private:
         std::map<ElementMap*, int> mapIndices;
     };
 
-    QHash<QByteArray, ChildMapInfo> childElements;
-    std::size_t childElementSize = 0;
-
-    mutable unsigned _id = 0;
+    std::unordered_map<MappedName, IndexedName, MappedNameHasher> mappedNames;
+    std::unordered_map<IndexedName, ElementMapPtr, IndexedNameHasher> childElements;
 
     void init();
-
-public:
-    /// String hasher for element name shortening
-    App::StringHasherRef hasher;
 };
 
 

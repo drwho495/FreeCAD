@@ -75,7 +75,6 @@
 #include "License.h"
 #include "Link.h"
 #include "MergeDocuments.h"
-#include "StringHasher.h"
 #include "Transactions.h"
 
 #ifdef _MSC_VER
@@ -986,17 +985,17 @@ std::string Document::getTransientDirectoryName(const std::string& uuid,
 void Document::Save(Base::Writer& writer) const
 {
     d->hashers.clear();
-    addStringHasher(d->Hasher);
+    // addStringHasher(d->Hasher);
 
     writer.Stream() << R"(<Document SchemaVersion="4" ProgramVersion=")"
                     << Application::Config()["BuildVersionMajor"] << "."
                     << Application::Config()["BuildVersionMinor"] << "R"
                     << Application::Config()["BuildRevision"] << "\" FileVersion=\""
-                    << writer.getFileVersion() << "\" StringHasher=\"1\">\n";
+                    << writer.getFileVersion() << "\n";
 
     writer.incInd();
 
-    d->Hasher->setPersistenceFileName("StringHasher.Table");
+    // d->Hasher->setPersistenceFileName("StringHasher.Table");
     for (const auto o : d->objectArray) {
         o->beforeSave();
     }
@@ -1017,7 +1016,7 @@ void Document::Restore(Base::XMLReader& reader)
 {
     d->hashers.clear();
     d->touchedObjs.clear();
-    addStringHasher(d->Hasher);
+    // addStringHasher(d->Hasher);
     setStatus(Document::PartialDoc, false);
 
     reader.readElement("Document");
@@ -1036,12 +1035,12 @@ void Document::Restore(Base::XMLReader& reader)
         reader.FileVersion = 0;
     }
 
-    if (reader.hasAttribute("StringHasher")) {
-        d->Hasher->Restore(reader);
-    }
-    else {
-        d->Hasher->clear();
-    }
+    // if (reader.hasAttribute("StringHasher")) {
+        // d->Hasher->Restore(reader);
+    // }
+    // else {
+        // d->Hasher->clear();
+    // }
 
     // When this document was created the FileName and Label properties
     // were set to the absolute path or file name, respectively. To save
@@ -1104,50 +1103,6 @@ void Document::Restore(Base::XMLReader& reader)
     }
 
     reader.readEndElement("Document");
-}
-
-void DocumentP::checkStringHasher(const Base::XMLReader& reader)
-{
-    if (reader.hasReadFailed("StringHasher.Table.txt")) {
-        Base::Console().error(QT_TRANSLATE_NOOP(
-            "Notifications",
-            "\nIt is recommended that the user right-click the root of "
-            "the document and select Mark to recompute.\n"
-            "The user should then click the Refresh button in the main toolbar.\n"));
-    }
-}
-
-std::pair<bool, int> Document::addStringHasher(const StringHasherRef& hasher) const
-{
-    if (!hasher) {
-        return std::make_pair(false, 0);
-    }
-    auto ret =
-        d->hashers.left.insert(HasherMap::left_map::value_type(hasher, static_cast<int>(d->hashers.size())));
-    if (ret.second) {
-        hasher->clearMarks();
-    }
-    return std::make_pair(ret.second, ret.first->second);
-}
-
-StringHasherRef Document::getStringHasher(const int idx) const
-{
-    StringHasherRef hasher;
-    if (idx < 0) {
-        if (UseHasher.getValue()) {
-            return d->Hasher;
-        }
-        return hasher;
-    }
-    const auto it = d->hashers.right.find(idx);
-    if (it == d->hashers.right.end()) {
-        hasher = new StringHasher;
-        d->hashers.right.insert(HasherMap::right_map::value_type(idx, hasher));
-    }
-    else {
-        hasher = it->second;
-    }
-    return hasher;
 }
 
 struct DocExportStatus

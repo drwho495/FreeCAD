@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include "FCGlobal.h"
+#include <unordered_set>
 
 namespace App
 {
@@ -100,6 +101,7 @@ AppExport const char *hasMappedElementName(const char *subname);
 
 AppExport const std::string indexSuffix(int index, const char *label=ELEMENT_MAP_INDEX);
 
+std::string escapeChars(const std::string& inputString, const std::unordered_set<char>& charsToEscape);
 }  // namespace Data
 // clang-format on
 

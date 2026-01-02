@@ -198,6 +198,11 @@ public:
         return *this;
     }
 
+    std::size_t hash() const
+    {
+        return qHash(toString());
+    }
+
     /// True if either the name or the index compare not equal.
     bool operator!=(const IndexedName& other) const
     {
@@ -298,6 +303,14 @@ private:
     int index;
 };
 
+
+struct IndexedNameHasher
+{
+    size_t operator()(const IndexedName& name) const
+    {
+        return name.hash();
+    }
+};
 
 /// A thin wrapper around a QByteArray providing the ability to force a copy of the data at any
 /// time, even if it isn't being written to. The standard assignment operator for this class *does*

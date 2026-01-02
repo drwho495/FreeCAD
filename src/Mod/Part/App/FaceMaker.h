@@ -36,7 +36,6 @@
 #include <Base/BaseClass.h>
 #include <Mod/Part/PartGlobal.h>
 
-#include <App/StringHasher.h>
 #include "TopoShape.h"
 
 namespace Part
@@ -108,7 +107,6 @@ public:
     static std::unique_ptr<FaceMaker> ConstructFromType(Base::Type type);
 
     const char* MyOp = 0;
-    App::StringHasherRef MyHasher;
 
 protected:
     std::vector<TopoShape> mySourceShapes;  // wire or compound

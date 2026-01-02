@@ -37,7 +37,6 @@
 #include "MappedName.h"
 #include "MappedElement.h"
 #include "ElementMap.h"
-#include "StringHasher.h"
 
 #ifdef __GNUC__
 #include <cstdint>
@@ -214,7 +213,6 @@ public:
     /** Get element indexed name
      *
      * @param name: the input name
-     * @param sid: optional output of and App::StringID involved forming this mapped name
      *
      * @return Returns an indexed name.
      */
@@ -226,7 +224,6 @@ public:
      * @param allowUnmapped: If the queried element is not mapped, then return
      *                       an empty name if \c allowUnmapped is false, or
      *                       else, return the indexed name.
-     * @param sid: optional output of and App::StringID involved forming this mapped name
      * @return Returns the mapped name.
      */
     MappedName getMappedName(const IndexedName& element,
@@ -235,8 +232,6 @@ public:
     /** Return a pair of indexed name and mapped name
      *
      * @param name: the input name.
-     * @param sid: optional output of any App::StringID involved in forming
-     *             this mapped name
      * @param copy: if true, copy the name string, or else use it as constant
      *              string, and caller must make sure the memory is not freed.
      *
@@ -303,7 +298,7 @@ public:
 
     /// Append the Tag (if and only if it is non zero) into the element map
     virtual void
-    reTagElementMap(long tag, App::StringHasherRef hasher, const char* postfix = nullptr)
+    reTagElementMap(long tag, const char* postfix = nullptr)
     {
         (void)tag;
         (void)hasher;
@@ -474,9 +469,6 @@ protected:
 
 public:
     mutable long Tag {0};
-
-    /// String hasher for element name shortening
-    mutable App::StringHasherRef Hasher;
 
 protected:
     void restoreStream(std::istream& stream, std::size_t count);

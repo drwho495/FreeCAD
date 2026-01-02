@@ -1654,7 +1654,7 @@ void LinkBaseExtension::checkGeoElementMap(const App::DocumentObject* obj,
         }
         postfix = _postfix.c_str();
     }
-    geoData->reTagElementMap(obj->getID(), obj->getDocument()->getStringHasher(), postfix);
+    geoData->reTagElementMap(obj->getID(), postfix);
 }
 
 void LinkBaseExtension::onExtendedUnsetupObject()

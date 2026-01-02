@@ -4,6 +4,8 @@
 namespace Data
 {
 
+constexpr int ELEMENT_MAP_VERSION = 6;
+
 enum class AppExport OperationCode : int {
     Fuse = 0,
     Cut = 1,

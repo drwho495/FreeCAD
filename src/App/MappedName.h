@@ -29,6 +29,7 @@
 #include <string>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include "MappingDataStructures.h"
 
 #include <QByteArray>
 #include <QHash>
@@ -41,6 +42,9 @@
 
 namespace Data
 {
+
+constexpr const char MAPPED_NAME_DELIMINATOR = ':';
+constexpr const char MAPPED_NAME_FORMAT[] = "ElementMapVersion:DuplicateCount:MappedSection";
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
@@ -59,6 +63,10 @@ public:
         for (const MappedSection &section : sections) {
             this->sections.push_back(std::make_unique<MappedSection>(section));
         }
+    };
+
+    void setDuplicateCount(int newCount) {
+        duplicateCount = newCount;
     };
 
     /// Share data with another MappedName
@@ -81,29 +89,33 @@ public:
         return !(this->operator==(other));
     }
 
-    /// Create a std::string from this instance, starting at startPosition, and extending len bytes.
-    ///
-    /// \param startPosition The offset into the data
-    /// \param len The number of bytes to output
-    /// \return A new std::string containing the bytes copied from this instance's data and postfix
-    /// (depending on startPosition and len).
-    /// \note No effort is made to ensure that these are valid ASCII characters, and it is possible
-    /// the data includes embedded null characters, non-ASCII data, etc.
-    std::string toString(int startPosition = 0, int len = -1) const
-    {
-        return std::string();
+    std::string toString() const;
+
+    const bool compareSections(const MappedName &otherName) const {
+        return (otherName.sections == sections);
     }
 
-    // if offset is inside data return data, if offset is > data.size
-    //(ends up in postfix) return postfix
-    const char* toConstString(int offset, int& size) const
+    MappedSection getSection(int index) const {
+        int formattedIndex = 0;
+
+        if (index < 0) {
+            formattedIndex = numberOfSections() + index;
+        }
+
+        if (formattedIndex >= 0 && formattedIndex < numberOfSections())
+            return *sections[formattedIndex];
+        else
+            return MappedSection();
+    }
+
+    const char* toConstString() const
     {
         return toString().c_str();
     }
 
     /// Treat this MappedName as a single continuous array of bytes, returning the combined size
     /// of the data and postfix.
-    int sectionSize() const
+    int numberOfSections() const
     {
         return sections.size();
     }
@@ -112,7 +124,7 @@ public:
     /// data and prefix are empty.
     bool empty() const
     {
-        return (this->sectionSize() == 0);
+        return (this->numberOfSections() == 0);
     }
 
     /// If this is shared data, a new unshared copy is made and returned. If it is already unshared
@@ -145,9 +157,18 @@ public:
     }
 
 private:
-    std::vector<std::unique_ptr<MappedSection>> sections;
+    std::vector<std::unique_ptr<MappedSection>> sections { };
+    int duplicateCount = 0;
 };
 
+
+struct MappedNameHasher
+{
+    size_t operator()(const MappedName& name) const
+    {
+        return name.hash();
+    }
+};
 
 // using ElementIDRefs = QVector<::App::StringIDRef>;
 
