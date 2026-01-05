@@ -121,8 +121,6 @@ private:
 private:
     TopoShape _Shape;
     std::string _Ver;
-    mutable int _HasherIndex = 0;
-    mutable bool _SaveHasher = false;
 };
 
 struct PartExport ShapeHistory

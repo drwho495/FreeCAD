@@ -340,28 +340,11 @@ void PropertyPartShape::getPaths(std::vector<App::ObjectIdentifier>& paths) cons
     );
 }
 
-void PropertyPartShape::beforeSave() const
-{
-    _HasherIndex = 0;
-    _SaveHasher = false;
-    auto owner = freecad_cast<App::DocumentObject*>(getContainer());
-    if (owner && !_Shape.isNull() && _Shape.getElementMapSize() > 0) {
-        _HasherIndex = ret.second;
-        _SaveHasher = ret.first;
-        _Shape.beforeSave();
-    }
-}
 void PropertyPartShape::Save(Base::Writer& writer) const
 {
     // See SaveDocFile(), RestoreDocFile()
     writer.Stream() << writer.ind() << "<Part";
     auto owner = dynamic_cast<App::DocumentObject*>(getContainer());
-    if (owner && !_Shape.isNull() && _Shape.getElementMapSize() > 0 && !_Shape.Hasher.isNull()) {
-        writer.Stream() << " HasherIndex=\"" << _HasherIndex << '"';
-        if (_SaveHasher) {
-            writer.Stream() << " SaveHasher=\"1\"";
-        }
-    }
     std::string version;
     // If exporting, do not export mapped element name, but still make a mark
     auto const version_valid = _Ver.size() && (_Ver != "?");
@@ -393,15 +376,6 @@ void PropertyPartShape::Save(Base::Writer& writer) const
         writer.endCharStream() << '\n' << writer.ind() << "</Part>\n";
     }
 
-    if (_SaveHasher) {
-        if (!toXML) {
-            _Shape.Hasher->setPersistenceFileName(getFileName(".Table").c_str());
-        }
-        else {
-            _Shape.Hasher->setPersistenceFileName(0);
-        }
-        _Shape.Hasher->Save(writer);
-    }
     if (version.size()) {
         if (!toXML) {
             _Shape.setPersistenceFileName(getFileName(".Map").c_str());
@@ -428,12 +402,15 @@ void PropertyPartShape::Restore(Base::XMLReader& reader)
     auto owner = freecad_cast<App::DocumentObject*>(getContainer());
     _Ver = "?";
     bool has_ver = reader.hasAttribute("ElementMap");
+    bool migrateFrom1_1 = false;
+    
     if (has_ver) {
         _Ver = reader.getAttribute<const char*>("ElementMap");
     }
 
-    int hasher_idx = reader.getAttribute<int>("HasherIndex", -1);
-    int save_hasher = reader.getAttribute<int>("SaveHasher", 0);
+    if (reader.hasAttribute("HasherIndex") || reader.hasAttribute("SaveHasher")) {
+        migrateFrom1_1 = true;
+    }
 
     TopoShape shape;
 
@@ -456,44 +433,51 @@ void PropertyPartShape::Restore(Base::XMLReader& reader)
     reader.readEndElement("Part");
 
     if (has_ver) {
-        // The file name here is not used for restore, but just a way to get
-        // more useful error message if something wrong when restoring
-        _Shape.setPersistenceFileName(getFileName().c_str());
-        if (owner && owner->getDocument()->testStatus(App::Document::PartialDoc)) {
-            _Shape.Restore(reader);
-        }
-        else if (_Ver == "?" || _Ver.empty()) {
-            // This indicate the shape is saved by legacy version without
-            // element map info.
+        if (migrateFrom1_1) {
             if (owner) {
                 // This will ask user for recompute after import
                 owner->getDocument()->addRecomputeObject(owner);
             }
-        }
-        else {
-            _Shape.Restore(reader);
-            if (owner ? owner->checkElementMapVersion(this, _Ver.c_str())
-                      : _Shape.checkElementMapVersion(_Ver.c_str())) {
-                auto ver = owner ? owner->getElementMapVersion(this) : _Shape.getElementMapVersion();
-                if (!owner || !owner->getNameInDocument()) {
-                    _Ver = ver;
-                }
-                else {
-                    // version mismatch, signal for regenerating.
-                    static const char* warnedDoc = 0;
-                    if (warnedDoc != owner->getDocument()->getName()) {
-                        warnedDoc = owner->getDocument()->getName();
-                        FC_WARN(
-                            "Recomputation required for document '"
-                            << warnedDoc << "' on geo element version change in " << getFullName()
-                            << ": " << _Ver << " -> " << ver
-                        );
-                    }
+        } else {
+            // The file name here is not used for restore, but just a way to get
+            // more useful error message if something wrong when restoring
+            _Shape.setPersistenceFileName(getFileName().c_str());
+            if (owner && owner->getDocument()->testStatus(App::Document::PartialDoc)) {
+                _Shape.Restore(reader);
+            }
+            else if (_Ver == "?" || _Ver.empty()) {
+                // This indicate the shape is saved by legacy version without
+                // element map info.
+                if (owner) {
+                    // This will ask user for recompute after import
                     owner->getDocument()->addRecomputeObject(owner);
+                }
+            }
+            else {
+                _Shape.Restore(reader);
+                if (owner ? owner->checkElementMapVersion(this, _Ver.c_str())
+                        : _Shape.checkElementMapVersion(_Ver.c_str())) {
+                    auto ver = owner ? owner->getElementMapVersion(this) : _Shape.getElementMapVersion();
+                    if (!owner || !owner->getNameInDocument()) {
+                        _Ver = ver;
+                    }
+                    else {
+                        // version mismatch, signal for regenerating.
+                        static const char* warnedDoc = 0;
+                        if (warnedDoc != owner->getDocument()->getName()) {
+                            warnedDoc = owner->getDocument()->getName();
+                            FC_WARN(
+                                "Recomputation required for document '"
+                                << warnedDoc << "' on geo element version change in " << getFullName()
+                                << ": " << _Ver << " -> " << ver
+                            );
+                        }
+                        owner->getDocument()->addRecomputeObject(owner);
 
-                    // sometimes objects will not update _Ver properly,
-                    // so lets do it here to avoid unnecessary remigration
-                    _Ver = ver;
+                        // sometimes objects will not update _Ver properly,
+                        // so lets do it here to avoid unnecessary remigration
+                        _Ver = ver;
+                    }
                 }
             }
         }
