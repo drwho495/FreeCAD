@@ -298,6 +298,7 @@ SET(FreeCADApp_CPP_SRCS
     IndexedName.cpp
     MappedElement.cpp
     MappedName.cpp
+    MappedSection.cpp
     Material.cpp
     MaterialPyImp.cpp
     MeasureManager.cpp
@@ -326,6 +327,9 @@ SET(FreeCADApp_HPP_SRCS
     Enumeration.h
     IndexedName.h
     MappedName.h
+    MappedSection.h
+    MappingDataStructures.h
+    MappedSectionUtils.h
     MappedElement.h
     Material.h
     MeasureManager.h
