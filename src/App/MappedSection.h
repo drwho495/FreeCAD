@@ -25,32 +25,8 @@ constexpr const char SECTION_SAVE_FORMAT[] = "OpCode;MapModifier;HistoryModifier
 class AppExport MappedSection
 {
 public:
-    MappedSection() = default;
-
-    // MappedSection(enum OperationCode opCode,
-    //               enum MapModifier mapModifier,
-    //               enum HistoryModifier historyModifier,
-    //               int iterationTag,
-    //               std::vector<std::string> referenceIDs,
-    //               std::vector<std::unique_ptr<MappedName>> linkedNames,
-    //               std::string elementType,
-    //               int index,
-    //               int totalNumberOfSectionElements,
-    //               std::vector<std::unique_ptr<MappedName>> deletedNames,
-    //               bool isForkedElement)
-    // {
-    //     this->opCode = opCode;
-    //     this->mapModifier = mapModifier;
-    //     this->historyModifier = historyModifier;
-    //     this->iterationTag = iterationTag;
-    //     this->referenceIDs = referenceIDs;
-    //     this->setLinkedNames(linkedNames);
-    //     this->elementType = elementType;
-    //     this->index = index;
-    //     this->totalNumberOfSectionElements = totalNumberOfSectionElements;
-    //     this->setDeletedNames(deletedNames);
-    //     this->isForkedElement = isForkedElement;
-    // }
+    MappedSection();
+    ~MappedSection();
 
     void setLinkedNames(std::vector<std::unique_ptr<MappedName>> newLinkedNames) {
         this->linkedNames.swap(newLinkedNames);
