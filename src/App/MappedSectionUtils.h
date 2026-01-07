@@ -38,7 +38,7 @@ static MappedSection buildElementSection(enum OperationCode opCode,
         linkedNamePtrs.push_back(std::make_unique<MappedName>(linkedName));
     }
 
-    mappedSection.setLinkedNames(linkedNamePtrs);
+    // mappedSection.setLinkedNames(linkedNamePtrs);
     mappedSection.elementType = elementType;
     mappedSection.index = index;
     mappedSection.totalNumberOfSectionElements = totalNumberOfSectionElements;
@@ -48,7 +48,7 @@ static MappedSection buildElementSection(enum OperationCode opCode,
         linkedNamePtrs.push_back(std::make_unique<MappedName>(deletedName));
     }
 
-    mappedSection.setDeletedNames(deletedNamePtrs);
+    // mappedSection.setDeletedNames(deletedNamePtrs);
     mappedSection.isForkedElement = isForkedElement;
 
     return mappedSection;

@@ -38,7 +38,7 @@
 #include "ElementNamingUtils.h"
 #include "IndexedName.h"
 #include "StringHasher.h"
-
+#include "MappedSection.h"
 
 namespace Data
 {
@@ -926,6 +926,8 @@ public:
 private:
     QByteArray data;
     QByteArray postfix;
+    std::vector<MappedSection> sections;
+    PersistentNameInfo nameInfo;
     bool raw;
 };
 
