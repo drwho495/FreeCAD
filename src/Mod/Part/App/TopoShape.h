@@ -45,6 +45,7 @@
 #include <BRepTools_History.hxx>
 #include <BRepTools_ReShape.hxx>
 #include <ShapeFix_Root.hxx>
+#include <App/MappingDataStructures.h>
 
 class gp_Ax1;
 class gp_Ax2;
@@ -2973,6 +2974,8 @@ private:
         const std::vector<TopoShape>& shapes,
         const char* op
     );
+
+    enum Data::AlgorithmType topoAlgorithmType = Data::AlgorithmType::Old;
 
     void setupChild(
         Data::ElementMap::MappedChildElements& child,

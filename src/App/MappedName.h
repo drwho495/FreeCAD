@@ -112,6 +112,10 @@ public:
         : raw(false)
     {}
 
+    MappedName(AlgorithmType algorithmType) {
+        nameAlgorithmType = algorithmType;
+    }
+
     MappedName(const MappedName& other) = default;
 
     /// Copy constructor with start position offset and optional size. The data is *not* reused.
@@ -703,7 +707,7 @@ public:
 
     /// Returns true if this is shared data, or false if a unique copy has been made.
     /// It is safe to access data only if it has been copied prior. To force a copy
-    /// please \see compact()
+    /// plenameAlgorithmTypease \see compact()
     bool isRaw() const
     {
         return this->raw;
@@ -923,11 +927,13 @@ public:
         return qHash(data, qHash(postfix));
     }
 
+    std::vector<MappedSection> sections;
+    PersistentNameInfo nameInfo;
+
 private:
     QByteArray data;
     QByteArray postfix;
-    std::vector<MappedSection> sections;
-    PersistentNameInfo nameInfo;
+    enum AlgorithmType nameAlgorithmType = AlgorithmType::Old;
     bool raw;
 };
 

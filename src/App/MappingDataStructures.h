@@ -12,6 +12,11 @@ struct PersistentNameInfo {
     int duplicateCount = 0;
 };
 
+enum class AppExport AlgorithmType : int {
+    Old = 0,
+    New = 1
+};
+
 enum class AppExport OperationCode : int {
     Fuse = 0,
     Cut = 1,

@@ -298,7 +298,6 @@ SET(FreeCADApp_CPP_SRCS
     IndexedName.cpp
     MappedElement.cpp
     MappedName.cpp
-    MappedSection.cpp
     Material.cpp
     MaterialPyImp.cpp
     MeasureManager.cpp
