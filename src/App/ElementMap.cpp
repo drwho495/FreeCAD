@@ -505,7 +505,9 @@ MappedName ElementMap::addName(MappedName& name,
                                bool overwrite,
                                IndexedName* existing)
 {
-    if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
+    if (name.nameAlgorithmType == AlgorithmType::Old 
+        && FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) 
+    {
         if (name.find("#") >= 0 && name.findTagInElementName() < 0) {
             FC_ERR("missing tag postfix " << name);  // NOLINT
         }
@@ -564,17 +566,19 @@ MappedName ElementMap::setElementName(const IndexedName& element,
         return {};
     }
 
-    for (int i = 0, count = name.size(); i < count; ++i) {
-        char check = name[i];
-        if (check == '.' || (std::isspace((int)check) != 0)) {
-            FC_THROWM(Base::RuntimeError, "Illegal character in mapped name: " << name);  // NOLINT
+    if (name.nameAlgorithmType == AlgorithmType::Old) {
+        for (int i = 0, count = name.size(); i < count; ++i) {
+            char check = name[i];
+            if (check == '.' || (std::isspace((int)check) != 0)) {
+                FC_THROWM(Base::RuntimeError, "Illegal character in mapped name: " << name);  // NOLINT
+            }
         }
-    }
-    for (const char* readChar = element.getType(); *readChar != 0; ++readChar) {
-        char check = *readChar;
-        if (check == '.' || (std::isspace((int)check) != 0)) {
-            FC_THROWM(Base::RuntimeError,  // NOLINT
-                      "Illegal character in element name: " << element);
+        for (const char* readChar = element.getType(); *readChar != 0; ++readChar) {
+            char check = *readChar;
+            if (check == '.' || (std::isspace((int)check) != 0)) {
+                FC_THROWM(Base::RuntimeError,  // NOLINT
+                        "Illegal character in element name: " << element);
+            }
         }
     }
 
@@ -590,28 +594,58 @@ MappedName ElementMap::setElementName(const IndexedName& element,
         sid = &_sid;
     }
 
-    std::ostringstream ss;
     Data::MappedName mappedName(name);
-    for (int i = 0;;) {
+    
+    if (name.nameAlgorithmType == AlgorithmType::Old) {
+        std::ostringstream ss;
+
+        for (int i = 0;;) {
+            IndexedName existing;
+            MappedName res = this->addName(mappedName, element, *sid, overwrite, &existing);
+            if (res) {
+                return res;
+            }
+            const int maxAttempts {100};
+            if (++i == maxAttempts) {
+                FC_ERR("unresolved duplicate element mapping '"  // NOLINT
+                    << name << ' ' << element << '/' << existing);
+                return name;
+            }
+            if (sid != &_sid) {
+                _sid = *sid;
+            }
+            mappedName = renameDuplicateElement(i, element, existing, name, _sid, masterTag);
+            if (!mappedName) {
+                return name;
+            }
+            sid = &_sid;
+        }
+    } else if (name.nameAlgorithmType == AlgorithmType::New) {
         IndexedName existing;
         MappedName res = this->addName(mappedName, element, *sid, overwrite, &existing);
+
         if (res) {
             return res;
+        } else {
+            // a copy of `name` was found in the element map, let's mark it as a duplicate.
+            int index = 0;
+
+            for (auto &loopName : mappedNames) {
+                if (loopName.first.sections == name.sections)
+                    ++index;
+            }
+
+            MappedName renamed(name);
+            renamed.nameInfo.duplicateCount = index;
+
+            // res = this->addName(renamed, element, *sid, overwrite, &existing);
+
+            if (!res) {
+                return { };
+            } else {
+                return renamed;
+            }
         }
-        const int maxAttempts {100};
-        if (++i == maxAttempts) {
-            FC_ERR("unresolved duplicate element mapping '"  // NOLINT
-                   << name << ' ' << element << '/' << existing);
-            return name;
-        }
-        if (sid != &_sid) {
-            _sid = *sid;
-        }
-        mappedName = renameDuplicateElement(i, element, existing, name, _sid, masterTag);
-        if (!mappedName) {
-            return name;
-        }
-        sid = &_sid;
     }
 }
 

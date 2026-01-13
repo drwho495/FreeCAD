@@ -34,6 +34,7 @@
 #include <QHash>
 #include <QVector>
 #include <utility>
+#include <ostream>
 
 #include "ElementNamingUtils.h"
 #include "IndexedName.h"
@@ -112,9 +113,9 @@ public:
         : raw(false)
     {}
 
-    MappedName(AlgorithmType algorithmType) {
-        nameAlgorithmType = algorithmType;
-    }
+    explicit MappedName(AlgorithmType algorithmType)
+        : nameAlgorithmType(algorithmType), raw(false)
+    { }
 
     MappedName(const MappedName& other) = default;
 
@@ -137,6 +138,9 @@ public:
     MappedName(const MappedName& other, const char* postfix)
         : data(other.data + other.postfix)
         , postfix(postfix)
+        , sections(other.sections)
+        , nameAlgorithmType(other.nameAlgorithmType)
+        , nameInfo(other.nameInfo)
         , raw(false)
     {}
 
@@ -144,6 +148,9 @@ public:
     MappedName(MappedName&& other) noexcept
         : data(std::move(other.data))
         , postfix(std::move(other.postfix))
+        , sections(std::move(other.sections))
+        , nameAlgorithmType(other.nameAlgorithmType)
+        , nameInfo(other.nameInfo)
         , raw(other.raw)
     {}
 
@@ -246,6 +253,10 @@ public:
         this->data = std::move(other.data);
         this->postfix = std::move(other.postfix);
         this->raw = other.raw;
+        this->sections = std::move(other.sections);
+        this->nameInfo = other.nameInfo;
+        this->nameAlgorithmType = other.nameAlgorithmType;
+
         return *this;
     }
 
@@ -262,32 +273,38 @@ public:
     /// individual data and postfix may NOT be equal in this case.
     bool operator==(const MappedName& other) const
     {
-        if (this->size() != other.size()) {
+        if (this->size() != other.size() || nameAlgorithmType != other.nameAlgorithmType) {
             return false;
         }
+        
+        if (nameAlgorithmType == AlgorithmType::Old) {
+            if (this->data.size() == other.data.size()) {
+                return this->data == other.data && this->postfix == other.postfix;
+            }
 
-        if (this->data.size() == other.data.size()) {
-            return this->data == other.data && this->postfix == other.postfix;
+            const auto& smaller = this->data.size() < other.data.size() ? *this : other;
+            const auto& larger = this->data.size() < other.data.size() ? other : *this;
+
+            if (!larger.data.startsWith(smaller.data)) {
+                return false;
+            }
+
+            QByteArray tmp = QByteArray::fromRawData(larger.data.constData() + smaller.data.size(),
+                                                    larger.data.size() - smaller.data.size());
+
+            if (!smaller.postfix.startsWith(tmp)) {
+                return false;
+            }
+
+            tmp = QByteArray::fromRawData(smaller.postfix.constData() + tmp.size(),
+                                        smaller.postfix.size() - tmp.size());
+
+            return tmp == larger.postfix;
+        } else if (nameAlgorithmType == AlgorithmType::New) {
+            return sections == other.sections;
         }
 
-        const auto& smaller = this->data.size() < other.data.size() ? *this : other;
-        const auto& larger = this->data.size() < other.data.size() ? other : *this;
-
-        if (!larger.data.startsWith(smaller.data)) {
-            return false;
-        }
-
-        QByteArray tmp = QByteArray::fromRawData(larger.data.constData() + smaller.data.size(),
-                                                 larger.data.size() - smaller.data.size());
-
-        if (!smaller.postfix.startsWith(tmp)) {
-            return false;
-        }
-
-        tmp = QByteArray::fromRawData(smaller.postfix.constData() + tmp.size(),
-                                      smaller.postfix.size() - tmp.size());
-
-        return tmp == larger.postfix;
+        return false;
     }
 
     bool operator!=(const MappedName& other) const
@@ -464,6 +481,14 @@ public:
         }
     }
 
+    std::vector<std::string> masterIDs() const {
+        if (nameAlgorithmType == AlgorithmType::New && size()) {
+            return sections[0].referenceIDs;
+        }
+
+        return { };
+    }
+
     /// Create a std::string from this instance, starting at startPosition, and extending len bytes.
     ///
     /// \param startPosition The offset into the data
@@ -474,8 +499,34 @@ public:
     /// the data includes embedded null characters, non-ASCII data, etc.
     std::string toString(int startPosition = 0, int len = -1) const
     {
-        std::string res;
-        return appendToBuffer(res, startPosition, len);
+        if (nameAlgorithmType == AlgorithmType::Old) {
+            std::string res;
+            return appendToBuffer(res, startPosition, len);
+        } else if (nameAlgorithmType == AlgorithmType::New) {
+            std::ostringstream ss;
+            std::vector<std::string> ids = masterIDs();
+
+            if (ids.size()) {
+                ss << "(";
+
+                int i = 0;
+                for (auto &id : ids) {
+                    ss << id;
+
+                    if (static_cast<int>(ids.size()) < (i + 1)) {
+                        ss << ",";
+                    }
+
+                    ++i;
+                }
+
+                ss << ")";
+
+                return ss.str();
+            }
+        } 
+
+        return "";
     }
 
     /// Given a (possibly non-empty) std::string buffer, append this instance to it, starting at a
@@ -650,23 +701,44 @@ public:
     {
         int thisSize = this->size();
         int otherSize = other.size();
-        for (int i = 0, count = std::min(thisSize, otherSize); i < count; ++i) {
-            char thisChar = this->operator[](i);
-            char otherChar = other[i];
-            if (thisChar < otherChar) {
-                return -1;
+
+        if (other == *this) {
+            return 0;
+        }
+
+        if (nameAlgorithmType == other.nameAlgorithmType && nameAlgorithmType == AlgorithmType::Old) {
+            for (int i = 0, count = std::min(thisSize, otherSize); i < count; ++i) {
+                char thisChar = this->operator[](i);
+                char otherChar = other[i];
+                if (thisChar < otherChar) {
+                    return -1;
+                }
+                if (thisChar > otherChar) {
+                    return 1;
+                }
             }
-            if (thisChar > otherChar) {
-                return 1;
+        } else if (nameAlgorithmType == other.nameAlgorithmType && nameAlgorithmType == AlgorithmType::New) {
+            for (int i = 0, count = std::min(thisSize, otherSize); i < count; ++i) {
+                MappedSection thisSection = sections[i];
+                MappedSection otherSection = other.sections[i];
+
+                if (thisSection < otherSection) {
+                    return -1;
+                }
+
+                if (thisSection > otherSection) {
+                    return 1;
+                }
             }
         }
         if (thisSize < otherSize) {
             return -1;
-        }
+        } 
         if (thisSize > otherSize) {
             return 1;
         }
-        return 0;
+
+        return -1;
     }
 
     /// \see compare()
@@ -695,19 +767,24 @@ public:
     /// of the data and postfix.
     int size() const
     {
-        return this->data.size() + this->postfix.size();
+        if (nameAlgorithmType == AlgorithmType::Old) {
+            return this->data.size() + this->postfix.size();
+        } else if (nameAlgorithmType == AlgorithmType::New) {
+            return this->sections.size();
+        }
+        return 0;
     }
 
     /// Treat this MappedName as a single continuous array of bytes, returning true only if both
     /// data and prefix are empty.
     bool empty() const
     {
-        return this->data.isEmpty() && this->postfix.isEmpty();
+        return !this->size();
     }
 
     /// Returns true if this is shared data, or false if a unique copy has been made.
     /// It is safe to access data only if it has been copied prior. To force a copy
-    /// plenameAlgorithmTypease \see compact()
+    /// \see compact()
     bool isRaw() const
     {
         return this->raw;
@@ -730,6 +807,7 @@ public:
     /// Ensure that this data is unshared, making a copy if necessary.
     void compact() const;
 
+
     /// Boolean conversion is the inverse of empty(), returning true if there is data in either the
     /// data or postfix, and false if there is nothing in either.
     explicit operator bool() const
@@ -742,6 +820,7 @@ public:
     {
         this->data.clear();
         this->postfix.clear();
+        this->sections.clear();
         this->raw = false;
     }
 
@@ -929,11 +1008,11 @@ public:
 
     std::vector<MappedSection> sections;
     PersistentNameInfo nameInfo;
+    enum AlgorithmType nameAlgorithmType = AlgorithmType::Old;
 
 private:
     QByteArray data;
     QByteArray postfix;
-    enum AlgorithmType nameAlgorithmType = AlgorithmType::Old;
     bool raw;
 };
 

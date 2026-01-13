@@ -26,6 +26,79 @@ class AppExport MappedSection
 public:
     MappedSection() = default;
 
+    bool operator==(const MappedSection &other) const {
+        return (opCode == other.opCode and
+                mapModifier == other.mapModifier and
+                historyModifier == other.historyModifier and
+                iterationTag == other.iterationTag and
+                referenceIDs == other.referenceIDs and
+                linkedNames == other.linkedNames and
+                elementType == other.elementType and
+                index == other.index);
+    }
+
+    int compare(MappedSection &other) const {
+        if (other == *this) {
+            return 0;
+        }
+
+        if (opCode < other.opCode) {
+            return -1;
+        }
+        if (opCode > other.opCode) {
+            return 1;
+        }
+
+        if (mapModifier < other.mapModifier) {
+            return -1;
+        }
+        if (mapModifier > other.mapModifier) {
+            return 1;
+        }
+
+        if (historyModifier < other.historyModifier) {
+            return -1;
+        }
+        if (historyModifier > other.historyModifier) {
+            return 1;
+        }
+
+        if (iterationTag < other.iterationTag) {
+            return -1;
+        }
+        if (iterationTag > other.iterationTag) {
+            return 1;
+        }
+
+        if (referenceIDs < other.referenceIDs) {
+            return -1;
+        }
+        if (referenceIDs > other.referenceIDs) {
+            return 1;
+        }
+
+        // if (linkedNames < other.linkedNames) {
+            // return -1;
+        // }
+        // if (linkedNames > other.linkedNames) {
+            // return 1;
+        // }
+
+        if (index > other.index) {
+            return 1;
+        }
+
+        return -1;
+    }
+
+    bool operator<(MappedSection &other) const {
+        return compare(other) == -1;
+    }
+
+    bool operator>(MappedSection &other) const {
+        return compare(other) == 1;
+    }
+
     enum OperationCode opCode = OperationCode::Maker;
     enum MapModifier mapModifier = MapModifier::Source;
     enum HistoryModifier historyModifier = HistoryModifier::New;

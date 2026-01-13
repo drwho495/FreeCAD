@@ -103,6 +103,7 @@
 
 #include <App/ElementMap.h>
 #include <App/ElementNamingUtils.h>
+#include <App/MappingDataStructures.h>
 #include <ShapeAnalysis_FreeBoundsProperties.hxx>
 #include <BRepFeat_MakeRevol.hxx>
 
@@ -896,6 +897,10 @@ void TopoShape::mapSubElement(const TopoShape& other, const char* op, bool force
 {
     if (!canMapElement(other)) {
         return;
+    }
+
+    if (other.topoAlgorithmType != topoAlgorithmType) {
+        FC_WARN("Algorithm Type mismatch in shapes!");
     }
 
     if (!getElementMapSize(false) && this->_Shape.IsPartner(other._Shape)) {
@@ -4435,14 +4440,29 @@ TopoShape& TopoShape::makeElementLoft(
 
 TopoShape& TopoShape::makeElementPrism(const TopoShape& base, const gp_Vec& vec, const char* op)
 {
-    if (!op) {
-        op = Part::OpCodes::Extrude;
-    }
     if (base.isNull()) {
         FC_THROWM(NullShapeException, "Null shape");
     }
     BRepPrimAPI_MakePrism mkPrism(base.getShape(), vec);
-    return makeElementShape(mkPrism, base, op);
+    
+    if (topoAlgorithmType == Data::AlgorithmType::Old) {
+        if (!op) {
+            op = Part::OpCodes::Extrude;
+        }
+        
+        return makeElementShape(mkPrism, base, op);
+    } else {
+        return mapPrismLikeShape(mkPrism, base, Data::OperationCode::Prism);
+    }
+}
+
+// This method works ONLY with the new Toponaming algorithm.
+TopoShape& TopoShape::mapPrismLikeShape(BRepBuilderAPI_MakeShape& mkPrism, const TopoShape& baseShape, Data::OperationCode opCode) 
+{
+    mkPrism.Build();
+    setShape(mkPrism.Shape());
+
+    return *this;
 }
 
 TopoShape& TopoShape::makeElementPrismUntil(

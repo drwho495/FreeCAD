@@ -9,6 +9,18 @@ namespace Data
 constexpr int ELEMENT_MAP_VERSION = 6;
 
 struct PersistentNameInfo {
+    bool operator==(const PersistentNameInfo& other) const {
+        return duplicateCount == other.duplicateCount;
+    }
+
+    bool operator<(const PersistentNameInfo& other) const {
+        return duplicateCount < other.duplicateCount;
+    }
+
+    bool operator>(const PersistentNameInfo& other) const {
+        return duplicateCount > other.duplicateCount;
+    }
+
     int duplicateCount = 0;
 };
 

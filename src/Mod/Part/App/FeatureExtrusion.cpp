@@ -390,8 +390,15 @@ App::DocumentObjectExecReturn* Extrusion::execute()
     }
 
     try {
+        ParameterGrp::handle hGrp =
+            App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Part/General");
+
+        bool useNewAlgo = hGrp->GetBool("UseNewAlgorithm", false);
+
         ExtrusionParameters params = computeFinalParameters();
         TopoShape result(0, getDocument()->getStringHasher());
+
+        result.setAlgorithmType(useNewAlgo);
 
         extrudeShape(
             result,

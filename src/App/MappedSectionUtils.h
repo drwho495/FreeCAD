@@ -15,7 +15,7 @@
 namespace Data
 {
 
-AppExport MappedSection buildElementSection(enum OperationCode opCode,
+AppExport MappedSection buildMappedSection(enum OperationCode opCode,
                                             enum MapModifier mapModifier,
                                             enum HistoryModifier historyModifier,
                                             int iterationTag,
@@ -56,34 +56,34 @@ AppExport MappedSection buildElementSection(enum OperationCode opCode,
     return mappedSection;
 };
 
-AppExport MappedSection buildElementSection(enum OperationCode opCode,
-                                            enum MapModifier mapModifier,
-                                            enum HistoryModifier historyModifier,
-                                            int iterationTag,
-                                            std::vector<std::string> referenceIDs,
-                                            std::vector<std::pair<PersistentNameInfo, std::vector<MappedSection>>> linkedNames,
-                                            std::string elementType,
-                                            int index,
-                                            int totalNumberOfSectionElements,
-                                            std::vector<std::pair<PersistentNameInfo, std::vector<MappedSection>>> deletedNames,
-                                            bool isForkedElement)
-{
-    MappedSection mappedSection = MappedSection();
+// AppExport MappedSection buildMappedSection(enum OperationCode opCode,
+//                                             enum MapModifier mapModifier,
+//                                             enum HistoryModifier historyModifier,
+//                                             int iterationTag,
+//                                             std::vector<std::string> referenceIDs,
+//                                             std::vector<std::pair<PersistentNameInfo, std::vector<MappedSection>>> linkedNames,
+//                                             std::string elementType,
+//                                             int index,
+//                                             int totalNumberOfSectionElements,
+//                                             std::vector<std::pair<PersistentNameInfo, std::vector<MappedSection>>> deletedNames,
+//                                             bool isForkedElement)
+// {
+//     MappedSection mappedSection = MappedSection();
 
-    mappedSection.opCode = opCode;
-    mappedSection.mapModifier = mapModifier;
-    mappedSection.historyModifier = historyModifier;
-    mappedSection.iterationTag = iterationTag;
-    mappedSection.referenceIDs = referenceIDs;
-    mappedSection.linkedNames = linkedNames;
-    mappedSection.elementType = elementType;
-    mappedSection.index = index;
-    mappedSection.totalNumberOfSectionElements = totalNumberOfSectionElements;
-    mappedSection.deletedNames = deletedNames;
-    mappedSection.isForkedElement = isForkedElement;
+//     mappedSection.opCode = opCode;
+//     mappedSection.mapModifier = mapModifier;
+//     mappedSection.historyModifier = historyModifier;
+//     mappedSection.iterationTag = iterationTag;
+//     mappedSection.referenceIDs = referenceIDs;
+//     mappedSection.linkedNames = linkedNames;
+//     mappedSection.elementType = elementType;
+//     mappedSection.index = index;
+//     mappedSection.totalNumberOfSectionElements = totalNumberOfSectionElements;
+//     mappedSection.deletedNames = deletedNames;
+//     mappedSection.isForkedElement = isForkedElement;
 
-    return mappedSection;
-};
+//     return mappedSection;
+// };
 
 AppExport std::vector<MappedName> getLinkedNames(MappedSection &section) {
     std::vector<MappedName> names;

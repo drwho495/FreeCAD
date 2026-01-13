@@ -112,6 +112,8 @@
 #include "SolverGeometryExtension.h"
 #include "ExternalGeometryFacade.h"
 #include <Mod/Part/App/Datums.h>
+#include <App/MappingDataStructures.h>
+#include <App/MappedSectionUtils.h>
 
 
 #undef DEBUG
@@ -329,14 +331,45 @@ void SketchObject::buildShape()
     std::vector<Part::TopoShape> shapes;
     std::vector<Part::TopoShape> vertices;
     int geoId = 0;
+    int tag = getID();
 
-    auto addVertex = [&vertices](auto vertex, auto name) {
+    ParameterGrp::handle hGrp =
+        App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Part/General");
+
+    bool useNewAlgo = hGrp->GetBool("UseNewAlgorithm", false);
+
+    auto addVertex = [&vertices](auto vertex, auto name, int tag, bool useNewAlgo) {
         if (!vertex.hasElementMap()) {
             vertex.resetElementMap(std::make_shared<Data::ElementMap>());
         }
+
+        Data::MappedName newName;
+
+        if (useNewAlgo) {
+            newName = Data::MappedName(Data::AlgorithmType::New);
+
+            Data::MappedSection addSection = 
+                Data::buildMappedSection(Data::OperationCode::Sketch,
+                                    Data::MapModifier::Source,
+                                    Data::HistoryModifier::New,
+                                    tag,
+                                    {name},
+                                    { },
+                                    "Vertex",
+                                    0,
+                                    1,
+                                    { },
+                                    false
+            );
+
+            newName.sections = { addSection };
+        } else {
+            newName = Data::MappedName::fromRawData(name.c_str());
+        }
+
         vertex.setElementName(
             Data::IndexedName::fromConst("Vertex", 1),
-            Data::MappedName::fromRawData(name.c_str()),
+            newName,
             0L
         );
         vertices.push_back(vertex);
@@ -361,7 +394,9 @@ void SketchObject::buildShape()
             int idx = getVertexIndexGeoPos(geoId - 1, Sketcher::PointPos::start);
             addVertex(
                 Part::TopoShape {TopoDS::Vertex(geo->toShape())},
-                convertSubName(Data::IndexedName::fromConst("Vertex", idx + 1), false)
+                convertSubName(Data::IndexedName::fromConst("Vertex", idx + 1), false),
+                tag,
+                useNewAlgo
             );
         }
         else {
@@ -386,7 +421,9 @@ void SketchObject::buildShape()
         if (geo->isDerivedFrom<Part::GeomPoint>()) {
             addVertex(
                 Part::TopoShape {TopoDS::Vertex(geo->toShape())},
-                convertSubName(indexedName, false)
+                convertSubName(indexedName, false),
+                tag,
+                useNewAlgo
             );
         }
         else {
@@ -402,8 +439,10 @@ void SketchObject::buildShape()
         return;
     }
     Part::TopoShape result(0, getDocument()->getStringHasher());
+    result.setAlgorithmType(useNewAlgo);
+
     if (vertices.empty()) {
-        // Notice here we supply op code Part::OpCodes::Sketch to makEWires().
+        // Notice here we supply op code Part::OpCodes::Sketch to makeElementWires().
         result.makeElementWires(shapes, Part::OpCodes::Sketch);
     }
     else {
@@ -11558,6 +11597,11 @@ App::ElementNamePair SketchObject::getElementName(
 
 Part::TopoShape SketchObject::getEdge(const Part::Geometry *geo, const char *name) const
 {
+    ParameterGrp::handle hGrp =
+        App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Part/General");
+
+    bool useNewAlgo = hGrp->GetBool("UseNewAlgorithm", false);
+
     Part::TopoShape shape(geo->toShape());
     // Originally in ComplexGeoData::setElementName
     // LinkStable/src/App/ComplexGeoData.cpp#L1631
@@ -11565,8 +11609,32 @@ Part::TopoShape SketchObject::getEdge(const Part::Geometry *geo, const char *nam
     if ( !shape.hasElementMap() ) {
         shape.resetElementMap(std::make_shared<Data::ElementMap>());
     }
+
+    Data::MappedName newName;
+    if (useNewAlgo) {
+        newName = Data::MappedName(Data::AlgorithmType::New);
+
+        Data::MappedSection addSection = 
+            Data::buildMappedSection(Data::OperationCode::Sketch,
+                                     Data::MapModifier::Source,
+                                     Data::HistoryModifier::New,
+                                     getID(),
+                                     { name },
+                                     { },
+                                     "Edge",
+                                     0,
+                                     1,
+                                     { },
+                                     false
+        );
+
+        newName.sections = { addSection };
+    } else {
+        newName = Data::MappedName::fromRawData(name);
+    }
+
     shape.setElementName(Data::IndexedName::fromConst("Edge", 1),
-                          Data::MappedName::fromRawData(name),0L);
+                          newName,0L);
     TopTools_IndexedMapOfShape vmap;
     TopExp::MapShapes(shape.getShape(), TopAbs_VERTEX, vmap);
     std::ostringstream ss;
@@ -11578,8 +11646,32 @@ Part::TopoShape SketchObject::getEdge(const Part::Geometry *geo, const char *nam
             if(getPoint(geo,pos[j]) == pt) {
                 ss.str("");
                 ss << name << 'v' << static_cast<int>(pos[j]);
+
+                Data::MappedName newName2;
+                if (useNewAlgo) {
+                    newName2 = Data::MappedName(Data::AlgorithmType::New);
+
+                    Data::MappedSection addSection = 
+                        Data::buildMappedSection(Data::OperationCode::Sketch,
+                                                  Data::MapModifier::Source,
+                                                  Data::HistoryModifier::New,
+                                                  getID(),
+                                                  {ss.str()},
+                                                  { },
+                                                  "Edge",
+                                                  0,
+                                                  1,
+                                                  { },
+                                                  false
+                    );
+
+                    newName2.sections = { addSection };
+                } else {
+                    newName2 = Data::MappedName::fromRawData(ss.str().c_str());
+                }
+
                 shape.setElementName(Data::IndexedName::fromConst("Vertex", i),
-                                      Data::MappedName::fromRawData(ss.str().c_str()),0L);
+                                      newName2,0L);
                 break;
             }
         }

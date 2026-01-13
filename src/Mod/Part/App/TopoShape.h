@@ -350,6 +350,12 @@ private:
     ) const;
 
 public:
+    void setAlgorithmType(Data::AlgorithmType algorithmType) {
+        topoAlgorithmType = algorithmType;
+    }
+    void setAlgorithmType(bool useNewAlgorithm) {
+        setAlgorithmType(useNewAlgorithm ? Data::AlgorithmType::New : Data::AlgorithmType::Old);
+    }
     /// Get the standard accuracy to be used with getPoints, getLines or getFaces
     double getAccuracy() const override;
     /** Get points from object with given accuracy */
@@ -1311,6 +1317,8 @@ public:
      *         for the same shape in the same line of code.
      */
     TopoShape& makeElementPrism(const TopoShape& base, const gp_Vec& vec, const char* op = nullptr);
+
+    TopoShape& mapPrismLikeShape(BRepBuilderAPI_MakeShape& mkPrism, const TopoShape& baseShape, Data::OperationCode opCode);
 
     /** Make a prism that is a linear sweep of this shape
      *
