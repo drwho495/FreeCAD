@@ -34,7 +34,6 @@
 #include <QHash>
 #include <QVector>
 #include <utility>
-#include <ostream>
 
 #include "ElementNamingUtils.h"
 #include "IndexedName.h"
@@ -136,21 +135,21 @@ public:
     /// \param other The mapped name to copy. Its data and postfix become the new MappedName's data
     /// \param postfix The postfix for the new MappedName
     MappedName(const MappedName& other, const char* postfix)
-        : data(other.data + other.postfix)
-        , postfix(postfix)
-        , sections(other.sections)
-        , nameAlgorithmType(other.nameAlgorithmType)
+        : sections(other.sections)
         , nameInfo(other.nameInfo)
+        , nameAlgorithmType(other.nameAlgorithmType)
+        , data(other.data + other.postfix)
+        , postfix(postfix)
         , raw(false)
     {}
 
     /// Move constructor
     MappedName(MappedName&& other) noexcept
-        : data(std::move(other.data))
-        , postfix(std::move(other.postfix))
-        , sections(std::move(other.sections))
-        , nameAlgorithmType(other.nameAlgorithmType)
+        : sections(std::move(other.sections))
         , nameInfo(other.nameInfo)
+        , nameAlgorithmType(other.nameAlgorithmType)
+        , data(std::move(other.data))
+        , postfix(std::move(other.postfix))
         , raw(other.raw)
     {}
 
@@ -497,37 +496,7 @@ public:
     /// (depending on startPosition and len).
     /// \note No effort is made to ensure that these are valid ASCII characters, and it is possible
     /// the data includes embedded null characters, non-ASCII data, etc.
-    std::string toString(int startPosition = 0, int len = -1) const
-    {
-        if (nameAlgorithmType == AlgorithmType::Old) {
-            std::string res;
-            return appendToBuffer(res, startPosition, len);
-        } else if (nameAlgorithmType == AlgorithmType::New) {
-            std::ostringstream ss;
-            std::vector<std::string> ids = masterIDs();
-
-            if (ids.size()) {
-                ss << "(";
-
-                int i = 0;
-                for (auto &id : ids) {
-                    ss << id;
-
-                    if (static_cast<int>(ids.size()) < (i + 1)) {
-                        ss << ",";
-                    }
-
-                    ++i;
-                }
-
-                ss << ")";
-
-                return ss.str();
-            }
-        } 
-
-        return "";
-    }
+    std::string toString(int startPosition = 0, int len = -1) const;
 
     /// Given a (possibly non-empty) std::string buffer, append this instance to it, starting at a
     /// specified position, and continuing for a specified number of bytes.
@@ -570,20 +539,26 @@ public:
     //(ends up in postfix) return postfix
     const char* toConstString(int offset, int& size) const
     {
-        if (offset < 0) {
-            offset = 0;
-        }
-        if (offset > this->data.size()) {
-            offset -= this->data.size();
-            if (offset > this->postfix.size()) {
-                size = 0;
-                return "";
+        if (nameAlgorithmType == AlgorithmType::Old) {
+            if (offset < 0) {
+                offset = 0;
             }
-            size = this->postfix.size() - offset;
-            return this->postfix.constData() + offset;
+            if (offset > this->data.size()) {
+                offset -= this->data.size();
+                if (offset > this->postfix.size()) {
+                    size = 0;
+                    return "";
+                }
+                size = this->postfix.size() - offset;
+                return this->postfix.constData() + offset;
+            }
+            size = this->data.size() - offset;
+            return this->data.constData() + offset;
+        } else if (nameAlgorithmType == AlgorithmType::New) {
+            return toString().c_str();
         }
-        size = this->data.size() - offset;
-        return this->data.constData() + offset;
+
+        return "";
     }
 
     /// Get access to raw byte data. When possible, data is shared between this instance and the

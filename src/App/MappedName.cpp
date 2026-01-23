@@ -23,6 +23,7 @@
  ****************************************************************************/
 
 #include <unordered_set>
+#include <sstream>
 
 #include "MappedName.h"
 
@@ -48,6 +49,31 @@ void MappedName::compact() const
     }
 }
 
+
+std::string MappedName::toString(int startPosition, int len) const {
+    if (nameAlgorithmType == AlgorithmType::Old) {
+        std::string res;
+        return appendToBuffer(res, startPosition, len);
+    } else if (nameAlgorithmType == AlgorithmType::New) {
+        SavingUtil sUtil;
+
+        std::vector<std::string> stringSections;
+
+        sUtil.setFormattingString(MAPPED_NAME_SAVE_FORMAT);
+        sUtil.addSaveKey("ElementMapVersion", "6");
+        sUtil.addSaveKey("DuplicateCount", std::to_string(nameInfo.duplicateCount));
+
+        for (auto &section : sections) {
+            stringSections.push_back(section.toString());
+        }
+
+        sUtil.addSaveKey("MappedSections", stringSections);
+        
+        return sUtil.getSaveString();
+    } 
+
+    return "";
+}
 
 int MappedName::findTagInElementName(long* tagOut,
                                      int* lenOut,

@@ -310,6 +310,8 @@ SET(FreeCADApp_CPP_SRCS
     StringHasher.cpp
     StringHasherPyImp.cpp
     StringIDPyImp.cpp
+    MappingDataStructures.cpp
+    MappedSection.cpp
 )
 
 SET(FreeCADApp_HPP_SRCS

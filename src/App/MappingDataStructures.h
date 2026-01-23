@@ -2,11 +2,75 @@
 #define DATA_MAPPING_STRUCTURES_H
 
 #include "FCGlobal.h"
+#include <string>
+#include <sstream>
+#include <vector>
+#include <unordered_set>
+#include <unordered_map>
 
 namespace Data
 {
 
-constexpr int ELEMENT_MAP_VERSION = 6;
+constexpr const int ELEMENT_MAP_VERSION = 6;
+constexpr const char MAPPED_NAME_SAVE_FORMAT[] = "ElementMapVersion;DuplicateCount;MappedSections";
+constexpr const char MAPPED_SECTION_SAVE_FORMAT[] = "OpCode;MapModifier;HistoryModifier;IterationTag;ReferenceIDs;LinkedNames;ElementType;Index;TNoSE;DeletedNames;IsForkedElement";
+
+struct SavingUtil {
+    std::string formattingString;
+    std::vector<std::string> keys;
+    std::unordered_map<std::string, std::vector<std::string>> keyStorage;
+    std::unordered_set<char> deliminators {';', ':'};
+    std::string cachedSaveString;
+    char mainDeliminator = ';';
+    char subDeliminator = ':';
+
+    void setFormattingString(std::string newFormattingStr) {
+        formattingString = newFormattingStr;
+
+        keyStorage.clear();
+
+        compileKeys();
+    };
+
+    void compileKeys();
+
+    static std::string escapeChars(
+        const std::string& input,
+        const std::unordered_set<char>& chars_to_escape)
+    {
+        std::string result;
+        result.reserve(input.size() * 2);
+
+        for (size_t i = 0; i < input.size(); ++i) {
+            char c = input[i];
+            bool is_target = chars_to_escape.count(c) != 0;
+
+            if (is_target) {
+                result.push_back('\\');
+            }
+
+            result.push_back(c);
+        }
+
+        return result;
+    }
+
+    void addDeliminator(char addDelim) {
+        deliminators.insert(addDelim);
+    };
+
+    void addSaveKey(std::string stringKey, std::string saveInfo) {
+        keyStorage[stringKey] = { saveInfo };
+    };
+
+    void addSaveKey(std::string stringKey, std::vector<std::string> saveInfo) {
+        keyStorage[stringKey] = saveInfo;
+    };
+
+    std::unordered_map<std::string, std::vector<std::string>> getRestoredKeyStorage(std::string restoreString);
+    
+    std::string getSaveString();
+};
 
 struct PersistentNameInfo {
     bool operator==(const PersistentNameInfo& other) const {

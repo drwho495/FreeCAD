@@ -4,11 +4,9 @@
 #define APP_MAPPED_SECTION_H
 
 #include <memory>
-#include <string>
-
-#include <boost/algorithm/string/predicate.hpp>
-
 #include <utility>
+#include <string>
+#include <sstream>
 
 #include "MappingDataStructures.h"
 #include "IndexedName.h"
@@ -98,6 +96,8 @@ public:
     bool operator>(MappedSection &other) const {
         return compare(other) == 1;
     }
+
+    std::string toString() const;
 
     enum OperationCode opCode = OperationCode::Maker;
     enum MapModifier mapModifier = MapModifier::Source;

@@ -647,6 +647,8 @@ MappedName ElementMap::setElementName(const IndexedName& element,
             }
         }
     }
+
+    return { };
 }
 
 // try to hash element name while preserving the source tag
