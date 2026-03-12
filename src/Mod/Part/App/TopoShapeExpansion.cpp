@@ -76,6 +76,7 @@
 #include <ShapeBuild_ReShape.hxx>
 #include <ShapeConstruct_Curve.hxx>
 #include <ShapeUpgrade_ShellSewing.hxx>
+#include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
@@ -4876,6 +4877,61 @@ public:
     }
 };
 
+struct UnifySameDomainMaker : TopoShape::Mapper {
+    ShapeUpgrade_UnifySameDomain maker;
+
+    UnifySameDomainMaker(const TopoDS_Shape& shapeToUnify) {
+        maker = ShapeUpgrade_UnifySameDomain(shapeToUnify, true, true, true);
+        maker.SetLinearTolerance(1E-4);
+        maker.SetAngularTolerance(1E-4);
+        maker.Build();
+    };
+
+    TopoDS_Shape Shape() const {
+        return maker.Shape();
+    };
+
+    const std::vector<TopoDS_Shape>& generated(const TopoDS_Shape& s) const override
+    {
+        _res.clear();
+        
+        auto history = maker.History();
+
+        try {
+            TopTools_ListIteratorOfListOfShape it;
+            for (it.Initialize(history->Generated(s)); it.More(); it.Next()) {
+                _res.push_back(it.Value());
+            }
+        }
+        catch (const Standard_Failure& e) {
+            if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
+                FC_WARN("Exception on shape mapper: " << e.GetMessageString());
+            }
+        }
+        return _res;
+    };
+
+    const std::vector<TopoDS_Shape>& modified(const TopoDS_Shape& s) const override
+    {
+        _res.clear();
+        
+        auto history = maker.History();
+
+        try {
+            TopTools_ListIteratorOfListOfShape it;
+            for (it.Initialize(history->Modified(s)); it.More(); it.Next()) {
+                _res.push_back(it.Value());
+            }
+        }
+        catch (const Standard_Failure& e) {
+            if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
+                FC_WARN("Exception on shape mapper: " << e.GetMessageString());
+            }
+        }
+        return _res;
+    };
+};
+
 TopoShape& TopoShape::makeElementRefine(const TopoShape& shape, const char* op, RefineFail no_fail)
 {
     if (shape.isNull()) {
@@ -4890,11 +4946,15 @@ TopoShape& TopoShape::makeElementRefine(const TopoShape& shape, const char* op, 
     }
     bool closed = shape.isClosed();
     try {
-        MyRefineMaker mkRefine(shape.getShape());
-        GenericShapeMapper mapper;
-        mkRefine.populate(mapper);
-        mapper.init(shape, mkRefine.Shape());
-        makeShapeWithElementMap(mkRefine.Shape(), mapper, {shape}, op);
+        // MyRefineMaker mkRefine(shape.getShape());
+        // GenericShapeMapper mapper;
+        // mkRefine.populate(mapper);
+        // mapper.init(shape, mkRefine.Shape());
+        // makeShapeWithElementMap(mkRefine.Shape(), mapper, {shape}, op);
+
+        UnifySameDomainMaker maker(shape.getShape());
+        makeShapeWithElementMap(maker.Shape(), maker, {shape}, op);
+
         // For some reason, refine operation may reverse the solid
         fixSolidOrientation();
         if (isClosed() == closed) {
