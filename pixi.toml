@@ -3,8 +3,8 @@ name = "FreeCAD"
 version = "1.0.0"
 description = "pixi instructions for FreeCAD"
 authors = ["looooo <sppedflyer@gmail.com>"]
-channels = ["conda-forge"]
-platforms = [ "linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64" ]
+channels = ["freecad-context-fork", "conda-forge"]
+platforms = [ "linux-64", "linux-aarch64", "win-64"  ]
 requires-pixi = ">=0.48"
 
 [dependencies]
@@ -34,7 +34,7 @@ nine = "*"
 ninja = "*"
 noqt5 = "*"
 numpy = ">=1.26,<1.27"
-occt-dw = ">=7.8,<7.9"
+occt-dw = ">=7.8.0,<7.9"
 opencamlib = "*"
 opencv = "*"
 openssl = "*"
@@ -163,13 +163,13 @@ configure-release = { cmd = [ "cmake", "--preset", "conda-linux-release" ], depe
 configure-debug = { cmd = [ "cmake", "--preset", "conda-linux-debug" ], depends-on= ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
 configure-release = { cmd = [ "cmake", "--preset", "conda-linux-release" ], depends-on= ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
 
-[target.osx-64.tasks]
-configure-debug = { cmd = [ "cmake", "--preset", "conda-macos-debug" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
-configure-release = { cmd = [ "cmake", "--preset", "conda-macos-release" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
+# [target.osx-64.tasks]
+# configure-debug = { cmd = [ "cmake", "--preset", "conda-macos-debug" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
+# configure-release = { cmd = [ "cmake", "--preset", "conda-macos-release" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
 
-[target.osx-arm64.tasks]
-configure-debug = { cmd = [ "cmake", "--preset", "conda-macos-debug" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
-configure-release = { cmd = [ "cmake", "--preset", "conda-macos-release" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
+# [target.osx-arm64.tasks]
+# configure-debug = { cmd = [ "cmake", "--preset", "conda-macos-debug" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
+# configure-release = { cmd = [ "cmake", "--preset", "conda-macos-release" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
 
 [target.win-64.tasks]
 configure-debug = { cmd = [ "cmake", "--preset", "conda-windows-debug", "-DCMAKE_GENERATOR_PLATFORM=", "-DCMAKE_GENERATOR_TOOLSET=" ], depends-on = ["initialize"], env={ CFLAGS="", CXXFLAGS="", DEBUG_CFLAGS="", DEBUG_CXXFLAGS="" }}
