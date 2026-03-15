@@ -2,6 +2,7 @@
 channels = [
     "https://prefix.dev/pixi-build-backends",
     "https://prefix.dev/conda-forge",
+    "https://prefix.dev/freecad-context-fork"
 ]
 platforms = ["linux-64", "linux-aarch64", "win-64"]
 preview = ["pixi-build"]
