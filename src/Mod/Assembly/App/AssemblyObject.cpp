@@ -1143,21 +1143,8 @@ void AssemblyObject::jointParts(std::vector<App::DocumentObject*> joints)
     }
 
     // Pass 2: add limits and motions (joints are now registered in limitableJoints)
-    int jointIdx = 0;
-    int maxJointsWithLimits = 0;
     for (auto& info : createdJoints) {
-        if (jointIdx >= maxJointsWithLimits) {
-            Base::Console().warning("jointParts P2: STOPPING after %d joints (bisect)\n", jointIdx);
-            break;
-        }
-        Base::Console().warning(
-            "jointParts P2: [%d] limits for '%s' type=%d\n",
-            jointIdx,
-            info.docObj->getFullName().c_str(),
-            static_cast<int>(getJointType(info.docObj))
-        );
         addJointLimitsAndMotions(info.docObj, info.solverJoint);
-        jointIdx++;
     }
 }
 
@@ -1505,6 +1492,9 @@ void AssemblyObject::addJointLimitsAndMotions(
                     maxEnabled = pMaxEnabled->getValue();
                 }
 
+                // Current joint distance in mm for coordinate offset calibration
+                double currentDistance = getJointDistance(joint);
+
                 if (minEnabled) {
                     auto limit = solver->makeTranslationLimit();
                     limit->setName(joint->getFullName() + "-LimitLenMin");
@@ -1512,6 +1502,7 @@ void AssemblyObject::addJointLimitsAndMotions(
                     limit->setMarkerJ(fullMarkerNameJ);
                     limit->setType(Solver::LimitType::GREATER_THAN_OR_EQUAL);
                     limit->setLimitValue(minLength);
+                    limit->setCurrentValue(currentDistance);
                     limit->setToleranceExpression("1.0e-9");
                     assembly->addLimit(limit);
                 }
@@ -1523,6 +1514,7 @@ void AssemblyObject::addJointLimitsAndMotions(
                     limit->setMarkerJ(fullMarkerNameJ);
                     limit->setType(Solver::LimitType::LESS_THAN_OR_EQUAL);
                     limit->setLimitValue(maxLength);
+                    limit->setCurrentValue(currentDistance);
                     limit->setToleranceExpression("1.0e-9");
                     assembly->addLimit(limit);
                 }
@@ -1556,6 +1548,9 @@ void AssemblyObject::addJointLimitsAndMotions(
                     maxEnabled = pMaxEnabled->getValue();
                 }
 
+                // Current joint angle in radians for coordinate offset calibration
+                double currentAngleRad = Base::toRadians(getJointAngle(joint));
+
                 if (minEnabled) {
                     auto limit = solver->makeRotationLimit();
                     limit->setName(joint->getFullName() + "-LimitRotMin");
@@ -1563,6 +1558,7 @@ void AssemblyObject::addJointLimitsAndMotions(
                     limit->setMarkerJ(fullMarkerNameJ);
                     limit->setType(Solver::LimitType::GREATER_THAN_OR_EQUAL);
                     limit->setLimitExpression(std::to_string(minAngle) + "*pi/180.0");
+                    limit->setCurrentValue(currentAngleRad);
                     limit->setToleranceExpression("1.0e-9");
                     assembly->addLimit(limit);
                 }
@@ -1574,6 +1570,7 @@ void AssemblyObject::addJointLimitsAndMotions(
                     limit->setMarkerJ(fullMarkerNameJ);
                     limit->setType(Solver::LimitType::LESS_THAN_OR_EQUAL);
                     limit->setLimitExpression(std::to_string(maxAngle) + "*pi/180.0");
+                    limit->setCurrentValue(currentAngleRad);
                     limit->setToleranceExpression("1.0e-9");
                     assembly->addLimit(limit);
                 }

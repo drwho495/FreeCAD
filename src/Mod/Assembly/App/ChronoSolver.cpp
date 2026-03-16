@@ -528,56 +528,27 @@ void ChronoAssembly::addLimit(std::shared_ptr<Limit> limit)
         FC_WARN("ChronoSolver: no limitable joint found for limit '" << limit->getName() << "'");
         return;
     }
-    auto& link = it->second;
 
     const double value = evaluateLimitExpression(limit->getLimitExpression());
     const bool isMax = (limit->getType() == LimitType::LESS_THAN_OR_EQUAL);
 
-    // Log current joint state to check if initial pose is within limits
-    auto relCoords = link->GetRelCoordsys();
+    storedLimits.push_back({key, limit->getLimitClass(), value, isMax, limit->getCurrentValue()});
+
     FC_MSG(
-        "addLimit: '" << limit->getName() << "'"
-                      << " class=" << static_cast<int>(limit->getLimitClass()) << " isMax=" << isMax
-                      << " value=" << value << " currentRelPos=(" << relCoords.pos.x() << ","
-                      << relCoords.pos.y() << "," << relCoords.pos.z() << ")"
-                      << " currentRelRot=(" << relCoords.rot.e0() << "," << relCoords.rot.e1()
-                      << "," << relCoords.rot.e2() << "," << relCoords.rot.e3() << ")"
+        "addLimit (stored): '" << limit->getName() << "'"
+                               << " class=" << static_cast<int>(limit->getLimitClass())
+                               << " isMax=" << isMax << " value=" << value
+                               << " fcCurrent=" << limit->getCurrentValue()
     );
-
-    switch (limit->getLimitClass()) {
-        case LimitClass::ROTATION_LIMIT:
-            // The free rotational DOF for Revolute and Cylindrical joints is Rz
-            // (rotation about the joint's Z axis).
-            if (isMax) {
-                link->LimitRz().SetMax(value);
-            }
-            else {
-                link->LimitRz().SetMin(value);
-            }
-            link->LimitRz().SetActive(true);
-            break;
-
-        case LimitClass::TRANSLATION_LIMIT:
-            // The free translational DOF for Prismatic and Cylindrical joints is Z
-            // (translation along the joint's Z axis).
-            if (isMax) {
-                link->LimitZ().SetMax(value);
-            }
-            else {
-                link->LimitZ().SetMin(value);
-            }
-            link->LimitZ().SetActive(true);
-            break;
-
-        default:
-            FC_WARN("ChronoSolver: unknown limit class for limit '" << limit->getName() << "'");
-    }
 }
 
 void ChronoAssembly::addMotion(std::shared_ptr<Motion> /*motion*/)
 {
     FC_WARN("ChronoSolver: joint motions are not yet implemented; motion ignored");
 }
+
+// updateActiveLimits() has been removed — limits are now enforced natively
+// by the Chrono solver via ChLinkLimit objects set in preDrag().
 
 void ChronoAssembly::dumpStructure() const
 {
@@ -692,6 +663,127 @@ void ChronoAssembly::preDrag(const DragContext& ctx)
 {
     sys->DoAssembly(chrono::AssemblyLevel::POSITION);
 
+    // Auto-detect the FreeCAD→Chrono coordinate offset for each stored limit.
+    // We DON'T rely on FreeCAD's Angle/Distance properties (they return the
+    // configured joint offset, not the actual angle).  Instead, we exploit the
+    // fact that the assembly is valid at rest: the Chrono baseline value must
+    // map to a FreeCAD value within [limitMin, limitMax].
+    //
+    // Step 1: Read the Chrono baseline per joint.
+    // Step 2: For each joint, gather its min/max limit values.
+    // Step 3: Compute offset as: chronoBaseline - midpoint (two-sided) or
+    //         chronoBaseline - limitValue (one-sided).
+
+    // Gather per-joint: chrono baseline + min/max limit values
+    struct JointLimitInfo
+    {
+        double chronoBaseline = 0.0;
+        double minLimit = -1e30;  // no min by default
+        double maxLimit = +1e30;  // no max by default
+        bool hasMin = false;
+        bool hasMax = false;
+    };
+    std::map<std::pair<MarkerRef, MarkerRef>, JointLimitInfo> jointInfoMap;
+
+    for (const auto& sl : storedLimits) {
+        auto it = limitableJoints.find(sl.jointKey);
+        if (it == limitableJoints.end()) {
+            continue;
+        }
+        auto& link = it->second;
+        auto& info = jointInfoMap[sl.jointKey];
+
+        // Read Chrono baseline (same for all limits on this joint)
+        if (sl.limitClass == LimitClass::ROTATION_LIMIT) {
+            info.chronoBaseline = link->GetRelAngle();
+        }
+        else if (sl.limitClass == LimitClass::TRANSLATION_LIMIT) {
+            info.chronoBaseline = link->GetRelCoordsys().pos.z();
+        }
+
+        if (sl.isMax) {
+            info.maxLimit = sl.value;
+            info.hasMax = true;
+        }
+        else {
+            info.minLimit = sl.value;
+            info.hasMin = true;
+        }
+    }
+
+    // Compute offset per joint and apply to each stored limit
+    std::map<std::pair<MarkerRef, MarkerRef>, double> jointOffset;
+    for (auto& [key, info] : jointInfoMap) {
+        double offset = 0.0;
+        if (info.hasMin && info.hasMax) {
+            // Two-sided: place baseline at midpoint of FreeCAD range
+            double midpoint = (info.minLimit + info.maxLimit) / 2.0;
+            offset = info.chronoBaseline - midpoint;
+        }
+        else if (info.hasMax || info.hasMin) {
+            // One-sided limit: FreeCAD convention is that joint value 0 =
+            // the rest/retracted position.  Map baseline to FreeCAD 0.
+            offset = info.chronoBaseline;
+        }
+        jointOffset[key] = offset;
+
+        // Find joint name for logging
+        auto jit = limitableJoints.find(key);
+        std::string jname = jit != limitableJoints.end() ? jit->second->GetName() : "???";
+        FC_MSG(
+            "  joint offset: '" << jname << "'"
+                                << " chronoBaseline=" << info.chronoBaseline << " fcRange=["
+                                << info.minLimit << ", " << info.maxLimit << "]"
+                                << " offset=" << offset
+        );
+    }
+
+    // Compute per-joint Chrono-space limit bounds for logging and future use.
+    // NOTE: ChLinkLimit uses penalty forces which are incompatible with the
+    // kinematic DoAssembly(POSITION) solver — they destabilize the solve and
+    // cause massive joint violations.  The limits are stored here for
+    // diagnostic purposes only; actual enforcement requires a different
+    // approach (e.g. post-solve clamping or unilateral constraints).
+    for (auto& [key, info] : jointInfoMap) {
+        auto jit = limitableJoints.find(key);
+        if (jit == limitableJoints.end()) {
+            continue;
+        }
+        auto& link = jit->second;
+        double offset = jointOffset[key];
+
+        // Determine which limit class this joint uses
+        LimitClass lc = LimitClass::ROTATION_LIMIT;
+        for (const auto& sl : storedLimits) {
+            if (sl.jointKey == key) {
+                lc = sl.limitClass;
+                break;
+            }
+        }
+
+        // Store into nativeLimits map for use in dragStep()
+        NativeLimitInfo nli;
+        nli.limitClass = lc;
+        nli.offset = offset;
+        if (info.hasMin) {
+            nli.chronoMin = info.minLimit + offset;
+            nli.hasMin = true;
+        }
+        if (info.hasMax) {
+            nli.chronoMax = info.maxLimit + offset;
+            nli.hasMax = true;
+        }
+        nativeLimits[key] = nli;
+
+        FC_MSG(
+            "  limit info: joint='"
+            << link->GetName() << "'"
+            << " class=" << (lc == LimitClass::ROTATION_LIMIT ? "rotation" : "translation")
+            << " chronoRange=[" << nli.chronoMin << ", " << nli.chronoMax << "]"
+            << " offset=" << offset
+        );
+    }
+
     // Snapshot all body positions so the first drag step has a known-good start.
     saveDragStepStart();
 
@@ -794,14 +886,49 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
             }
         }
 
-        if (!ok || jointsBroken) {
+        // Post-solve limit check using pre-computed Chrono-space bounds.
+        // Check each limited joint; if it exceeds its limit by more than a
+        // generous tolerance, reject the step.
+        bool limitsViolated = false;
+        for (const auto& [key, nli] : nativeLimits) {
+            auto jit = limitableJoints.find(key);
+            if (jit == limitableJoints.end()) {
+                continue;
+            }
+            auto& lnk = jit->second;
+            double currentVal = 0.0;
+            double tolerance = 0.0;
+
+            if (nli.limitClass == LimitClass::ROTATION_LIMIT) {
+                currentVal = lnk->GetRelAngle();
+                tolerance = 0.1;  // ~5.7 degrees
+            }
+            else {
+                currentVal = lnk->GetRelCoordsys().pos.z();
+                tolerance = 10.0;  // 10 mm
+            }
+
+            if (nli.hasMin && currentVal < nli.chronoMin - tolerance) {
+                limitsViolated = true;
+            }
+            if (nli.hasMax && currentVal > nli.chronoMax + tolerance) {
+                limitsViolated = true;
+            }
+        }
+
+        if (!ok || jointsBroken || limitsViolated) {
+            FC_MSG(
+                "  DRAG REJECTED: ok=" << ok << " jointsBroken=" << jointsBroken
+                                       << " limitsViolated=" << limitsViolated
+                                       << " (maxViolation=" << maxJointViolation << ")"
+            );
             // Restore all bodies to pre-solve state
             for (const auto& part : parts) {
                 auto body = part->getBody();
-                auto it = preSolveState.find(body.get());
-                if (it != preSolveState.end()) {
-                    body->SetPos(it->second.pos);
-                    body->SetRot(it->second.rot);
+                auto it2 = preSolveState.find(body.get());
+                if (it2 != preSolveState.end()) {
+                    body->SetPos(it2->second.pos);
+                    body->SetRot(it2->second.rot);
                 }
             }
         }

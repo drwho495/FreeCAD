@@ -394,6 +394,18 @@ public:
 
     virtual LimitClass getLimitClass() const;
 
+    // The current FreeCAD joint value (angle in radians, distance in mm) at the
+    // time the limit is created.  Used by the solver to calibrate the offset
+    // between FreeCAD's coordinate convention and the solver's internal coordinates.
+    virtual void setCurrentValue(double v)
+    {
+        currentVal = v;
+    }
+    virtual double getCurrentValue() const
+    {
+        return currentVal;
+    }
+
 protected:
     virtual void setLimitClass(LimitClass limitClass);
 
@@ -402,6 +414,7 @@ private:
     LimitType type = LimitType::NO_LIMIT;
     std::string limitExpr = "0.0";
     std::string toleranceExpr = "1.0e-9";
+    double currentVal = 0.0;
 };
 
 class RotationLimit: public Limit

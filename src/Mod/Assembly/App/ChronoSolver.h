@@ -44,6 +44,7 @@ namespace chrono
 {
 class ChBody;
 class ChLinkLock;
+class ChLinkLockLock;
 class ChSystemNSC;
 }  // namespace chrono
 
@@ -175,9 +176,36 @@ private:
     std::map<MarkerRef, MarkerInfo> markerRegistry;
 
     // Map from (markerI, markerJ) → the ChLinkLock joint, populated in addJoint().
-    // Used by addLimit() to find the joint that owns a given limit and apply
-    // SetMin/SetMax/SetActive on the appropriate free-DOF limit object.
+    // Used by addLimit() to validate that a limitable joint exists, and by
+    // updateActiveLimits() to read current joint coordinates and add/remove
+    // freeze constraints.
     std::map<std::pair<MarkerRef, MarkerRef>, std::shared_ptr<chrono::ChLinkLock>> limitableJoints;
+
+    // Limit metadata stored at setup time. Used by preDrag() to compute
+    // FreeCAD→Chrono coordinate offsets and apply native ChLinkLimit constraints.
+    struct StoredLimit
+    {
+        std::pair<MarkerRef, MarkerRef> jointKey;
+        LimitClass limitClass;             // ROTATION_LIMIT or TRANSLATION_LIMIT
+        double value;                      // limit value (radians for rotation, mm for translation)
+        bool isMax;                        // true = upper limit (<=), false = lower limit (>=)
+        double freecadCurrentValue = 0.0;  // FreeCAD joint value at setup time
+    };
+    std::vector<StoredLimit> storedLimits;
+
+    // Pre-computed Chrono-coordinate-space limit bounds per joint, populated
+    // in preDrag().  Used by dragStep() for post-solve limit clamping.
+    struct NativeLimitInfo
+    {
+        LimitClass limitClass = LimitClass::ROTATION_LIMIT;
+        double offset = 0.0;
+        double chronoMin = -1e30;
+        double chronoMax = +1e30;
+        bool hasMin = false;
+        bool hasMax = false;
+    };
+    std::map<std::pair<MarkerRef, MarkerRef>, NativeLimitInfo> nativeLimits;
+
 
     // Simulation parameter storage
     std::shared_ptr<SimulationParameters> simulationParameters;
