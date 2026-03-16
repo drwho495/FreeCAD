@@ -598,9 +598,17 @@ public:
     // Returns 0 on success, non-zero on failure.
     virtual int runKinematic() = 0;
 
+    // Context passed to preDrag describing the camera frame and pick point.
+    struct DragContext
+    {
+        Base::Vector3d pickPoint;       // world-space click point (initial)
+        Base::Vector3d cameraViewDir;   // camera Z axis (into screen)
+        Base::Rotation cameraRotation;  // full camera-plane rotation (X=right, Y=up, Z=into)
+    };
+
     // Interactive drag support
-    virtual void preDrag() = 0;
-    virtual void dragStep(std::vector<std::shared_ptr<Part>> parts) = 0;
+    virtual void preDrag(const DragContext& ctx) = 0;
+    virtual void dragStep(std::vector<std::shared_ptr<Part>> parts, Base::Vector3d mousePos3D) = 0;
     virtual void postDrag() = 0;
 
     // Simulation parameter management

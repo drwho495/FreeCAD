@@ -282,8 +282,22 @@ size_t Assembly::AssemblyObject::numberOfFrames()
     return assembly->numberOfFrames();
 }
 
-void AssemblyObject::preDrag(std::vector<App::DocumentObject*> dragParts)
+void AssemblyObject::preDrag(
+    std::vector<App::DocumentObject*> dragParts,
+    Base::Vector3d pickPoint,
+    Base::Vector3d cameraViewDir
+)
 {
+    // Clean up previous drag objects if they were left behind
+    if (dragTargetBox) {
+        getDocument()->removeObject(dragTargetBox->getNameInDocument());
+        dragTargetBox = nullptr;
+    }
+    if (dragPlane) {
+        getDocument()->removeObject(dragPlane->getNameInDocument());
+        dragPlane = nullptr;
+    }
+
     bundleFixed = true;
     solve();
     bundleFixed = false;
@@ -318,36 +332,106 @@ void AssemblyObject::preDrag(std::vector<App::DocumentObject*> dragParts)
 
         draggedParts.push_back(part);
     }
+
+    // Compute camera-aligned rotation from cameraViewDir
+    Base::Vector3d zAxis = cameraViewDir;
+    zAxis.Normalize();
+    Base::Vector3d worldUp(0, 0, 1);
+    if (std::abs(zAxis.Dot(worldUp)) > 0.99) {
+        worldUp = Base::Vector3d(0, 1, 0);
+    }
+    Base::Vector3d xAxis = worldUp.Cross(zAxis);
+    xAxis.Normalize();
+    Base::Vector3d yAxis = zAxis.Cross(xAxis);
+
+    // Build rotation matrix from column vectors (x, y, z axes)
+    Base::Matrix4D mat;
+    mat[0][0] = xAxis.x;
+    mat[0][1] = yAxis.x;
+    mat[0][2] = zAxis.x;
+    mat[1][0] = xAxis.y;
+    mat[1][1] = yAxis.y;
+    mat[1][2] = zAxis.y;
+    mat[2][0] = xAxis.z;
+    mat[2][1] = yAxis.z;
+    mat[2][2] = zAxis.z;
+    dragCameraRotation = Base::Rotation(mat);
+
+    // Create visualization box at pick point
+    dragTargetBox = getDocument()->addObject("Part::Box", "DragTarget");
+    auto* len = dynamic_cast<App::PropertyFloat*>(dragTargetBox->getPropertyByName("Length"));
+    auto* wid = dynamic_cast<App::PropertyFloat*>(dragTargetBox->getPropertyByName("Width"));
+    auto* hgt = dynamic_cast<App::PropertyFloat*>(dragTargetBox->getPropertyByName("Height"));
+    if (len) {
+        len->setValue(10.0);
+    }
+    if (wid) {
+        wid->setValue(10.0);
+    }
+    if (hgt) {
+        hgt->setValue(10.0);
+    }
+
+    // Position centered on pick point, oriented to camera plane
+    Base::Vector3d boxCenter = pickPoint - dragCameraRotation.multVec(Base::Vector3d(5, 5, 0));
+    dragTargetBox->getPlacementProperty()->setValue(Base::Placement(boxCenter, dragCameraRotation));
+    addObject(dragTargetBox);
+    dragTargetBox->purgeTouched();
+
+    // Pass drag context to solver (creates mouse body + constraint)
+    Solver::Assembly::DragContext ctx;
+    ctx.pickPoint = pickPoint;
+    ctx.cameraViewDir = cameraViewDir;
+    ctx.cameraRotation = dragCameraRotation;
+    assembly->preDrag(ctx);
+
+    /*
+    // Create a large plane to visualize the projection plane
+    dragPlane = getDocument()->addObject("Part::Plane", "DragPlane");
+    auto* pLen = dynamic_cast<App::PropertyFloat*>(dragPlane->getPropertyByName("Length"));
+    auto* pWid = dynamic_cast<App::PropertyFloat*>(dragPlane->getPropertyByName("Width"));
+    if (pLen) pLen->setValue(500.0);
+    if (pWid) pWid->setValue(500.0);
+    // Center the plane on the pick point, oriented to camera
+    Base::Vector3d planeCorner = pickPoint
+        - dragCameraRotation.multVec(Base::Vector3d(250, 250, 0));
+    dragPlane->getPlacementProperty()->setValue(
+        Base::Placement(planeCorner, dragCameraRotation));
+    addObject(dragPlane);
+    dragPlane->purgeTouched();
+    */
 }
 
-void AssemblyObject::doDragStep()
+void AssemblyObject::doDragStep(Base::Vector3d mousePos3D)
 {
-    try {
-        std::vector<std::shared_ptr<Solver::Part>> dragSolverParts;
+    // Update visualization box to follow mouse
+    if (dragTargetBox) {
+        Base::Vector3d boxCenter = mousePos3D - dragCameraRotation.multVec(Base::Vector3d(5, 5, 0));
+        dragTargetBox->getPlacementProperty()->setValue(Base::Placement(boxCenter, dragCameraRotation));
+        dragTargetBox->purgeTouched();
+    }
 
+    try {
+        // Build solver parts list from dragged document objects
+        std::vector<std::shared_ptr<Solver::Part>> dragSolverParts;
         for (auto& part : draggedParts) {
             if (!part) {
                 continue;
             }
-
-            auto solverPart = getPart(part);
-            dragSolverParts.push_back(solverPart);
-
-            // Push the current dragged placement into the solver part
-            Base::Placement plc = getPlacementFromProp(part, "Placement");
-            solverPart->pushPlacement(plc);
+            dragSolverParts.push_back(getPart(part));
         }
 
-        assembly->dragStep(dragSolverParts);
+        // Run solver — mouse body drives the dragged part via compliant constraint
+        assembly->dragStep(dragSolverParts, mousePos3D);
 
         if (validateNewPlacements()) {
             setNewPlacements();
-
             redrawJointPlacements(getJoints(false));
         }
     }
     catch (...) {
-        // We do nothing if a solve step fails.
+        // If a solve step fails, just redraw joints for visual feedback
+        redrawJointPlacements(getJoints(false));
     }
 }
 
@@ -388,6 +472,10 @@ bool AssemblyObject::validateNewPlacements()
 void AssemblyObject::postDrag()
 {
     assembly->postDrag();
+
+    // Skip removal of dragTargetBox so we can inspect its final position.
+    // It will be cleaned up when the next drag starts (in preDrag).
+
     purgeTouched();
 }
 
@@ -1028,16 +1116,48 @@ bool AssemblyObject::isPartConnected(App::DocumentObject* obj)
 
 void AssemblyObject::jointParts(std::vector<App::DocumentObject*> joints)
 {
+    // Two-pass approach: first create and add all joints (so limitableJoints is populated),
+    // then add limits and motions (which need to look up their joint by marker pair).
+    struct JointInfo
+    {
+        App::DocumentObject* docObj;
+        std::shared_ptr<Solver::Joint> solverJoint;
+    };
+    std::vector<JointInfo> createdJoints;
+
+    // Pass 1: create joints and add to assembly
     for (auto* joint : joints) {
         if (!joint) {
             continue;
         }
-
-        // makeJoint() also adds any associated limits and motions to the assembly
-        auto solverJoint = makeJoint(joint);
+        auto solverJoint = makeJointOnly(joint);
         if (solverJoint) {
             assembly->addJoint(solverJoint);
+            createdJoints.push_back({joint, solverJoint});
+            Base::Console().warning(
+                "jointParts P1: added joint '%s' type=%d\n",
+                joint->getFullName().c_str(),
+                static_cast<int>(getJointType(joint))
+            );
         }
+    }
+
+    // Pass 2: add limits and motions (joints are now registered in limitableJoints)
+    int jointIdx = 0;
+    int maxJointsWithLimits = 0;
+    for (auto& info : createdJoints) {
+        if (jointIdx >= maxJointsWithLimits) {
+            Base::Console().warning("jointParts P2: STOPPING after %d joints (bisect)\n", jointIdx);
+            break;
+        }
+        Base::Console().warning(
+            "jointParts P2: [%d] limits for '%s' type=%d\n",
+            jointIdx,
+            info.docObj->getFullName().c_str(),
+            static_cast<int>(getJointType(info.docObj))
+        );
+        addJointLimitsAndMotions(info.docObj, info.solverJoint);
+        jointIdx++;
     }
 }
 
@@ -1310,7 +1430,7 @@ std::shared_ptr<Solver::Joint> AssemblyObject::makeJointDistance(App::DocumentOb
     }
 }
 
-std::shared_ptr<Solver::Joint> AssemblyObject::makeJoint(App::DocumentObject* joint)
+std::shared_ptr<Solver::Joint> AssemblyObject::makeJointOnly(App::DocumentObject* joint)
 {
     if (!joint) {
         return nullptr;
@@ -1338,6 +1458,21 @@ std::shared_ptr<Solver::Joint> AssemblyObject::makeJoint(App::DocumentObject* jo
     solverJoint->setName(joint->getFullName());
     solverJoint->setMarkerI(fullMarkerNameI);
     solverJoint->setMarkerJ(fullMarkerNameJ);
+    return solverJoint;
+}
+
+void AssemblyObject::addJointLimitsAndMotions(
+    App::DocumentObject* joint,
+    std::shared_ptr<Solver::Joint> solverJoint
+)
+{
+    if (!joint || !solverJoint) {
+        return;
+    }
+
+    JointType jointType = getJointType(joint);
+    const auto& fullMarkerNameI = solverJoint->getMarkerI();
+    const auto& fullMarkerNameJ = solverJoint->getMarkerJ();
 
     // Add limits if needed. We do not add if this is a simulation or they might clash.
     if (motions.empty()) {
@@ -1536,8 +1671,6 @@ std::shared_ptr<Solver::Joint> AssemblyObject::makeJoint(App::DocumentObject* jo
             assembly->addMotion(transMotion);
         }
     }
-
-    return solverJoint;
 }
 
 std::string AssemblyObject::handleOneSideOfJoint(

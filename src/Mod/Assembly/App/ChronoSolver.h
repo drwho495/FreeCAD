@@ -87,9 +87,7 @@ public:
     bool getMarkerFrame(const std::string& markerName, chrono::ChFrame<double>& outFrame) const;
 
     // Invoke cb(name, localFrame) for every stored marker.
-    void forEachMarker(
-        std::function<void(const std::string&, const chrono::ChFrame<double>&)> cb
-    ) const;
+    void forEachMarker(std::function<void(const std::string&, const chrono::ChFrame<double>&)> cb) const;
 
 private:
     std::shared_ptr<chrono::ChBody> body;
@@ -123,8 +121,8 @@ public:
     int runKinematic() override;
 
     // Interactive drag support
-    void preDrag() override;
-    void dragStep(std::vector<std::shared_ptr<Part>> parts) override;
+    void preDrag(const DragContext& ctx) override;
+    void dragStep(std::vector<std::shared_ptr<Part>> parts, Base::Vector3d mousePos3D) override;
     void postDrag() override;
 
     // Simulation parameters
@@ -201,6 +199,11 @@ private:
         chrono::ChQuaternion<double> rot;
     };
     std::map<chrono::ChBody*, BodyDragStart> dragStepStart;
+
+    // Mouse drag body and constraint (created in preDrag, removed in postDrag)
+    std::shared_ptr<chrono::ChBody> mouseBody;
+    std::shared_ptr<chrono::ChLinkLock> mouseLink;
+    DragContext dragCtx;
 
     bool solved = false;
     bool debugLogging = false;
