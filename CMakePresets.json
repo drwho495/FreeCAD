@@ -248,6 +248,33 @@
         ]
       },
       {
+        "name": "conda-linux-release-local-occt",
+        "displayName": "Conda Release (Local OCCT)",
+        "description": "Conda release profile using local OCCT build",
+        "inherits": [
+          "conda-linux-release"
+        ],
+        "binaryDir": "${sourceDir}/build/release-local-occt",
+        "cacheVariables": {
+          "OCCT_CMAKE_FALLBACK": {
+            "type": "BOOL",
+            "value": "OFF"
+          },
+          "OpenCASCADE_DIR": {
+            "type": "PATH",
+            "value": "/home/hypocritical/OCCT_Fork/OCCT/build/install/lib/cmake/opencascade"
+          },
+          "OCC_INCLUDE_DIR": {
+            "type": "FILEPATH",
+            "value": "/home/hypocritical/OCCT_Fork/OCCT/build/install/include/opencascade"
+          },
+          "OCC_LIBRARY_DIR": {
+            "type": "FILEPATH",
+            "value": "/home/hypocritical/OCCT_Fork/OCCT/build/install/lib"
+          }
+        }
+      },
+      {
         "name": "conda-linux-release",
         "displayName": "Conda Release",
         "description": "Conda release profile",
