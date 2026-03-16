@@ -8459,8 +8459,8 @@ packages:
   size: 24824977
   timestamp: 1729330486797
 - conda: https://prefix.dev/freecad-context-fork/linux-64/occt-dw-7.8.0-novtk_h1163336_100.conda
-  sha256: 5d92220548c251ee4107f626cb3db57963835ce5322a526cccc240ce8750b448
-  md5: d451e8c77c2f38077917be10368b3fba
+  sha256: a2c0fee593ec1561ae12650800dd430db87048ef8a72b60c838ffa10828bbd3f
+  md5: b2884fd673891cc8577ec1a8bea19d4e
   depends:
   - fontconfig >=2.17.1,<3.0a0
   - fonts-conda-ecosystem
@@ -8474,11 +8474,11 @@ packages:
   - xorg-libxt >=1.3.1,<2.0a0
   license: LGPL-2.1-only
   license_family: LGPL
-  size: 28094024
-  timestamp: 1773603652198
+  size: 28140199
+  timestamp: 1773635123903
 - conda: https://prefix.dev/freecad-context-fork/linux-aarch64/occt-dw-7.8.0-novtk_h81d0c92_100.conda
-  sha256: 297e6706ab60949300cb6d2dd6b845e791bf75cba4df24399c3eaf870e875776
-  md5: 5ab128813b05e7137c8b4e7737993df7
+  sha256: 6f5882ff03be43cb6896e5214a18827f630ef6f659d6b3d27c1ba8690abf4493
+  md5: d42a90d6e63a8cc2d3daf5662fbd7598
   depends:
   - fontconfig >=2.17.1,<3.0a0
   - fonts-conda-ecosystem
@@ -8492,11 +8492,11 @@ packages:
   - xorg-libxt >=1.3.1,<2.0a0
   license: LGPL-2.1-only
   license_family: LGPL
-  size: 26477054
-  timestamp: 1773603802638
+  size: 26597669
+  timestamp: 1773635175957
 - conda: https://prefix.dev/freecad-context-fork/win-64/occt-dw-7.8.0-novtk_h0acd683_100.conda
-  sha256: 096c11fd1a044269bd2ef8c0163819c4ad46ef2daa223a5c42ef1aedab44734a
-  md5: d37c7fcee445997b717f6bab853ca2dc
+  sha256: fb1ace179f9331be3e4caba75246c0d406ef2095475da7aea71aefcd25d34f1f
+  md5: 781ae137126e8f84bbc1be4f686a4296
   depends:
   - fontconfig >=2.17.1,<3.0a0
   - fonts-conda-ecosystem
@@ -8510,8 +8510,8 @@ packages:
   - vc14_runtime >=14.29.30139
   license: LGPL-2.1-only
   license_family: LGPL
-  size: 24671983
-  timestamp: 1773610035930
+  size: 24718242
+  timestamp: 1773635676698
 - conda: https://prefix.dev/conda-forge/linux-64/ocl-icd-2.3.3-hb9d3cd8_0.conda
   sha256: 2254dae821b286fb57c61895f2b40e3571a070910fdab79a948ff703e1ea807b
   md5: 56f8947aa9d5cf37b0b3d43b83f34192
