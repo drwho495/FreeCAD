@@ -368,6 +368,7 @@ void AssemblyObject::preDrag(
     // Position centered on pick point
     dragTarget->getPlacementProperty()->setValue(Base::Placement(pickPoint, Base::Rotation()));
     addObject(dragTarget);
+    dragTarget->recomputeFeature();
     dragTarget->purgeTouched();
 
     // Pass drag context to solver (creates mouse body + constraint)

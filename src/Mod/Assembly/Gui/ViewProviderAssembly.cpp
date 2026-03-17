@@ -1174,7 +1174,7 @@ void ViewProviderAssembly::tryInitMove(const SbVec2s& cursorPos, Gui::View3DInve
                     vp->getPropertyByName("ShapeColor")
                 );
                 if (shapeColor) {
-                    shapeColor->setValue(0.2f, 0.4f, 1.0f);  // blue
+                    shapeColor->setValue(0.0f, 0.0f, 1.0f);  // blue
                 }
                 auto* transparency = dynamic_cast<App::PropertyInteger*>(
                     vp->getPropertyByName("Transparency")
