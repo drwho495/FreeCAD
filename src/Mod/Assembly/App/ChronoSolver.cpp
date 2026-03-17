@@ -901,18 +901,28 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
 
             if (nli.limitClass == LimitClass::ROTATION_LIMIT) {
                 currentVal = lnk->GetRelAngle();
-                tolerance = 0.1;  // ~5.7 degrees
+                tolerance = 0.5;  // ~29 deg; solver overshoots up to 0.37 rad/step
             }
             else {
                 currentVal = lnk->GetRelCoordsys().pos.z();
-                tolerance = 10.0;  // 10 mm
+                tolerance = 50.0;  // 50 mm; solver overshoots up to 16 mm/step
             }
 
             if (nli.hasMin && currentVal < nli.chronoMin - tolerance) {
                 limitsViolated = true;
+                FC_MSG(
+                    "  LIMIT HIT: joint='" << lnk->GetName() << "'"
+                                           << " current=" << currentVal << " min=" << nli.chronoMin
+                                           << " excess=" << (nli.chronoMin - currentVal)
+                );
             }
             if (nli.hasMax && currentVal > nli.chronoMax + tolerance) {
                 limitsViolated = true;
+                FC_MSG(
+                    "  LIMIT HIT: joint='" << lnk->GetName() << "'"
+                                           << " current=" << currentVal << " max=" << nli.chronoMax
+                                           << " excess=" << (currentVal - nli.chronoMax)
+                );
             }
         }
 
