@@ -73,8 +73,8 @@ AssemblyObject::AssemblyObject()
     , lastSolverStatus(0)
 {
     // TODO: replace with user/addon configuration to support alternative solvers
-    solver = std::make_shared<Solver::ChronoSolver>(this);
-    // solver = std::make_shared<Solver::OndselSolver>(this);
+    // solver = std::make_shared<Solver::ChronoSolver>(this);
+    solver = std::make_shared<Solver::OndselSolver>(this);
     assembly = solver->makeAssembly();
 
     lastDoF = numberOfComponents() * 6;
@@ -413,7 +413,16 @@ void AssemblyObject::doDragStep(Base::Vector3d mousePos3D)
             if (!part) {
                 continue;
             }
-            dragSolverParts.push_back(getPart(part));
+            auto solverPart = getPart(part);
+
+            // Sync FreeCAD placement into solver part (needed by OndselSolver
+            // which reads MbD internal state; harmless for ChronoSolver).
+            auto* propPlc = part->getPlacementProperty();
+            if (solverPart && propPlc) {
+                solverPart->pushPlacement(propPlc->getValue());
+            }
+
+            dragSolverParts.push_back(solverPart);
         }
 
         // Run solver — mouse body drives the dragged part via compliant constraint
