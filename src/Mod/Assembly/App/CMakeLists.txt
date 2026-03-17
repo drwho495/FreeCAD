@@ -70,6 +70,8 @@ SET(Assembly_SRCS
     SimulationGroup.h
     Solver.cpp
     Solver.h
+    SolverRegistry.cpp
+    SolverRegistry.h
     OndselSolver.cpp
     OndselSolver.h
     ${Module_SRCS}
