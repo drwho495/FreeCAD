@@ -477,8 +477,10 @@ void AssemblyObject::postDrag()
 {
     assembly->postDrag();
 
-    // Skip removal of dragTargetBox so we can inspect its final position.
-    // It will be cleaned up when the next drag starts (in preDrag).
+    if (dragTargetBox) {
+        getDocument()->removeObject(dragTargetBox->getNameInDocument());
+        dragTargetBox = nullptr;
+    }
 
     purgeTouched();
 }
