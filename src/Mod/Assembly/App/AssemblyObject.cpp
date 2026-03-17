@@ -1158,7 +1158,7 @@ void AssemblyObject::jointParts(std::vector<App::DocumentObject*> joints)
         if (solverJoint) {
             assembly->addJoint(solverJoint);
             createdJoints.push_back({joint, solverJoint});
-            Base::Console().warning(
+            Base::Console().log(
                 "jointParts P1: added joint '%s' type=%d\n",
                 joint->getFullName().c_str(),
                 static_cast<int>(getJointType(joint))
