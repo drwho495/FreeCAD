@@ -285,7 +285,8 @@ size_t Assembly::AssemblyObject::numberOfFrames()
 void AssemblyObject::preDrag(
     std::vector<App::DocumentObject*> dragParts,
     Base::Vector3d pickPoint,
-    Base::Vector3d cameraViewDir
+    Base::Vector3d cameraViewDir,
+    App::DocumentObject* movingJoint
 )
 {
     // Clean up previous drag objects if they were left behind
@@ -383,6 +384,9 @@ void AssemblyObject::preDrag(
     ctx.pickPoint = pickPoint;
     ctx.cameraViewDir = cameraViewDir;
     ctx.cameraRotation = dragCameraRotation;
+    if (movingJoint) {
+        ctx.nearestJointName = movingJoint->getFullName();
+    }
     assembly->preDrag(ctx);
 
     /*

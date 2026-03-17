@@ -89,7 +89,8 @@ public:
     void preDrag(
         std::vector<App::DocumentObject*> dragParts,
         Base::Vector3d pickPoint,
-        Base::Vector3d cameraViewDir
+        Base::Vector3d cameraViewDir,
+        App::DocumentObject* movingJoint = nullptr
     );
     void doDragStep(Base::Vector3d mousePos3D);
     void postDrag();

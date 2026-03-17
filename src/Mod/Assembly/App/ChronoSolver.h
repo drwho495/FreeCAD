@@ -206,6 +206,21 @@ private:
     };
     std::map<std::pair<MarkerRef, MarkerRef>, NativeLimitInfo> nativeLimits;
 
+    // Nearest-joint drag projection info.
+    // Populated in preDrag(), used by dragStep() to pre-rotate the
+    // dragged body around the nearest joint's DOF before solving.
+    struct NearestJointDOF
+    {
+        bool active = false;
+        bool isRotational = false;                 // true=revolute/cylindrical, false=prismatic
+        chrono::ChVector3d axis;                   // joint Z axis (initial, world coords)
+        chrono::ChVector3d pivot;                  // joint position (initial, world coords)
+        chrono::ChLinkLock* link = nullptr;        // raw ptr to the joint for per-step queries
+        std::pair<MarkerRef, MarkerRef> limitKey;  // key into nativeLimits
+        bool hasLimits = false;
+    };
+    NearestJointDOF nearestJointDOF;
+
 
     // Simulation parameter storage
     std::shared_ptr<SimulationParameters> simulationParameters;

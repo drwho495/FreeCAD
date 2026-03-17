@@ -617,6 +617,7 @@ public:
         Base::Vector3d pickPoint;       // world-space click point (initial)
         Base::Vector3d cameraViewDir;   // camera Z axis (into screen)
         Base::Rotation cameraRotation;  // full camera-plane rotation (X=right, Y=up, Z=into)
+        std::string nearestJointName;   // fullName of the joint nearest to the pick (empty if none)
     };
 
     // Interactive drag support

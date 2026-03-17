@@ -1162,7 +1162,7 @@ void ViewProviderAssembly::tryInitMove(const SbVec2s& cursorPos, Gui::View3DInve
             dragPlanePlc = Base::Placement(pickPoint, Base::Rotation(mat));
         }
 
-        assemblyPart->preDrag(dragParts, pickPoint, cameraViewDir);
+        assemblyPart->preDrag(dragParts, pickPoint, cameraViewDir, movingJoint);
     }
     else {
         assemblyPart->redrawJointPlacements(assemblyPart->getJoints());

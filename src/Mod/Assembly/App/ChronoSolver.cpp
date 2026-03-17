@@ -784,6 +784,74 @@ void ChronoAssembly::preDrag(const DragContext& ctx)
         );
     }
 
+
+    // ------------------------------------------------------------------
+    // Nearest-joint drag prioritization via mouse-projection.
+    // Extract the joint's world-space axis and pivot so that dragStep()
+    // can project the mouse target onto the joint's DOF.  This avoids
+    // modifying the solver at all — instead we shape the input.
+    // ------------------------------------------------------------------
+    nearestJointDOF = {};
+    if (!ctx.nearestJointName.empty()) {
+        FC_MSG("Nearest joint for drag: '" << ctx.nearestJointName << "'");
+
+        for (const auto& linkPtr : sys->GetLinks()) {
+            auto* lockLink = dynamic_cast<chrono::ChLinkLock*>(linkPtr.get());
+            if (!lockLink) {
+                continue;
+            }
+            if (lockLink->GetName() == ctx.nearestJointName) {
+                // Get the joint's world frame — Z axis is the joint axis
+                auto frame = lockLink->GetFrame1Abs();
+                nearestJointDOF.active = true;
+                nearestJointDOF.axis = frame.GetRotMat().GetAxisZ();
+                nearestJointDOF.pivot = frame.GetPos();
+                nearestJointDOF.link = lockLink;
+
+                // Determine joint type from Chrono link class.
+                // ChLinkLockRevolute/Cylindrical → rotational.
+                // ChLinkLockPrismatic → translational.
+                if (dynamic_cast<chrono::ChLinkLockRevolute*>(lockLink)
+                    || dynamic_cast<chrono::ChLinkLockCylindrical*>(lockLink)) {
+                    nearestJointDOF.isRotational = true;
+                }
+                else if (dynamic_cast<chrono::ChLinkLockPrismatic*>(lockLink)) {
+                    nearestJointDOF.isRotational = false;
+                }
+                else {
+                    // Unknown joint type — don't project
+                    nearestJointDOF.active = false;
+                }
+
+                FC_MSG(
+                    "  DOF: " << (nearestJointDOF.isRotational ? "rotational" : "translational")
+                              << " axis=(" << nearestJointDOF.axis.x() << ","
+                              << nearestJointDOF.axis.y() << "," << nearestJointDOF.axis.z() << ")"
+                              << " pivot=(" << nearestJointDOF.pivot.x() << ","
+                              << nearestJointDOF.pivot.y() << "," << nearestJointDOF.pivot.z() << ")"
+                );
+
+                // Find the limit key for this joint by matching link pointers
+                for (const auto& [mkey, lnk] : limitableJoints) {
+                    if (lnk.get() == lockLink) {
+                        auto nlit = nativeLimits.find(mkey);
+                        if (nlit != nativeLimits.end()) {
+                            nearestJointDOF.limitKey = mkey;
+                            nearestJointDOF.hasLimits = true;
+                            FC_MSG(
+                                "  Nearest joint has limits: chronoRange=["
+                                << nlit->second.chronoMin << ", " << nlit->second.chronoMax << "]"
+                            );
+                        }
+                        break;
+                    }
+                }
+
+                break;
+            }
+        }
+    }
+
     // Snapshot all body positions so the first drag step has a known-good start.
     saveDragStepStart();
 
@@ -812,8 +880,10 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
         return;
     }
 
-    // Move the mouse body to the new mouse position.
-    mouseBody->SetPos(chrono::ChVector3d(mousePos3D.x, mousePos3D.y, mousePos3D.z));
+    auto rawMousePos = chrono::ChVector3d(mousePos3D.x, mousePos3D.y, mousePos3D.z);
+
+    // Move the mouse body to the raw mouse position.
+    mouseBody->SetPos(rawMousePos);
 
     // Create the mouse constraint linking dragged part to mouse body.
     // For now we constrain only the first dragged part.
@@ -859,12 +929,126 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
         );
     }
 
-    // Snapshot all body states before solving so we can reject bad solves
+    // Snapshot all body states BEFORE pre-rotation so we can fully
+    // revert to a known-good state if the solve fails.  Previously
+    // the snapshot was taken after pre-rotation, so rejected steps
+    // restored to the pre-rotated (corrupted) state, causing
+    // progressive model breakage.
     std::map<chrono::ChBody*, BodyDragStart> preSolveState;
     for (const auto& part : parts) {
         auto body = part->getBody();
         preSolveState[body.get()] = {body->GetPos(), body->GetRot()};
     }
+
+    // ------------------------------------------------------------------
+    // Nearest-joint pre-rotation.
+    // Instead of projecting the mouse target (which the solver ignores
+    // due to minimum-norm distributing motion), we pre-rotate/translate
+    // the dragged body around the nearest joint's DOF.  DoAssembly then
+    // reconciles the rest of the kinematic chain to match.
+    // ------------------------------------------------------------------
+    if (nearestJointDOF.active && nearestJointDOF.link && !draggedParts.empty()) {
+        auto chronoPart = std::static_pointer_cast<ChronoPart>(draggedParts[0]);
+        auto draggedBody = chronoPart->getBody();
+
+        // Query current joint frame (updates as the body moves)
+        auto jFrame = nearestJointDOF.link->GetFrame1Abs();
+        auto jAxis = jFrame.GetRotMat().GetAxisZ();
+        auto jPivot = jFrame.GetPos();
+
+        // Current pick point in world (body-local pick pos transformed to world)
+        auto localPick
+            = chrono::ChVector3d(dragCtx.pickPoint.x, dragCtx.pickPoint.y, dragCtx.pickPoint.z);
+        // Use actual current body transform to find where the pick point is NOW
+        auto bodyRot = draggedBody->GetRot();
+        auto bodyPos = draggedBody->GetPos();
+        auto currentPickWorld = bodyPos
+            + bodyRot.Rotate(bodyRot.GetInverse().Rotate(localPick - bodyPos));
+        // Simplification: the initial pick point in body-local was computed at drag start;
+        // but we stored dragCtx.pickPoint which is in world coords at drag start.
+        // Use the body-local offset from the mouse link instead.
+        if (mouseLink) {
+            auto* partMarker = mouseLink->GetMarker2();
+            auto localOff = partMarker->GetPos();
+            currentPickWorld = bodyPos + bodyRot.Rotate(localOff);
+        }
+
+        auto displacement = rawMousePos - currentPickWorld;
+
+        if (nearestJointDOF.isRotational) {
+            // Compute radius from joint axis to current pick point
+            auto radius = currentPickWorld - jPivot;
+            auto axialComp = radius.Dot(jAxis);
+            radius = radius - jAxis * axialComp;
+            auto rLen = radius.Length();
+            if (rLen > 1e-6) {
+                // Tangent direction at current position
+                auto tangent = jAxis.Cross(radius);
+                tangent.Normalize();
+                // Desired tangential displacement
+                auto tangentDisp = displacement.Dot(tangent);
+                // Convert to rotation angle: angle = arc_length / radius
+                auto angle = tangentDisp / rLen;
+
+                // Cap per-step rotation to prevent solver divergence
+                constexpr double maxAnglePerStep = 0.05;  // ~3 degrees
+                angle = std::clamp(angle, -maxAnglePerStep, maxAnglePerStep);
+
+                // Clamp to joint limits if available
+                if (nearestJointDOF.hasLimits) {
+                    auto nlit = nativeLimits.find(nearestJointDOF.limitKey);
+                    if (nlit != nativeLimits.end()) {
+                        double currentAngle = nearestJointDOF.link->GetRelAngle();
+                        double newAngle = currentAngle + angle;
+                        if (nlit->second.hasMin && newAngle < nlit->second.chronoMin) {
+                            angle = nlit->second.chronoMin - currentAngle;
+                        }
+                        if (nlit->second.hasMax && newAngle > nlit->second.chronoMax) {
+                            angle = nlit->second.chronoMax - currentAngle;
+                        }
+                    }
+                }
+
+                // Pre-rotate the dragged body around the joint axis by this angle.
+                auto rotQ = chrono::QuatFromAngleAxis(angle, jAxis);
+
+                // Rotate body position around the pivot
+                auto relPos = bodyPos - jPivot;
+                auto newRelPos = rotQ.Rotate(relPos);
+                draggedBody->SetPos(jPivot + newRelPos);
+
+                // Combine rotation with existing body rotation
+                draggedBody->SetRot(rotQ * bodyRot);
+            }
+        }
+        else {
+            // Prismatic: pre-translate along the slide axis
+            auto axialDisp = displacement.Dot(jAxis);
+
+            // Cap per-step translation to prevent solver divergence
+            constexpr double maxTransPerStep = 20.0;  // 20mm
+            axialDisp = std::clamp(axialDisp, -maxTransPerStep, maxTransPerStep);
+
+            // Clamp to joint limits if available
+            if (nearestJointDOF.hasLimits) {
+                auto nlit = nativeLimits.find(nearestJointDOF.limitKey);
+                if (nlit != nativeLimits.end()) {
+                    double currentPos = nearestJointDOF.link->GetRelCoordsys().pos.z();
+                    double newPos = currentPos + axialDisp;
+                    if (nlit->second.hasMin && newPos < nlit->second.chronoMin) {
+                        axialDisp = nlit->second.chronoMin - currentPos;
+                    }
+                    if (nlit->second.hasMax && newPos > nlit->second.chronoMax) {
+                        axialDisp = nlit->second.chronoMax - currentPos;
+                    }
+                }
+            }
+
+            draggedBody->SetPos(bodyPos + jAxis * axialDisp);
+        }
+    }
+
+    // (preSolveState was captured above, before pre-rotation)
 
     bool ok = sys->DoAssembly(chrono::AssemblyLevel::POSITION);
 
