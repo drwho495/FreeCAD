@@ -1110,7 +1110,7 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
             }
         }
 
-        if (!ok || jointsBroken || limitsViolated) {
+        if (!ok || jointsBroken) {
             FC_MSG(
                 "  DRAG REJECTED: ok=" << ok << " jointsBroken=" << jointsBroken
                                        << " limitsViolated=" << limitsViolated
