@@ -319,7 +319,7 @@ void ChronoAssembly::addJoint(std::shared_ptr<Joint> joint)
         if (debugLogging) {
             auto p1 = body1->GetPos() + body1->GetRot().Rotate(frame1.GetPos());
             auto p2 = body2->GetPos() + body2->GetRot().Rotate(frame2.GetPos());
-            FC_MSG(
+            FC_TRACE(
                 "  joint '" << joint->getName() << "'"
                             << "  body1='" << body1->GetName() << "'"
                             << "  body2='" << body2->GetName() << "'"
@@ -334,7 +334,7 @@ void ChronoAssembly::addJoint(std::shared_ptr<Joint> joint)
             frame1.SetRot(frame1.GetRot() * chrono::ChQuaternion<double>(0.0, 1.0, 0.0, 0.0));
             if (debugLogging) {
                 auto z1n = body1->GetRot().Rotate(frame1.GetRot().GetAxisZ());
-                FC_MSG(
+                FC_TRACE(
                     "  -> flipped frame1 Z (Rx180); new world_z1=(" << z1n.x() << "," << z1n.y()
                                                                     << "," << z1n.z() << ")"
                 );
@@ -534,7 +534,7 @@ void ChronoAssembly::addLimit(std::shared_ptr<Limit> limit)
 
     storedLimits.push_back({key, limit->getLimitClass(), value, isMax, limit->getCurrentValue()});
 
-    FC_MSG(
+    FC_TRACE(
         "addLimit (stored): '" << limit->getName() << "'"
                                << " class=" << static_cast<int>(limit->getLimitClass())
                                << " isMax=" << isMax << " value=" << value
@@ -552,14 +552,14 @@ void ChronoAssembly::addMotion(std::shared_ptr<Motion> /*motion*/)
 
 void ChronoAssembly::dumpStructure() const
 {
-    FC_MSG("=== ChronoSolver: Assembly Structure ===");
+    FC_TRACE("=== ChronoSolver: Assembly Structure ===");
 
     // Ground body
-    FC_MSG("[GROUND] fixed=true  pos=(0,0,0)");
+    FC_TRACE("[GROUND] fixed=true  pos=(0,0,0)");
     for (const auto& [name, frame] : groundMarkers) {
         auto p = frame.GetPos();
         auto z = frame.GetRot().GetAxisZ();
-        FC_MSG(
+        FC_TRACE(
             "  marker '" << name << "'"
                          << "  local_pos=(" << p.x() << "," << p.y() << "," << p.z() << ")"
                          << "  local_z=(" << z.x() << "," << z.y() << "," << z.z() << ")"
@@ -567,12 +567,12 @@ void ChronoAssembly::dumpStructure() const
     }
 
     // Parts
-    FC_MSG("--- Parts (" << parts.size() << ") ---");
+    FC_TRACE("--- Parts (" << parts.size() << ") ---");
     for (const auto& part : parts) {
         auto body = part->getBody();
         auto pos = body->GetPos();
         auto rot = body->GetRot();
-        FC_MSG(
+        FC_TRACE(
             "[PART] '" << body->GetName() << "'"
                        << "  fixed=" << (body->IsFixed() ? "true" : "false") << "  pos=(" << pos.x()
                        << "," << pos.y() << "," << pos.z() << ")"
@@ -584,7 +584,7 @@ void ChronoAssembly::dumpStructure() const
             auto lz = frame.GetRot().GetAxisZ();
             auto wz = rot.Rotate(lz);
             auto wp = pos + rot.Rotate(lp);
-            FC_MSG(
+            FC_TRACE(
                 "  marker '" << mname << "'"
                              << "  world_pos=(" << wp.x() << "," << wp.y() << "," << wp.z() << ")"
                              << "  world_z=(" << wz.x() << "," << wz.y() << "," << wz.z() << ")"
@@ -593,18 +593,18 @@ void ChronoAssembly::dumpStructure() const
     }
 
     // Links
-    FC_MSG("--- Links (" << sys->GetLinks().size() << ") ---");
+    FC_TRACE("--- Links (" << sys->GetLinks().size() << ") ---");
     for (const auto& link : sys->GetLinks()) {
         if (!link) {
             continue;
         }
-        FC_MSG(
+        FC_TRACE(
             "[LINK] '" << link->GetName() << "'"
                        << "  bilateral_dof=" << link->GetNumConstraintsBilateral()
         );
     }
 
-    FC_MSG("=== End Assembly Structure ===");
+    FC_TRACE("=== End Assembly Structure ===");
 }
 
 int ChronoAssembly::solveStatic()
@@ -615,7 +615,7 @@ int ChronoAssembly::solveStatic()
 
     bool ok = sys->DoAssembly(chrono::AssemblyLevel::POSITION);
     if (debugLogging) {
-        FC_MSG("=== Post-solve (converged=" << (ok ? "true" : "false") << ") ===");
+        FC_LOG("=== Post-solve (converged=" << (ok ? "true" : "false") << ") ===");
         dumpStructure();
     }
     if (ok) {
@@ -730,7 +730,7 @@ void ChronoAssembly::preDrag(const DragContext& ctx)
         // Find joint name for logging
         auto jit = limitableJoints.find(key);
         std::string jname = jit != limitableJoints.end() ? jit->second->GetName() : "???";
-        FC_MSG(
+        FC_TRACE(
             "  joint offset: '" << jname << "'"
                                 << " chronoBaseline=" << info.chronoBaseline << " fcRange=["
                                 << info.minLimit << ", " << info.maxLimit << "]"
@@ -775,7 +775,7 @@ void ChronoAssembly::preDrag(const DragContext& ctx)
         }
         nativeLimits[key] = nli;
 
-        FC_MSG(
+        FC_TRACE(
             "  limit info: joint='"
             << link->GetName() << "'"
             << " class=" << (lc == LimitClass::ROTATION_LIMIT ? "rotation" : "translation")
@@ -793,7 +793,7 @@ void ChronoAssembly::preDrag(const DragContext& ctx)
     // ------------------------------------------------------------------
     nearestJointDOF = {};
     if (!ctx.nearestJointName.empty()) {
-        FC_MSG("Nearest joint for drag: '" << ctx.nearestJointName << "'");
+        FC_LOG("Nearest joint for drag: '" << ctx.nearestJointName << "'");
 
         for (const auto& linkPtr : sys->GetLinks()) {
             auto* lockLink = dynamic_cast<chrono::ChLinkLock*>(linkPtr.get());
@@ -823,7 +823,7 @@ void ChronoAssembly::preDrag(const DragContext& ctx)
                     nearestJointDOF.active = false;
                 }
 
-                FC_MSG(
+                FC_TRACE(
                     "  DOF: " << (nearestJointDOF.isRotational ? "rotational" : "translational")
                               << " axis=(" << nearestJointDOF.axis.x() << ","
                               << nearestJointDOF.axis.y() << "," << nearestJointDOF.axis.z() << ")"
@@ -838,7 +838,7 @@ void ChronoAssembly::preDrag(const DragContext& ctx)
                         if (nlit != nativeLimits.end()) {
                             nearestJointDOF.limitKey = mkey;
                             nearestJointDOF.hasLimits = true;
-                            FC_MSG(
+                            FC_TRACE(
                                 "  Nearest joint has limits: chronoRange=["
                                 << nlit->second.chronoMin << ", " << nlit->second.chronoMax << "]"
                             );
@@ -919,7 +919,7 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
             mask.GetConstraint(i).SetComplianceTerm(cfm);
         }
 
-        FC_MSG(
+        FC_LOG(
             "Mouse constraint: pickWorld=("
             << pickWorld.x() << "," << pickWorld.y() << "," << pickWorld.z() << ")"
             << " localPick=(" << localPickPos.x() << "," << localPickPos.y() << ","
@@ -1094,7 +1094,7 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
 
             if (nli.hasMin && currentVal < nli.chronoMin - tolerance) {
                 limitsViolated = true;
-                FC_MSG(
+                FC_LOG(
                     "  LIMIT HIT: joint='" << lnk->GetName() << "'"
                                            << " current=" << currentVal << " min=" << nli.chronoMin
                                            << " excess=" << (nli.chronoMin - currentVal)
@@ -1102,7 +1102,7 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
             }
             if (nli.hasMax && currentVal > nli.chronoMax + tolerance) {
                 limitsViolated = true;
-                FC_MSG(
+                FC_LOG(
                     "  LIMIT HIT: joint='" << lnk->GetName() << "'"
                                            << " current=" << currentVal << " max=" << nli.chronoMax
                                            << " excess=" << (currentVal - nli.chronoMax)
@@ -1111,7 +1111,7 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
         }
 
         if (!ok || jointsBroken) {
-            FC_MSG(
+            FC_LOG(
                 "  DRAG REJECTED: ok=" << ok << " jointsBroken=" << jointsBroken
                                        << " limitsViolated=" << limitsViolated
                                        << " (maxViolation=" << maxJointViolation << ")"
@@ -1135,7 +1135,7 @@ void ChronoAssembly::dragStep(std::vector<std::shared_ptr<Part>> draggedParts, B
 void ChronoAssembly::postDrag()
 {
     if (debugLogging) {
-        FC_MSG("=== postDrag: final assembly structure ===");
+        FC_LOG("=== postDrag: final assembly structure ===");
         dumpStructure();
     }
 
