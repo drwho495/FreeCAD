@@ -448,80 +448,84 @@ App::ElementNamePair Feature::getExportElementName(TopoShape shape, const char* 
             }
             std::pair<TopAbs_ShapeEnum, int> occindex = shape.shapeTypeAndIndex(dot);
             if (occindex.second > 0) {
-                auto idxName = Data::IndexedName::fromConst(
-                    shape.shapeName(occindex.first).c_str(),
-                    occindex.second
-                );
-                std::string postfix;
-                auto names
-                    = shape.decodeElementComboName(idxName, mapped.name, idxName.getType(), &postfix);
-                std::vector<int> ancestors;
-                if (names.empty()) {
-                    // Naming based heuristic has failed to find the element.  Let's see if we can
-                    // find it by matching either planes for faces or lines for edges.
-                    auto searchShape = this->Shape.getShape();
-                    // If we're still out at a Shell, Solid, CompSolid, or Compound drill in
-                    while (!searchShape.getShape().IsNull()
-                           && searchShape.getShape().ShapeType() < TopAbs_FACE) {
-                        auto shapes = searchShape.getSubTopoShapes();
-                        if (shapes.empty()) {  // No more subshapes, so don't continue
+                if (mapped.name.getHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
+                    auto idxName = Data::IndexedName::fromConst(
+                        shape.shapeName(occindex.first).c_str(),
+                        occindex.second
+                    );
+                    std::string postfix;
+                    auto names
+                        = shape.decodeElementComboName(idxName, mapped.name, idxName.getType(), &postfix);
+                    std::vector<int> ancestors;
+                    if (names.empty()) {
+                        // Naming based heuristic has failed to find the element.  Let's see if we can
+                        // find it by matching either planes for faces or lines for edges.
+                        auto searchShape = this->Shape.getShape();
+                        // If we're still out at a Shell, Solid, CompSolid, or Compound drill in
+                        while (!searchShape.getShape().IsNull()
+                            && searchShape.getShape().ShapeType() < TopAbs_FACE) {
+                            auto shapes = searchShape.getSubTopoShapes();
+                            if (shapes.empty()) {  // No more subshapes, so don't continue
+                                break;
+                            }
+                            searchShape = shapes.front();  // After the break, so we stopped at
+                                                        // innermost container
+                        }
+                        // auto newMapped = TopoShape::chooseMatchingSubShapeByPlaneOrLine(shape, searchShape);
+                        // if (!newMapped.name.empty()) {
+                        //     mapped = newMapped;
+                        // } else {
+                            
+                        // }
+                    }
+                    for (auto& name : names) {
+                        auto index = shape.getIndexedName(name);
+                        if (!index) {
+                            ancestors.clear();
                             break;
                         }
-                        searchShape = shapes.front();  // After the break, so we stopped at
-                                                       // innermost container
+                        auto oidx = shape.shapeTypeAndIndex(index);
+                        auto subshape = shape.getSubShape(oidx.first, oidx.second);
+                        if (subshape.IsNull()) {
+                            ancestors.clear();
+                            break;
+                        }
+                        auto current = shape.findAncestors(subshape, occindex.first);
+                        if (ancestors.empty()) {
+                            ancestors = std::move(current);
+                        }
+                        else {
+                            for (auto it = ancestors.begin(); it != ancestors.end();) {
+                                if (std::ranges::find(current, *it) == current.end()) {
+                                    it = ancestors.erase(it);
+                                }
+                                else {
+                                    ++it;
+                                }
+                            }
+                            if (ancestors.empty()) {  // model changed beyond recognition, bail!
+                                break;
+                            }
+                        }
                     }
-                    auto newMapped = TopoShape::chooseMatchingSubShapeByPlaneOrLine(shape, searchShape);
-                    if (!newMapped.name.empty()) {
-                        mapped = newMapped;
-                    } else {
-                        std::vector<Data::MappedName> foundNames = findSimilarNames(mapped.name, shape);
+                    if (ancestors.size() > 1 && boost::starts_with(postfix, Data::POSTFIX_INDEX)) {
+                        std::istringstream iss(postfix.c_str() + strlen(Data::POSTFIX_INDEX));
+                        int idx;
+                        if (iss >> idx && idx >= 0 && idx < (int)ancestors.size()) {
+                            ancestors.resize(1, ancestors[idx]);
+                        }
+                    }
+                    if (ancestors.size() == 1) {
+                        idxName.setIndex(ancestors.front());
+                        mapped.index = idxName;
+                    }
+                } else if (mapped.name.getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+                    std::vector<Data::MappedName> foundNames = findSimilarNames(mapped.name, shape);
 
-                        if (foundNames.size()) {
-                            mapped.name = foundNames[0];
-                            mapped.index = shape.getIndexedName(mapped.name);
-                        }
+                    if (foundNames.size()) {
+                        mapped.name = foundNames[0];
+                        mapped.index = shape.getIndexedName(mapped.name);
                     }
-                }
-                for (auto& name : names) {
-                    auto index = shape.getIndexedName(name);
-                    if (!index) {
-                        ancestors.clear();
-                        break;
-                    }
-                    auto oidx = shape.shapeTypeAndIndex(index);
-                    auto subshape = shape.getSubShape(oidx.first, oidx.second);
-                    if (subshape.IsNull()) {
-                        ancestors.clear();
-                        break;
-                    }
-                    auto current = shape.findAncestors(subshape, occindex.first);
-                    if (ancestors.empty()) {
-                        ancestors = std::move(current);
-                    }
-                    else {
-                        for (auto it = ancestors.begin(); it != ancestors.end();) {
-                            if (std::ranges::find(current, *it) == current.end()) {
-                                it = ancestors.erase(it);
-                            }
-                            else {
-                                ++it;
-                            }
-                        }
-                        if (ancestors.empty()) {  // model changed beyond recognition, bail!
-                            break;
-                        }
-                    }
-                }
-                if (ancestors.size() > 1 && boost::starts_with(postfix, Data::POSTFIX_INDEX)) {
-                    std::istringstream iss(postfix.c_str() + strlen(Data::POSTFIX_INDEX));
-                    int idx;
-                    if (iss >> idx && idx >= 0 && idx < (int)ancestors.size()) {
-                        ancestors.resize(1, ancestors[idx]);
-                    }
-                }
-                if (ancestors.size() == 1) {
-                    idxName.setIndex(ancestors.front());
-                    mapped.index = idxName;
                 }
             }
         }
