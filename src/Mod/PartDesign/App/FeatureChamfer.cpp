@@ -204,7 +204,11 @@ App::DocumentObjectExecReturn* Chamfer::execute()
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure& e) {
-        return new App::DocumentObjectExecReturn(e.GetMessageString());
+        // this is an opencascade error, likely caused by a chamfer that is too large.
+        return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
+            "Exception",
+            "The size of this chamfer is too large. Try to use a smaller alternative."
+        ));
     }
     catch (...) {
         return new App::DocumentObjectExecReturn(
