@@ -4480,7 +4480,7 @@ over 90: larger hole radius at the bottom</source>
       <location filename="../../../App/FeatureLoft.cpp" line="331"/>
       <location filename="../../../App/FeatureLoft.cpp" line="375"/>
       <location filename="../../../App/FeatureRevolution.cpp" line="284"/>
-      <source>Result has multiple solids: enable 'Allow Compound' in the active body.</source>
+      <source>Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel.</source>
       <translation>Az eredmény több szilárd testet tartalmaz: engedélyezze a 'Többszörös test engedélyezése' lehetőséget az aktív testnél.</translation>
     </message>
     <message>

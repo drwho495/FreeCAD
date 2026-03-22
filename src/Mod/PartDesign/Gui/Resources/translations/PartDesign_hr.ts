@@ -4483,7 +4483,7 @@ preko 90: veći polumjer rupe na dnu</translation>
       <location filename="../../../App/FeatureLoft.cpp" line="331"/>
       <location filename="../../../App/FeatureLoft.cpp" line="375"/>
       <location filename="../../../App/FeatureRevolution.cpp" line="284"/>
-      <source>Result has multiple solids: enable 'Allow Compound' in the active body.</source>
+      <source>Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel.</source>
       <translation>Rezultat ima više čvrstih tijela: omogućite 'Dopusti spoj' u aktivnom tijelu.</translation>
     </message>
     <message>
