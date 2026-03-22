@@ -4478,7 +4478,7 @@ over 90: larger hole radius at the bottom</source>
       <location filename="../../../App/FeatureLoft.cpp" line="331"/>
       <location filename="../../../App/FeatureLoft.cpp" line="375"/>
       <location filename="../../../App/FeatureRevolution.cpp" line="284"/>
-      <source>Result has multiple solids: enable 'Allow Compound' in the active body.</source>
+      <source>Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel.</source>
       <translation>结果有多个实体：在活动实体中启用“允许复合”</translation>
     </message>
     <message>

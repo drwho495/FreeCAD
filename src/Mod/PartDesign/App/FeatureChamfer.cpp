@@ -195,7 +195,7 @@ App::DocumentObjectExecReturn* Chamfer::execute()
         if (!isSingleSolidRuleSatisfied(shape.getShape())) {
             return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                 "Exception",
-                "Result has multiple solids: enable 'Allow Compound' in the active body."
+                "Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel."
             ));
         }
 
@@ -204,7 +204,11 @@ App::DocumentObjectExecReturn* Chamfer::execute()
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure& e) {
-        return new App::DocumentObjectExecReturn(e.GetMessageString());
+        // this is an opencascade error, likely caused by a chamfer that is too large.
+        return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
+            "Exception",
+            "The size of this chamfer is too large. Try to use a smaller alternative."
+        ));
     }
     catch (...) {
         return new App::DocumentObjectExecReturn(

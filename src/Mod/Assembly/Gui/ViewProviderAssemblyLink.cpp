@@ -90,6 +90,21 @@ bool ViewProviderAssemblyLink::doubleClicked()
         return true;
     }
     auto* assembly = link->getLinkedAssembly();
+    if (!assembly) {
+        return true;
+    }
+
+    // Ensure the linked assembly document is fully loaded
+    auto doc = assembly->getDocument();
+    if (doc && doc->testStatus(App::Document::PartialDoc)) {
+        Gui::Application::Instance->reopen(doc);
+
+        // reopening invalidates the pointer.
+        auto* assembly = link->getLinkedAssembly();
+        if (!assembly) {
+            return true;
+        }
+    }
 
     auto* vpa = freecad_cast<ViewProviderAssembly*>(
         Gui::Application::Instance->getViewProvider(assembly)
@@ -137,14 +152,14 @@ void ViewProviderAssemblyLink::setupContextMenu(QMenu* menu, QObject* receiver, 
 
     func->trigger(act, [this]() {
         auto* assemblyLink = dynamic_cast<Assembly::AssemblyLink*>(getObject());
-        Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Toggle Rigid"));
+        getDocument()->openCommand(QT_TRANSLATE_NOOP("Command", "Toggle Rigid"));
         Gui::cmdAppObjectArgs(
             assemblyLink,
             "Rigid = %s",
             assemblyLink->Rigid.getValue() ? "False" : "True"
         );
 
-        Gui::Command::commitCommand();
+        getDocument()->commitCommand();
         Gui::Selection().clearSelection();
     });
 
