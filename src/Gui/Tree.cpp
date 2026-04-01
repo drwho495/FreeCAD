@@ -128,111 +128,6 @@ void TreeParams::onItemBackgroundChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-struct Stats
-{
-#define DEFINE_STATS \
-    DEFINE_STAT(testStatus1) \
-    DEFINE_STAT(testStatus2) \
-    DEFINE_STAT(testStatus3) \
-    DEFINE_STAT(getIcon) \
-    DEFINE_STAT(setIcon)
-
-#define DEFINE_STAT(_name) \
-    FC_DURATION_DECLARE(_name); \
-    int _name##_count;
-
-    DEFINE_STATS
-
-    void init()
-    {
-#undef DEFINE_STAT
-#define DEFINE_STAT(_name) \
-    FC_DURATION_INIT(_name); \
-    _name##_count = 0;
-
-        DEFINE_STATS
-    }
-
-    void print()
-    {
-#undef DEFINE_STAT
-#define DEFINE_STAT(_name) FC_DURATION_MSG(_name, #_name " count: " << _name##_count);
-        DEFINE_STATS
-    }
-
-#undef DEFINE_STAT
-#define DEFINE_STAT(_name) \
-    void time_##_name(FC_TIME_POINT& t) \
-    { \
-        ++_name##_count; \
-        FC_DURATION_PLUS(_name, t); \
-    }
-
-    DEFINE_STATS
-};
-
-// static Stats _Stats;
-
-struct TimingInfo
-{
-    bool timed = false;
-    FC_TIME_POINT t;
-    FC_DURATION& d;
-    explicit TimingInfo(FC_DURATION& d)
-        : d(d)
-    {
-        _FC_TIME_INIT(t);
-    }
-    ~TimingInfo()
-    {
-        stop();
-    }
-    void stop()
-    {
-        if (!timed) {
-            timed = true;
-            FC_DURATION_PLUS(d, t);
-        }
-    }
-    void reset()
-    {
-        stop();
-        _FC_TIME_INIT(t);
-    }
-};
-
-// #define DO_TIMING
-#ifdef DO_TIMING
-# define _Timing(_idx, _name) \
-     ++_Stats._name##_count; \
-     TimingInfo _tt##_idx(_Stats._name)
-# define Timing(_name) _Timing(0, _name)
-# define _TimingStop(_idx, _name) _tt##_idx.stop();
-# define TimingStop(_name) _TimingStop(0, _name);
-# define TimingInit() _Stats.init();
-# define TimingPrint() _Stats.print();
-#else
-# define _Timing(...) \
-     do { \
-     } while (0)
-# define Timing(...) \
-     do { \
-     } while (0)
-# define TimingInit() \
-     do { \
-     } while (0)
-# define TimingPrint() \
-     do { \
-     } while (0)
-# define _TimingStop(...) \
-     do { \
-     } while (0);
-# define TimingStop(...) \
-     do { \
-     } while (0);
-#endif
-
-// ---------------------------------------------------------------------------
 
 using DocumentObjectItems = std::set<DocumentObjectItem*>;
 
@@ -748,6 +643,13 @@ TreeWidget::TreeWidget(const char* name, QWidget* parent)
 
     this->recomputeObjectAction = new QAction(this);
     connect(this->recomputeObjectAction, &QAction::triggered, this, &TreeWidget::onRecomputeObject);
+    if (auto recomputeCmd
+        = Gui::Application::Instance->commandManager().getCommandByName("Std_Recompute")) {
+        // Register command action on the tree so its shortcut can trigger from the main window.
+        recomputeCmd->addTo(this);
+        this->recomputeObjectAction->setShortcut(recomputeCmd->getShortcut());
+        this->recomputeObjectAction->setShortcutVisibleInContextMenu(true);
+    }
     this->searchObjectsAction = new QAction(this);
     this->searchObjectsAction->setText(tr("Search Objects"));
     this->searchObjectsAction->setStatusTip(tr("Searches for objects in the tree"));
@@ -1696,23 +1598,13 @@ void TreeWidget::onMarkRecompute()
 
 void TreeWidget::onRecomputeObject()
 {
-    std::vector<App::DocumentObject*> objs;
-    const auto items = selectedItems();
-    for (auto ti : items) {
-        if (ti->type() == ObjectType) {
-            auto objitem = static_cast<DocumentObjectItem*>(ti);
-            objs.push_back(objitem->object()->getObject());
-            objs.back()->enforceRecompute();
-        }
-    }
-    if (objs.empty()) {
+    if (auto cmd = Gui::Application::Instance->commandManager().getCommandByName("Std_Recompute")) {
+        cmd->invoke(0, Command::TriggerAction);
         return;
     }
 
-    App::AutoTransaction committer(objs.front()->getDocument()->openTransaction("Recompute object"));
-    objs.front()->getDocument()->recompute(objs, true);
+    Base::Console().error("TreeWidget::onRecomputeObject: Std_Recompute command not found\n");
 }
-
 
 DocumentItem* TreeWidget::getDocumentItem(const Gui::Document* doc) const
 {
@@ -2380,8 +2272,10 @@ Qt::DropAction getDropAction(int size, const int type)
     if (QApplication::keyboardModifiers() == Qt::ControlModifier) {
         return Qt::CopyAction;
     }
-    else if (QApplication::keyboardModifiers() == Qt::AltModifier
-             && (size == 1 || type == TreeWidget::DocumentType)) {
+    else if (
+        QApplication::keyboardModifiers() == Qt::AltModifier
+        && (size == 1 || type == TreeWidget::DocumentType)
+    ) {
         return Qt::LinkAction;
     }
     else {
@@ -3644,11 +3538,9 @@ void TreeWidget::onUpdateStatus()
     }
 
     FC_LOG("update item status");
-    TimingInit();
     for (auto pos = DocumentMap.begin(); pos != DocumentMap.end(); ++pos) {
         pos->second->testStatus();
     }
-    TimingPrint();
 
     // Checking for just restored documents
     for (auto& v : DocumentMap) {
@@ -4904,13 +4796,10 @@ void DocumentItem::populateItem(DocumentObjectItem* item, bool refresh, bool del
         auto it = ObjectMap.find(child);
         if (it == ObjectMap.end() || it->second->items.empty()) {
             auto vp = getViewProvider(child);
-            if (!vp
-                || !createNewItem(
-                    *vp,
-                    item,
-                    i,
-                    it == ObjectMap.end() ? DocumentObjectDataPtr() : it->second
-                )) {
+            if (
+                !vp
+                || !createNewItem(*vp, item, i, it == ObjectMap.end() ? DocumentObjectDataPtr() : it->second)
+            ) {
                 --i;
             }
             else {
@@ -6294,7 +6183,6 @@ void DocumentObjectItem::testStatus(bool resetStatus, QIcon& icon1, QIcon& icon2
     int visible = -1;
     auto parentItem = getParentItem();
     if (parentItem) {
-        Timing(testStatus1);
         auto parent = parentItem->object()->getObject();
         auto ext = parent->getExtensionByType<App::GroupExtension>(true, false);
         if (!ext) {
@@ -6315,8 +6203,6 @@ void DocumentObjectItem::testStatus(bool resetStatus, QIcon& icon1, QIcon& icon2
         }
     }
 
-    Timing(testStatus2);
-
     if (visible < 0) {
         visible = object()->isShow() ? 1 : 0;
     }
@@ -6331,13 +6217,10 @@ void DocumentObjectItem::testStatus(bool resetStatus, QIcon& icon1, QIcon& icon2
         | ((object()->showInTree() ? 0 : 1) << 3) | ((pObject->isError() ? 1 : 0) << 2)
         | ((pObject->isTouched() || pObject->mustExecute() == 1 ? 1 : 0) << 1) | (visible ? 1 : 0);
 
-    TimingStop(testStatus2);
 
     if (!resetStatus && previousStatus == currentStatus) {
         return;
     }
-
-    _Timing(1, testStatus3);
 
     previousStatus = currentStatus;
 
@@ -6367,12 +6250,9 @@ void DocumentObjectItem::testStatus(bool resetStatus, QIcon& icon1, QIcon& icon2
         mode = QIcon::Disabled;
     }
 
-    _TimingStop(1, testStatus3);
-
     QIcon& icon = mode == QIcon::Normal ? icon1 : icon2;
 
     if (icon.isNull()) {
-        Timing(getIcon);
         QPixmap px;
         if (currentStatus & Status::Error) {
             static QPixmap pxError;
@@ -6496,7 +6376,6 @@ void DocumentObjectItem::testStatus(bool resetStatus, QIcon& icon1, QIcon& icon2
         }
     }
 
-    _Timing(2, setIcon);
     this->setIcon(0, icon);
 }
 

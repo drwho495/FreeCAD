@@ -47,12 +47,9 @@ cmake --build build
 mkdir -p FreeCAD.app/Contents/MacOS
 cp build/FreeCAD FreeCAD.app/Contents/MacOS/FreeCAD
 
-python_version=$(${conda_env}/bin/python -c 'import platform; print("py" + platform.python_version_tuple()[0] + platform.python_version_tuple()[1])')
-
 # Add deployment target suffix to artifact name (e.g., "-macOS11" or "-macOS15")
 deploy_target="${MACOS_DEPLOYMENT_TARGET:-11.0}"
-deploy_suffix="-macOS${deploy_target%%.*}"
-version_name="FreeCAD_${BUILD_TAG}-macOS-$(uname -m)${deploy_suffix}-${python_version}"
+version_name="FreeCAD_${BUILD_TAG}-macOS${deploy_target%%.*}-$(uname -m)"
 application_menu_name="FreeCAD_${BUILD_TAG}"
 
 echo -e "\################"
@@ -105,5 +102,15 @@ fi
 sha256sum ${version_name}.dmg > ${version_name}.dmg-SHA256.txt
 
 if [[ "${UPLOAD_RELEASE}" == "true" ]]; then
-    gh release upload --clobber ${BUILD_TAG} "${version_name}.dmg" "${version_name}.dmg-SHA256.txt"
+    for attempt in 1 2 3 4 5; do
+        if gh release upload --clobber ${BUILD_TAG} "${version_name}.dmg" "${version_name}.dmg-SHA256.txt"; then
+            break
+        fi
+        if [[ $attempt -eq 5 ]]; then
+            echo "Failed to upload release after 5 attempts" >&2
+            exit 1
+        fi
+        echo "Upload attempt $attempt failed, retrying in $((attempt * 10))s..."
+        sleep $((attempt * 10))
+    done
 fi
