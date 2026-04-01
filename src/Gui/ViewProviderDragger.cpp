@@ -121,14 +121,6 @@ bool ViewProviderDragger::doubleClicked()
     return true;
 }
 
-void ViewProviderDragger::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
-{
-    QIcon iconObject = mergeGreyableOverlayIcons(Gui::BitmapFactory().pixmap("Std_TransformManip.svg"));
-    QAction* act = menu->addAction(iconObject, QObject::tr("Transform"), receiver, member);
-    act->setData(QVariant((int)ViewProvider::Transform));
-    ViewProviderDocumentObject::setupContextMenu(menu, receiver, member);
-}
-
 ViewProvider* ViewProviderDragger::startEditing(int mode)
 {
     forwardedViewProvider = nullptr;
@@ -365,16 +357,20 @@ Base::Rotation Gui::ViewProviderDragger::orthonormalize(
         z = x.Cross(y);
         z.Normalize();
     }
-    else if (components.testFlag(Gui::ViewProviderDragger::DraggerComponent::XRot)
-             && components.testFlag(Gui::ViewProviderDragger::DraggerComponent::ZRot)) {
+    else if (
+        components.testFlag(Gui::ViewProviderDragger::DraggerComponent::XRot)
+        && components.testFlag(Gui::ViewProviderDragger::DraggerComponent::ZRot)
+    ) {
         x.Normalize();
         z = z - x * (x * z);
         z.Normalize();
         y = z.Cross(x);
         y.Normalize();
     }
-    else if (components.testFlag(Gui::ViewProviderDragger::DraggerComponent::YRot)
-             && components.testFlag(Gui::ViewProviderDragger::DraggerComponent::ZRot)) {
+    else if (
+        components.testFlag(Gui::ViewProviderDragger::DraggerComponent::YRot)
+        && components.testFlag(Gui::ViewProviderDragger::DraggerComponent::ZRot)
+    ) {
         y.Normalize();
         z = z - y * (y * z);
         z.Normalize();
