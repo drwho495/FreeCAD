@@ -43,6 +43,7 @@
 #include <App/FeaturePythonPyImp.h>
 #include <App/IndexedName.h>
 #include <App/MappedName.h>
+#include <Mod/Part/App/TopoShapeOpCode.h>
 #include <App/ObjectIdentifier.h>
 #include <Base/Console.h>
 #include <Base/Reader.h>
@@ -268,13 +269,29 @@ void SketchObject::buildShape()
     std::vector<Part::TopoShape> vertices;
     int geoId = 0;
 
-    auto addVertex = [&vertices](auto vertex, auto name) {
+    auto addVertex = [&vertices](auto vertex, auto name, int tag) {
         if (!vertex.hasElementMap()) {
             vertex.resetElementMap(std::make_shared<Data::ElementMap>());
         }
+
+        Data::MappedName builtName = Data::MappedName();
+
+        if (builtName.getHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
+            builtName = name;
+        } else if (builtName.getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+            builtName = Data::MappedName::makeSection({name},
+                                                      {},
+                                                      tag,
+                                                      Part::OpCodes::Sketch,
+                                                      0,
+                                                      'V',
+                                                      0,
+                                                      "SRC");
+        }
+
         vertex.setElementName(
             Data::IndexedName::fromConst("Vertex", 1),
-            Data::MappedName::fromRawData(name.c_str()),
+            builtName,
             0L
         );
         vertices.push_back(vertex);
@@ -299,7 +316,8 @@ void SketchObject::buildShape()
             int idx = getVertexIndexGeoPos(geoId - 1, Sketcher::PointPos::start);
             addVertex(
                 Part::TopoShape {TopoDS::Vertex(geo->toShape())},
-                convertSubName(Data::IndexedName::fromConst("Vertex", idx + 1), false)
+                convertSubName(Data::IndexedName::fromConst("Vertex", idx + 1), false),
+                getID()
             );
         }
         else {
@@ -324,7 +342,8 @@ void SketchObject::buildShape()
         if (geo->isDerivedFrom<Part::GeomPoint>()) {
             addVertex(
                 Part::TopoShape {TopoDS::Vertex(geo->toShape())},
-                convertSubName(indexedName, false)
+                convertSubName(indexedName, false),
+                getID()
             );
         }
         else {
@@ -1857,20 +1876,63 @@ App::ElementNamePair SketchObject::getElementName(
     App::ElementNamePair ret;
     if(!name) return ret;
 
+    // If this is an InternalFace then don't check the MappedName below, as that would cause
+    // the wrong element to be selected.
+    const char *mapped = Data::isMappedElement(name);
+    const char* indexedSubname = mapped;
+
+    if (mapped) {
+        const char* dot = strchr(mapped, '.');
+        
+        if (dot) {
+            indexedSubname = dot + 1; 
+
+            if (indexedSubname == strstr(indexedSubname, "InternalFace")) {
+                Data::IndexedName internalFaceIndexedName = Data::IndexedName(indexedSubname, {"InternalFace"}, false);
+
+                if (internalFaceIndexedName) {
+                    const Part::TopoShape &internalShape = InternalShape.getShape();
+                    Data::MappedElement mappedElement = internalShape.getElementName(name);
+
+                    // let's attempt to find the right mapped name before marking this as missing by running findSimilarNames.
+                    // We could use getExportElementName to do the same thing, but this is more direct and should be more performant
+                    if (!mappedElement.index && type == ElementNameType::Export) {
+                        std::vector<Data::MappedElement> foundNames = findSimilarNames(mappedElement.name, internalShape);
+
+                        if (foundNames.size()) {
+                            // just grab the first name.
+                            mappedElement = foundNames[0];
+                        }
+                    }
+
+                    ret.newName = Data::ComplexGeoData::elementMapPrefix();
+                    mappedElement.name.appendToBuffer(ret.newName);
+
+                    ret.oldName = internalPrefix();
+                    mappedElement.index.appendToStringBuffer(ret.oldName);
+
+                    ret.newName += ".";
+                    ret.newName += ret.oldName;
+
+                    return ret;
+                }
+            }
+        }
+    }
+
     if(hasSketchMarker(name))
         return Part2DObject::getElementName(name,type);
 
-    const char *mapped = Data::isMappedElement(name);
     Data::IndexedName index = checkSubName(name);
     index.appendToStringBuffer(ret.oldName);
     if (auto realName = convertInternalName(ret.oldName.c_str())) {
         Data::MappedElement mappedElement;
-        if (mapped)
-            mappedElement = InternalShape.getShape().getElementName(name);
-        else if (type == ElementNameType::Export)
+        if (type == ElementNameType::Export) {
             ret.newName = getExportElementName(InternalShape.getShape(), realName).newName;
-        else
+        }
+        else {
             mappedElement = InternalShape.getShape().getElementName(realName);
+        }
 
         if (mapped || type != ElementNameType::Export) {
             if (mappedElement.index) {
@@ -1887,7 +1949,7 @@ App::ElementNamePair SketchObject::getElementName(
 
         if (ret.newName.size()) {
             if (auto dot = strrchr(ret.newName.c_str(), '.'))
-                ret.newName.resize(dot+1-ret.newName.c_str());
+                ret.newName.resize(dot + 1 - ret.newName.c_str());
             else
                 ret.newName += ".";
             ret.newName += ret.oldName;
@@ -1926,8 +1988,6 @@ Data::IndexedName SketchObject::checkSubName(const char *subname) const
         "H_Axis",
         "V_Axis",
         "Constraint",
-
-        // other feature from LS3 not related to TNP
         "InternalEdge",
         "InternalFace",
         "InternalVertex",

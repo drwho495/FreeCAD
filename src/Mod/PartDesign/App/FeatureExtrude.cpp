@@ -774,7 +774,7 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
             if (!isSingleSolidRuleSatisfied(solRes.getShape())) {
                 return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                     "Exception",
-                    "Result has multiple solids: enable 'Allow Compound' in the active body."
+                    "Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel."
                 ));
             }
             this->Shape.setValue(getSolid(solRes));
@@ -790,7 +790,7 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
             if (!isSingleSolidRuleSatisfied(prism.getShape())) {
                 return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                     "Exception",
-                    "Result has multiple solids: enable 'Allow Compound' in the active body."
+                    "Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel."
                 ));
             }
             prism = getSolid(prism);
@@ -803,7 +803,7 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
             if (!isSingleSolidRuleSatisfied(prism.getShape())) {
                 return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                     "Exception",
-                    "Result has multiple solids: enable 'Allow Compound' in the active body."
+                    "Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel."
                 ));
             }
             this->Shape.setValue(prism);

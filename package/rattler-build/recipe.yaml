@@ -90,9 +90,9 @@ requirements:
         - xorg-x11-server-xvfb-cos7-aarch64
         - xorg-xproto
 
-    - if: osx and x86_64
-      then:
-        - __osx >=10.13
+    # - if: osx and x86_64
+    #   then:
+    #     - __osx >=10.13
 
     - if: build_platform != target_platform
       then:
@@ -109,7 +109,7 @@ requirements:
     - matplotlib-base
     - noqt5
     - numpy>=1.26,<2
-    - occt>=7.8,<7.9
+    - occt-dw
     - pcl
     - pivy
     - ply
@@ -154,7 +154,7 @@ requirements:
     - nine
     - noqt5
     - numpy>=1.26,<2
-    - occt>=7.8,<7.9
+    - occt-dw
     - olefile
     - opencamlib
     - opencv

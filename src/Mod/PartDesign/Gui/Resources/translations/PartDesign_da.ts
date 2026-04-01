@@ -4481,7 +4481,7 @@ over 90: større hulradius i bunden</translation>
       <location filename="../../../App/FeatureLoft.cpp" line="331"/>
       <location filename="../../../App/FeatureLoft.cpp" line="375"/>
       <location filename="../../../App/FeatureRevolution.cpp" line="284"/>
-      <source>Result has multiple solids: enable 'Allow Compound' in the active body.</source>
+      <source>Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel.</source>
       <translation>Operationen resulterer i flere massive emner. Aktiver 'Tillad sammensatte emner' i det aktive emne.</translation>
     </message>
     <message>
