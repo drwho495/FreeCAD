@@ -34,12 +34,6 @@
 #include "ViewGroup.h"
 #include "SimulationGroup.h"
 
-#include "SolverRegistry.h"
-#include "OndselSolver.h"
-#ifdef HAVE_CHRONO
-# include "ChronoSolver.h"
-#endif
-
 
 namespace Assembly
 {
@@ -61,17 +55,6 @@ PyMOD_INIT_FUNC(AssemblyApp)
 
     PyObject* mod = Assembly::initModule();
     Base::Console().log("Loading Assembly module... done\n");
-
-    // Register built-in solver backends
-    auto& reg = Assembly::Solver::SolverRegistry::instance();
-    reg.registerSolver("Ondsel", [](Assembly::AssemblyObject* obj) {
-        return std::make_shared<Assembly::Solver::OndselSolver>(obj);
-    });
-#ifdef HAVE_CHRONO
-    reg.registerSolver("Chrono", [](Assembly::AssemblyObject* obj) {
-        return std::make_shared<Assembly::Solver::ChronoSolver>(obj);
-    });
-#endif
 
 
     // NOTE: To finish the initialization of our own type objects we must

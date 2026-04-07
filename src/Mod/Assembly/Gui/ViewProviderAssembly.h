@@ -285,7 +285,6 @@ private:
 
     std::unordered_map<App::DocumentObject*, ComponentState> stateBackup;
     App::DocumentObject* temporaryExplosion {nullptr};
-    Base::Placement dragPlanePlc;  // camera-parallel plane placement for mouse projection
     App::DocumentObject* isolatedJoint {nullptr};
     bool isolatedJointVisibilityBackup {false};
 
