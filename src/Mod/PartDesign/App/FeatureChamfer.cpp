@@ -207,7 +207,7 @@ App::DocumentObjectExecReturn* Chamfer::execute()
         // this is an opencascade error, likely caused by a chamfer that is too large.
         return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
             "Exception",
-            "The size of this chamfer is too large. Try to use a smaller alternative."
+            "Chamfering the selected elements failed. Try to use a smaller radius."
         ));
     }
     catch (...) {

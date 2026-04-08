@@ -156,7 +156,7 @@ App::DocumentObjectExecReturn* Fillet::execute()
         // this is an opencascade error, likely caused by a fillet that is too large.
         return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
             "Exception",
-            "The radius of this fillet is too large. Try to use a smaller alternative."
+            "Filleting the selected elements failed. Try to use a smaller radius."
         ));
     }
     catch (...) {
