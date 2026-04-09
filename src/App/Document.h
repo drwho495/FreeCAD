@@ -190,6 +190,8 @@ public:
     PropertyBool ShowHidden;
     /// Whether to use hasher on topological naming.
     PropertyBool UseHasher;
+    /// The algorithm version to use for topological naming.
+    PropertyEnumeration ToponamingAlgorithmVersion;
     /// @}
 
     /** @name Signals of the document
