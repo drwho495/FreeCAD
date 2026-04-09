@@ -54,6 +54,7 @@
 #include <QWhatsThis>
 #include <QWindow>
 #include <QPushButton>
+#include <string>
 
 
 #if defined(Q_OS_WIN)
@@ -421,9 +422,32 @@ MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags f)
     d->sizeLabel = new DimensionWidget(statusBar());
 
     statusBar()->addWidget(d->actionLabel, 1);
+
     QProgressBar* progressBar = Gui::SequencerBar::instance()->getProgressBar(statusBar());
     statusBar()->addPermanentWidget(progressBar, 0);
     statusBar()->addPermanentWidget(d->sizeLabel, 0);
+
+    // Toggle bottom panels button. Must be added after progressBar and sizeLabel so it appears as
+    // the rightmost permanent widget.
+    auto* toggleBottomPanelsButton = new QToolButton(statusBar());
+    toggleBottomPanelsButton->setObjectName(QStringLiteral("toggleBottomPanelsButton"));
+    int iconSize = App::GetApplication()
+                       .GetParameterGroupByPath("User parameter:BaseApp/Preferences/General")
+                       ->GetInt("ToolbarIconSize", 24);
+    toggleBottomPanelsButton->setIconSize(QSize(iconSize, iconSize));
+    toggleBottomPanelsButton->setIcon(BitmapFactory().pixmap("Std_ToggleBottomPanels"));
+    toggleBottomPanelsButton->setCheckable(true);
+    // Starts checked because FreeCAD shows bottom panels by default on first launch. On subsequent
+    // launches the command restores the persisted state, but that happens after this point, so
+    // the button state is always an approximation until the first toggle.
+    toggleBottomPanelsButton->setChecked(true);
+    //: Tooltip for the status bar button that toggles bottom dock panels
+    toggleBottomPanelsButton->setToolTip(tr("Toggles the bottom dock panels"));
+    toggleBottomPanelsButton->setAutoRaise(true);
+    connect(toggleBottomPanelsButton, &QToolButton::clicked, this, []() {
+        Application::Instance->commandManager().runCommandByName("Std_ToggleBottomPanels");
+    });
+    statusBar()->addPermanentWidget(toggleBottomPanelsButton);
 
     // hint label
     d->hintLabel = new InputHintWidget(statusBar());
@@ -2251,9 +2275,10 @@ QMimeData* MainWindow::createMimeDataFromSelection() const
     // if less than ~10 MB
     bool use_buffer = (memsize < 0xA00000);
     QByteArray res;
+    std::string buffer;
     if (use_buffer) {
         try {
-            res.reserve(memsize);
+            buffer.reserve(memsize);
         }
         catch (const std::bad_alloc&) {
             use_buffer = false;
@@ -2264,12 +2289,13 @@ QMimeData* MainWindow::createMimeDataFromSelection() const
     QString mime;
     if (use_buffer) {
         mime = hasXLink ? _MimeDocObjX : _MimeDocObj;
-        Base::ByteArrayOStreambuf buf(res);
-        std::ostream str(&buf);
+        Base::StringOStreambuf sbuf(buffer);
+        std::ostream str(&sbuf);
         // need this instance to call MergeDocuments::Save()
         App::Document* doc = sel.front()->getDocument();
         MergeDocuments mimeView(doc);
         doc->exportObjects(sel, str);
+        res = QByteArray(buffer.data(), static_cast<int>(buffer.size()));
     }
     else {
         mime = hasXLink ? _MimeDocObjXFile : _MimeDocObjFile;
@@ -2400,9 +2426,10 @@ void MainWindow::insertFromMimeData(const QMimeData* mimeData)
     }
     if (!fromDoc) {
         QByteArray res = mimeData->data(format);
+        std::string buffer(res.constData(), static_cast<std::size_t>(res.size()));
 
         doc->openTransaction("Paste");
-        Base::ByteArrayIStreambuf buf(res);
+        Base::StringIStreambuf buf(buffer);
         std::istream in(nullptr);
         in.rdbuf(&buf);
         MergeDocuments mimeView(doc);
