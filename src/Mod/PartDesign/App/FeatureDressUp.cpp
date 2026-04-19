@@ -53,6 +53,11 @@ PROPERTY_SOURCE(PartDesign::DressUp, PartDesign::FeatureAddSub)
 DressUp::DressUp()
 {
     ADD_PROPERTY(Base, (nullptr));
+
+    // if an edge/face is split into multiple copies, then add those new copies onto Base,
+    // as we do not know which segment the user wants to use yet.
+    Base.useMultipleMatchedNames(true);
+
     Placement.setStatus(App::Property::ReadOnly, true);
 
     ADD_PROPERTY_TYPE(
@@ -278,11 +283,22 @@ void DressUp::onChanged(const App::Property* prop)
     // the BaseFeature property should track the Base and vice-versa as long as
     // the feature is inside a body (aka BaseFeature is nonzero)
     if (prop == &BaseFeature) {
-        if (BaseFeature.getValue() && Base.getValue() && Base.getValue() != BaseFeature.getValue()) {
-
+        App::DocumentObject *baseFeature = BaseFeature.getValue();
+        
+        if (baseFeature && Base.getValue() && Base.getValue() != baseFeature) {
             auto subs = Base.getSubValues(false);
             auto shadows = Base.getShadowSubs();
-            Base.setValue(BaseFeature.getValue(), std::move(subs), std::move(shadows));
+            Base.setValue(baseFeature, std::move(subs), std::move(shadows));
+
+            App::GeoFeature *baseFeatureGeoFeature = static_cast<App::GeoFeature*>(baseFeature);
+
+            if (baseFeatureGeoFeature) {
+                const Data::ComplexGeoData *geoData = baseFeatureGeoFeature->getPropertyOfGeometry()->getComplexData();
+
+                if (geoData && geoData->getElementMapSize()) {
+                    App::PropertyLinkBase::updateElementReferences(baseFeature);
+                }
+            }
         }
     }
     else if (prop == &Base) {
