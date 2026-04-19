@@ -1985,7 +1985,7 @@ App::DocumentObjectExecReturn* Hole::execute()
             );
         }
 
-        TopoShape result(0);
+        TopoShape result = makeTopoShape(false);
 
         // set the subtractive shape property for later usage in e.g. pattern
         this->AddSubShape.setValue(compound);
@@ -2187,7 +2187,7 @@ TopoShape Hole::findHoles(
     const TopoDS_Shape& protoHole
 ) const
 {
-    TopoShape result(0);
+    TopoShape result = makeTopoShape(false);
 
     auto addHole = [&](Part::TopoShape const& baseshape, gp_Pnt loc) {
         gp_Trsf localSketchTransformation;
@@ -2208,7 +2208,7 @@ TopoShape Hole::findHoles(
             TopoShape(protoHole).getSubTopoShapes(TopAbs_FACE)
         );
 
-        TopoShape hole(-getID());
+        TopoShape hole = makeTopoShape(false, -getID());
         hole.makeShapeWithElementMap(protoHole, mapper, {baseshape});
 
         // transform and generate element map.

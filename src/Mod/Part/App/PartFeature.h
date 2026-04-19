@@ -217,6 +217,9 @@ public:
         double atol = 1e-10
     ) const override;
 
+    static TopoShape makeTopoShape(const App::DocumentObject* object, bool useHasher = true, long tag = 0, const TopoDS_Shape &shape = TopoDS_Shape());
+    TopoShape makeTopoShape(bool useHasher = true, long tag = 0, const TopoDS_Shape &shape = TopoDS_Shape()) const;
+
 protected:
     /// recompute only this object
     App::DocumentObjectExecReturn* recompute() override;

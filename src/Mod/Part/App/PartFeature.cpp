@@ -1073,11 +1073,11 @@ static TopoShape _getTopoShape(
 )
 
 {
-    TopoShape shape;
-
-    if (!obj) {
-        return shape;
+    if (!obj || !obj->isAttachedToDocument()) {
+        return { };
     }
+
+    TopoShape shape = Feature::makeTopoShape(obj, false);
 
     PyObject* pyobj = nullptr;
     Base::Matrix4D mat;
@@ -1175,7 +1175,7 @@ static TopoShape _getTopoShape(
                     _shape = builder.Shape();
                     _shape.Infinite(Standard_True);
                 }
-                shape = TopoShape(tag, hasher, _shape);
+                shape = Feature::makeTopoShape(obj, true, tag, _shape);
             }
             else if (linked->isDerivedFrom<App::Plane>()) {
                 static TopoDS_Shape _shape;
@@ -1188,7 +1188,7 @@ static TopoShape _getTopoShape(
                     _shape = builder.Shape();
                     _shape.Infinite(Standard_True);
                 }
-                shape = TopoShape(tag, hasher, _shape);
+                shape = Feature::makeTopoShape(obj, true, tag, _shape);
             }
             else if (linked->isDerivedFrom<App::Point>()) {
                 static TopoDS_Shape _shape;
@@ -1196,7 +1196,7 @@ static TopoShape _getTopoShape(
                     BRepBuilderAPI_MakeVertex builder(gp_Pnt(0, 0, 0));
                     _shape = builder.Shape();
                 }
-                shape = TopoShape(tag, hasher, _shape);
+                shape = Feature::makeTopoShape(obj, true, tag, _shape);
             }
             else if (linked->isDerivedFrom<App::Placement>()) {
                 auto element = Data::findElementName(subname);
@@ -1210,7 +1210,7 @@ static TopoShape _getTopoShape(
                             _shape = builder.Shape();
                             _shape.Infinite(Standard_True);
                         }
-                        shape = TopoShape(tag, hasher, _shape);
+                        shape = Feature::makeTopoShape(obj, true, tag, _shape);
                     }
                     else if (boost::iequals("o", element) || boost::iequals("origin", element)) {
                         static TopoDS_Shape _shape;
@@ -1219,7 +1219,7 @@ static TopoShape _getTopoShape(
                             _shape = builder.Shape();
                             _shape.Infinite(Standard_True);
                         }
-                        shape = TopoShape(tag, hasher, _shape);
+                        shape = Feature::makeTopoShape(obj, true, tag, _shape);
                     }
                 }
                 if (shape.isNull()) {
@@ -1229,7 +1229,7 @@ static TopoShape _getTopoShape(
                         _shape = builder.Shape();
                         _shape.Infinite(Standard_True);
                     }
-                    shape = TopoShape(tag, hasher, _shape);
+                    shape = Feature::makeTopoShape(obj, true, tag, _shape);
                 }
             }
 
@@ -1645,6 +1645,40 @@ void Feature::onBeforeChange(const App::Property* prop)
         }
     }
     GeoFeature::onBeforeChange(prop);
+}
+
+TopoShape Feature::makeTopoShape(const App::DocumentObject* object, bool useHasher, long tag, const TopoDS_Shape &shape) {
+    TopoShape retShape;
+
+    if (object->isAttachedToDocument()) {
+        App::Document* document = object->getDocument();
+
+        if (document) {
+            retShape.setShape(shape);
+
+            if (document->getHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
+                if (useHasher) {
+                    retShape.Hasher = document->getStringHasher();
+                }
+
+                retShape.Tag = tag;
+            } else if (document->getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+                retShape.Tag = tag == 0 ? object->getID() : tag;
+            }
+
+            retShape.setHistoryAlgorithm(document->getHistoryAlgorithm());
+        }
+    }
+
+    return retShape;
+}
+
+TopoShape Feature::makeTopoShape(bool useHasher, long tag, const TopoDS_Shape &shape) const {
+    if (const App::DocumentObject* docObject = static_cast<const App::DocumentObject*>(this)) {
+        return makeTopoShape(docObject, useHasher, tag, shape);
+    }
+
+    return { };
 }
 
 void Feature::onChanged(const App::Property* prop)

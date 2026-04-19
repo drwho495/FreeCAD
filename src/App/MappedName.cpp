@@ -234,7 +234,33 @@ std::string MappedName::makeSection(std::vector<std::string> referenceIDs,
     return ss.str();
 }
 
-MappedName::MappedName(const char* name, int size) : raw(false)
+int MappedName::compare(const MappedName& other) const {
+    int thisSize = this->size();
+    int otherSize = other.size();
+    
+    for (int i = 0, count = std::min(thisSize, otherSize); i < count; ++i) {
+        char thisChar = this->operator[](i);
+        char otherChar = other[i];
+        if (thisChar < otherChar) {
+            return -1;
+        }
+        if (thisChar > otherChar) {
+            return 1;
+        }
+    }
+
+    if (thisSize < otherSize) {
+        return -1;
+    }
+
+    if (thisSize > otherSize) {
+        return 1;
+    }
+
+    return 0;
+}
+
+MappedName::MappedName(const char* name, int size, const App::HistoryAlgorithm historyAlgorithm) : raw(false), usedHistoryAlgorithm(historyAlgorithm)
 {
     if (!name) {
         return;

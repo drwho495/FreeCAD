@@ -156,7 +156,7 @@ App::DocumentObjectExecReturn* RuledSurface::execute()
                 return new App::DocumentObjectExecReturn("Invalid link.");
             }
         }
-        TopoShape res(0, getDocument()->getStringHasher());
+        TopoShape res = makeTopoShape();
         res.makeElementRuledSurface(shapes, Orientation.getValue());
         this->Shape.setValue(res);
         return Part::Feature::execute();
@@ -237,7 +237,7 @@ App::DocumentObjectExecReturn* Loft::execute()
         IsRuled isRuled = Ruled.getValue() ? IsRuled::ruled : IsRuled::notRuled;
         IsClosed isClosed = Closed.getValue() ? IsClosed::closed : IsClosed::notClosed;
         int degMax = MaxDegree.getValue();
-        TopoShape result(0, getDocument()->getStringHasher());
+        TopoShape result = makeTopoShape();
         result.makeElementLoft(shapes, isSolid, isRuled, isClosed, degMax);
         if (Linearize.getValue()) {
             result.linearize(LinearizeFace::linearizeFaces, LinearizeEdge::noEdges);
@@ -340,7 +340,7 @@ App::DocumentObjectExecReturn* Sweep::execute()
     Standard_Boolean isFrenet = Frenet.getValue() ? Standard_True : Standard_False;
     auto transMode = static_cast<TransitionMode>(Transition.getValue());
     try {
-        TopoShape result(0, getDocument()->getStringHasher());
+        TopoShape result = makeTopoShape();
         result.makeElementPipeShell(shapes, isSolid, isFrenet, transMode, Part::OpCodes::Sweep);
         if (Linearize.getValue()) {
             result.linearize(LinearizeFace::linearizeFaces, LinearizeEdge::noEdges);

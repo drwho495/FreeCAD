@@ -1082,6 +1082,11 @@ void TopoShape::exportFaceSet(
     builder.endSeparator();
 }
 
+void TopoShape::setHistoryAlgorithm(App::HistoryAlgorithm newAlgorithm) {
+    // ensureElementMap()->setHistoryAlgorithm(newAlgorithm);
+// ensureElementMap(false);
+}
+
 void TopoShape::exportLineSet(std::ostream& str) const
 {
     Base::InventorBuilder builder(str);

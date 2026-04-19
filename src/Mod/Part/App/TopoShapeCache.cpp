@@ -49,19 +49,23 @@ TopoShape TopoShapeCache::Ancestry::_getTopoShape(const TopoShape& parent, int i
     }
 
     if (ts._Shape.IsEqual(parent._cache->shape)) {
+        // Base::Console().log("ret parent\n");
         return parent;
     }
 
     TopoShape res(ts);
     res.Tag = parent.Tag;
     res.Hasher = parent.Hasher;
+    // res.setHistoryAlgorithm(parent.getHistoryAlgorithm());
 
     if (!parent.getShape().Location().IsIdentity()) {
         res.setShape(TopoShape::moved(res._Shape, parent.getShape().Location()), false);
     }
 
     if (ts._cache->cachedElementMap) {
+        // Base::Console().log("use cached map\n");
         res.resetElementMap(ts._cache->cachedElementMap);
+        // Base::Console().log("sizec: %d\n", ts._cache->cachedElementMap->size());
     }
     else if (parent._parentCache) {
         // If no cachedElementMap exists, we use _parentCache for
@@ -79,12 +83,18 @@ TopoShape TopoShapeCache::Ancestry::_getTopoShape(const TopoShape& parent, int i
         // used to accumulate locations in higher ancestors. We
         // separate these two to avoid invalidating cache.
 
+        // Base::Console().log("use parent cache\n");
+
         res._subLocation = parent._subLocation * parent._cache->subLocation;
         res._parentCache = parent._parentCache;
     }
     else {
         res._parentCache = owner->shared_from_this();
     }
+    // for (const auto& entry : res.getElementMap()) {
+    //     Base::Console().log("name: %s index: %s\n", entry.name.toString().c_str(), entry.index.toString().c_str());
+    // }
+    // Base::Console().log("element map size: %d\n", res.elementMap()->size());
     return res;
 }
 

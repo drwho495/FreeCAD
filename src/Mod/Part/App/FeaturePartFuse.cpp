@@ -154,7 +154,7 @@ App::DocumentObjectExecReturn* MultiFuse::execute()
                 throw Base::RuntimeError("MultiFusion failed");
             }
 
-            TopoShape res(0);
+            TopoShape res = makeTopoShape();
             res = res.makeShapeWithElementMap(mkFuse.Shape(), MapperMaker(mkFuse), shapes, OpCodes::Fuse);
             for (const auto& it2 : shapes) {
                 history.push_back(buildHistory(mkFuse, TopAbs_FACE, res.getShape(), it2.getShape()));

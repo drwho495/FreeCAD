@@ -145,7 +145,7 @@ void Feature::setMaterialToBodyMaterial()
 
 void Feature::updateSuppressedShape()
 {
-    TopoShape res(getID());
+    TopoShape res = makeTopoShape(false);
     TopoShape shape = Shape.getShape();
     shape.setPlacement(Base::Placement());
     std::vector<TopoShape> generated;

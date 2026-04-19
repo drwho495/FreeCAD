@@ -1263,6 +1263,24 @@ public:
     friend class Transaction;
     friend class TransactionDocumentObject;
 
+    /// Get the history algorithm used in this document.
+    /// Stored in the property: `ToponamingAlgorithmVersion`.
+    App::HistoryAlgorithm getHistoryAlgorithm() const {
+        std::string historyAlgorithmString = ToponamingAlgorithmVersion.getValueAsString();
+
+        if (historyAlgorithmString == "V1") {
+            return App::HistoryAlgorithm::V1;
+        } else if (historyAlgorithmString == "V2") {
+            return App::HistoryAlgorithm::V2;
+        } else {
+            // We print this information as a log, instead of a warning, because the user likely won't understand how to fix it.
+            // If a user is technical enough to use the logs, then they're more likely to create a GitHub issue about it.
+            Base::Console().log("%s: Document is marked as using an invalid toponaming algorithm.\n", Label.getValue());
+        }
+
+        return App::HistoryAlgorithm::V1; // return V1 as a backup, as this document was likely created before 1.2.
+    };
+
     ~Document() override;
 
 protected:

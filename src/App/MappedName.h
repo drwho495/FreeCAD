@@ -70,7 +70,7 @@ public:
      * @param[in] size Optional, the length of the name string. If not
      * provided, the string must be null-terminated.
      */
-    explicit MappedName(const char* name, int size = -1);
+    explicit MappedName(const char* name, int size = -1, const App::HistoryAlgorithm historyAlgorithm = App::HistoryAlgorithm::V1);
 
     /**
      * @brief Create a MappedName from a C++ std::string.
@@ -81,7 +81,7 @@ public:
      * @param nameString The new name. A deep copy is made.
      * @param historyAlgorithm The algorithm used to make `nameString`. Defaulted to `V1`.
      */
-    explicit MappedName(const std::string& nameString, const App::HistoryAlgorithm historyAlgorithm = App::HistoryAlgorithm::V2);
+    explicit MappedName(const std::string& nameString, const App::HistoryAlgorithm historyAlgorithm = App::HistoryAlgorithm::V1);
 
     /**
      * @brief Create a MappedName from an IndexedName.
@@ -91,10 +91,11 @@ public:
      * the memory is *not* shared between the original IndexedName and the
      * MappedName.
      */
-    explicit MappedName(const IndexedName& element)
+    explicit MappedName(const IndexedName& element, const App::HistoryAlgorithm historyAlgorithm = App::HistoryAlgorithm::V1)
         : data(QByteArray::fromRawData(element.getType(),
                                        static_cast<int>(qstrlen(element.getType()))))
         , raw(true)
+        , usedHistoryAlgorithm(historyAlgorithm)
     {
         if (element.getIndex() > 0) {
             this->data += QByteArray::number(element.getIndex());
@@ -104,8 +105,9 @@ public:
 
 
     /// Create a MappedName from a StringIdRef.
-    explicit MappedName(const App::StringIDRef& sid)
+    explicit MappedName(const App::StringIDRef& sid, const App::HistoryAlgorithm historyAlgorithm = App::HistoryAlgorithm::V1)
         : raw(false)
+        , usedHistoryAlgorithm(historyAlgorithm)
     {
         sid.toBytes(this->data);
     }
@@ -811,28 +813,7 @@ public:
      * @return < 0 if this is less than other, 0 if they are equal and > 0 if
      * this is greater than other.
      */
-    int compare(const MappedName& other) const
-    {
-        int thisSize = this->size();
-        int otherSize = other.size();
-        for (int i = 0, count = std::min(thisSize, otherSize); i < count; ++i) {
-            char thisChar = this->operator[](i);
-            char otherChar = other[i];
-            if (thisChar < otherChar) {
-                return -1;
-            }
-            if (thisChar > otherChar) {
-                return 1;
-            }
-        }
-        if (thisSize < otherSize) {
-            return -1;
-        }
-        if (thisSize > otherSize) {
-            return 1;
-        }
-        return 0;
-    }
+    int compare(const MappedName& other) const;
 
     /// Check if this mapped name is less than @p other.
     bool operator<(const MappedName& other) const
@@ -1172,7 +1153,7 @@ private:
     QByteArray data;
     QByteArray postfix;
     bool raw;
-    enum App::HistoryAlgorithm usedHistoryAlgorithm = App::HistoryAlgorithm::V2;
+    enum App::HistoryAlgorithm usedHistoryAlgorithm = App::HistoryAlgorithm::V1;
 };
 
 

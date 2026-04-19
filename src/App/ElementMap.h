@@ -410,7 +410,7 @@ private:
 
     std::map<MappedName, IndexedName, std::less<>> mappedNames;
 
-    App::HistoryAlgorithm usedHistoryAlgorithm = App::HistoryAlgorithm::V2;
+    App::HistoryAlgorithm usedHistoryAlgorithm = App::HistoryAlgorithm::V1;
 
 
     struct ChildMapInfo
