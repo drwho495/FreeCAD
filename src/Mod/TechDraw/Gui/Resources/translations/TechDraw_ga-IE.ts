@@ -58,17 +58,17 @@
   <context>
     <name>CmdTechDraw3PtAngleDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1742"/>
+      <location filename="../../CommandCreateDims.cpp" line="1771"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1743"/>
+      <location filename="../../CommandCreateDims.cpp" line="1772"/>
       <source>Angle Dimension From 3 Points</source>
       <translation>Toise Uillinne Ó 3 Phointe</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1744"/>
+      <location filename="../../CommandCreateDims.cpp" line="1773"/>
       <source>Inserts an angle dimension between 3 selected points</source>
       <translation>Cuirtear toise uillinne isteach idir 3 phointe roghnaithe</translation>
     </message>
@@ -89,17 +89,17 @@
   <context>
     <name>CmdTechDrawAngleDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1695"/>
+      <location filename="../../CommandCreateDims.cpp" line="1724"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1696"/>
+      <location filename="../../CommandCreateDims.cpp" line="1725"/>
       <source>Angle Dimension</source>
       <translation>Toise Uillinne</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1697"/>
+      <location filename="../../CommandCreateDims.cpp" line="1726"/>
       <source>Inserts an angle dimension between two edges</source>
       <translation>Cuirtear toise uillinne isteach idir dhá imeall</translation>
     </message>
@@ -177,8 +177,8 @@
     </message>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="649"/>
-      <source>Centerline Faces</source>
-      <translation>Aghaidheanna Lárlíne</translation>
+      <source>Centerline on Face</source>
+      <translation>Lárlíne ar an Aghaidh</translation>
     </message>
   </context>
   <context>
@@ -347,17 +347,17 @@
   <context>
     <name>CmdTechDrawDiameterDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1504"/>
+      <location filename="../../CommandCreateDims.cpp" line="1533"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1505"/>
+      <location filename="../../CommandCreateDims.cpp" line="1534"/>
       <source>Diameter Dimension</source>
       <translation>Toise Trastomhas</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1506"/>
+      <location filename="../../CommandCreateDims.cpp" line="1535"/>
       <source>Inserts a diameter dimension of a circular edge or arc</source>
       <translation>Cuireann sé toise trastomhais imeall ciorclach nó stua isteach</translation>
     </message>
@@ -365,17 +365,17 @@
   <context>
     <name>CmdTechDrawDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1363"/>
+      <location filename="../../CommandCreateDims.cpp" line="1393"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1364"/>
+      <location filename="../../CommandCreateDims.cpp" line="1394"/>
       <source>Dimension</source>
       <translation>Toise</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1365"/>
+      <location filename="../../CommandCreateDims.cpp" line="1395"/>
       <source>Inserts new contextual dimensions to the selection.
 Depending on your selection you might have several dimensions available. You can cycle through them using the M key.
 Left clicking on empty space will validate the current dimension. Right clicking or pressing Esc will cancel.</source>
@@ -1229,8 +1229,8 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
     </message>
     <message>
       <location filename="../../CommandExtensionDims.cpp" line="629"/>
-      <source>Align Chain Dimensions Horizontally</source>
-      <translation>Ailínigh Toisí an tSlabhra go Cothrománach</translation>
+      <source>Align Horizontal Chain Dimensions</source>
+      <translation>Ailínigh Toisí an tSlabhra Chothrománach</translation>
     </message>
     <message>
       <location filename="../../CommandExtensionDims.cpp" line="630"/>
@@ -1277,8 +1277,8 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
     </message>
     <message>
       <location filename="../../CommandExtensionDims.cpp" line="691"/>
-      <source>Align Chain Dimensions Vertically</source>
-      <translation>Ailínigh Toisí an tSlabhra go hIngearach</translation>
+      <source>Align Vertical Chain Dimensions</source>
+      <translation>Ailínigh Toisí Slabhra Ingearacha</translation>
     </message>
     <message>
       <location filename="../../CommandExtensionDims.cpp" line="692"/>
@@ -1475,27 +1475,27 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
   <context>
     <name>CmdTechDrawExtentGroup</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1837"/>
+      <location filename="../../CommandCreateDims.cpp" line="1866"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1838"/>
+      <location filename="../../CommandCreateDims.cpp" line="1867"/>
       <source>Extent Dimension</source>
       <translation>Toise Fairsinge</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1839"/>
+      <location filename="../../CommandCreateDims.cpp" line="1868"/>
       <source>Inserts a dimension showing the extent (overall length) of an object or feature</source>
       <translation>Cuirtear toise isteach a thaispeánann fairsinge (fad iomlán) réada nó gné</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1905"/>
+      <location filename="../../CommandCreateDims.cpp" line="1934"/>
       <source>Horizontal extent</source>
       <translation>Fairsinge chothrománach</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1910"/>
+      <location filename="../../CommandCreateDims.cpp" line="1939"/>
       <source>Vertical extent</source>
       <translation>Fairsinge ingearach</translation>
     </message>
@@ -1509,8 +1509,8 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
     </message>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="679"/>
-      <source>Centerline Between 2 Faces</source>
-      <translation>Lárlíne idir 2 Aghaidh</translation>
+      <source>Centerline on Face</source>
+      <translation>Lárlíne ar an Aghaidh</translation>
     </message>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="680"/>
@@ -1557,17 +1557,17 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
   <context>
     <name>CmdTechDrawHorizontalDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1599"/>
+      <location filename="../../CommandCreateDims.cpp" line="1628"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1600"/>
+      <location filename="../../CommandCreateDims.cpp" line="1629"/>
       <source>Horizontal Length Dimension</source>
       <translation>Toise Fad Cothrománach</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1601"/>
+      <location filename="../../CommandCreateDims.cpp" line="1630"/>
       <source>Inserts a horizontal length dimension of an edge or distance between two points</source>
       <translation>Cuirtear toise faid chothrománach imeall nó fad idir dhá phointe isteach</translation>
     </message>
@@ -1575,17 +1575,17 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
   <context>
     <name>CmdTechDrawHorizontalExtentDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1931"/>
+      <location filename="../../CommandCreateDims.cpp" line="1960"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1932"/>
+      <location filename="../../CommandCreateDims.cpp" line="1961"/>
       <source>Horizontal Extent Dimension</source>
       <translation>Toise Fairsinge Cothrománach</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1933"/>
+      <location filename="../../CommandCreateDims.cpp" line="1962"/>
       <source>Inserts a dimension showing the horizontal extent (overall length) of an object or feature.</source>
       <translation>Cuirtear toise isteach a thaispeánann fairsinge chothrománach (fad iomlán) réada nó gné.</translation>
     </message>
@@ -1644,17 +1644,17 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
   <context>
     <name>CmdTechDrawLengthDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1552"/>
+      <location filename="../../CommandCreateDims.cpp" line="1581"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1553"/>
+      <location filename="../../CommandCreateDims.cpp" line="1582"/>
       <source>Length Dimension</source>
       <translation>Toise Fad</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1554"/>
+      <location filename="../../CommandCreateDims.cpp" line="1583"/>
       <source>Inserts a length dimension of an edge or distance between two points</source>
       <translation>Cuirtear toise faid imeall nó fad idir dhá phointe isteach</translation>
     </message>
@@ -1798,17 +1798,17 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
   <context>
     <name>CmdTechDrawRadiusDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1456"/>
+      <location filename="../../CommandCreateDims.cpp" line="1485"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1457"/>
+      <location filename="../../CommandCreateDims.cpp" line="1486"/>
       <source>Radius Dimension</source>
       <translation>Toise Ga</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1458"/>
+      <location filename="../../CommandCreateDims.cpp" line="1487"/>
       <source>Inserts a radius dimension of a circular edge or arc</source>
       <translation>Cuirtear toise ga imeall ciorclach nó stua isteach</translation>
     </message>
@@ -2080,17 +2080,17 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
   <context>
     <name>CmdTechDrawVerticalDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1647"/>
+      <location filename="../../CommandCreateDims.cpp" line="1676"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1648"/>
+      <location filename="../../CommandCreateDims.cpp" line="1677"/>
       <source>Vertical Length Dimension</source>
       <translation>Toise Fad Ingearach</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1649"/>
+      <location filename="../../CommandCreateDims.cpp" line="1678"/>
       <source>Inserts a vertical length dimension of an edge or distance between two points</source>
       <translation>Cuirtear toise faid ingearach imeall nó fad idir dhá phointe isteach</translation>
     </message>
@@ -2098,17 +2098,17 @@ Má chliceálann tú ar chlé ar spás folamh, déanfar an toise reatha a bhail�
   <context>
     <name>CmdTechDrawVerticalExtentDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2056"/>
+      <location filename="../../CommandCreateDims.cpp" line="2085"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2057"/>
+      <location filename="../../CommandCreateDims.cpp" line="2086"/>
       <source>Vertical Extent Dimension</source>
       <translation>Toise Fairsinge Ingearach</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2058"/>
+      <location filename="../../CommandCreateDims.cpp" line="2087"/>
       <source>Inserts a dimension showing the vertical extent (overall length) of an object or feature.</source>
       <translation>Cuirtear toise isteach a thaispeánann fairsinge ingearach (fad iomlán) réada nó gné.</translation>
     </message>
@@ -2182,7 +2182,7 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
     </message>
     <message>
       <location filename="../../Command.cpp" line="1893"/>
-      <location filename="../../PagePrinter.cpp" line="429"/>
+      <location filename="../../PagePrinter.cpp" line="444"/>
       <source>Save page to DXF</source>
       <translation>Sábháil leathanach go DXF</translation>
     </message>
@@ -2230,204 +2230,205 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
     </message>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="360"/>
-      <source>Quadrant vertices</source>
-      <translation>Buaicphointí ceathrúna</translation>
+      <source>Add Quadrant vertices</source>
+      <translation>Cuir buaicphointí na gCeathrúnach leis</translation>
     </message>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="543"/>
+      <location filename="../../TaskRichAnno.cpp" line="153"/>
       <source>Create Annotation</source>
       <translation>Cruthaigh Anótáil</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="468"/>
+      <location filename="../../CommandCreateDims.cpp" line="473"/>
       <source>Add Extent dimension</source>
       <translation>Cuir toise Fairsinge leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="789"/>
-      <location filename="../../CommandCreateDims.cpp" line="1246"/>
+      <location filename="../../CommandCreateDims.cpp" line="811"/>
+      <location filename="../../CommandCreateDims.cpp" line="1276"/>
       <source>Add horizontal chain dimensions</source>
       <translation>Cuir toisí slabhra cothrománacha leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="794"/>
-      <location filename="../../CommandCreateDims.cpp" line="821"/>
+      <location filename="../../CommandCreateDims.cpp" line="816"/>
+      <location filename="../../CommandCreateDims.cpp" line="843"/>
       <source>Add horizontal coordinate dimensions</source>
       <translation>Cuir toisí comhordanáidí cothrománacha leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="798"/>
-      <location filename="../../CommandCreateDims.cpp" line="802"/>
-      <location filename="../../CommandCreateDims.cpp" line="806"/>
+      <location filename="../../CommandCreateDims.cpp" line="820"/>
+      <location filename="../../CommandCreateDims.cpp" line="824"/>
+      <location filename="../../CommandCreateDims.cpp" line="828"/>
       <source>Add 3-points angle dimension</source>
       <translation>Cuir toise uillinne 3 phointe leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="816"/>
+      <location filename="../../CommandCreateDims.cpp" line="838"/>
       <source>Add horizontal chain dimension</source>
       <translation>Cuir toise slabhra cothrománach leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="842"/>
-      <location filename="../../CommandCreateDims.cpp" line="857"/>
-      <location filename="../../CommandCreateDims.cpp" line="872"/>
+      <location filename="../../CommandCreateDims.cpp" line="864"/>
+      <location filename="../../CommandCreateDims.cpp" line="879"/>
+      <location filename="../../CommandCreateDims.cpp" line="894"/>
       <source>Add length dimension</source>
       <translation>Cuir toise faid leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1008"/>
+      <location filename="../../CommandCreateDims.cpp" line="1030"/>
       <source>Add edge length dimension</source>
       <translation>Cuir toise fad imeall leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="243"/>
+      <location filename="../../CommandCreateDims.cpp" line="247"/>
       <source>Insert dimension</source>
       <translation>Cuir isteach toise</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="758"/>
+      <location filename="../../CommandCreateDims.cpp" line="780"/>
       <source>Add area dimension</source>
       <translation>Cuir toise achair leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="769"/>
-      <location filename="../../CommandCreateDims.cpp" line="1064"/>
-      <location filename="../../CommandCreateDims.cpp" line="1165"/>
+      <location filename="../../CommandCreateDims.cpp" line="791"/>
+      <location filename="../../CommandCreateDims.cpp" line="1094"/>
+      <location filename="../../CommandCreateDims.cpp" line="1195"/>
       <source>Add distance dimension</source>
       <translation>Cuir toise an achair leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="778"/>
-      <location filename="../../CommandCreateDims.cpp" line="884"/>
-      <location filename="../../CommandCreateDims.cpp" line="1145"/>
+      <location filename="../../CommandCreateDims.cpp" line="800"/>
+      <location filename="../../CommandCreateDims.cpp" line="906"/>
+      <location filename="../../CommandCreateDims.cpp" line="1175"/>
       <source>Add distanceX chamfer dimension</source>
       <translation>Cuir toise chamfer distanceX leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="831"/>
+      <location filename="../../CommandCreateDims.cpp" line="853"/>
       <source>Add point to line distance dimension</source>
       <translation>Cuir pointe le toise an achair líne</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="847"/>
-      <location filename="../../CommandCreateDims.cpp" line="862"/>
-      <location filename="../../CommandCreateDims.cpp" line="900"/>
-      <location filename="../../CommandCreateDims.cpp" line="915"/>
-      <location filename="../../CommandCreateDims.cpp" line="930"/>
-      <location filename="../../CommandCreateDims.cpp" line="964"/>
-      <location filename="../../CommandCreateDims.cpp" line="998"/>
-      <location filename="../../CommandCreateDims.cpp" line="1019"/>
+      <location filename="../../CommandCreateDims.cpp" line="869"/>
+      <location filename="../../CommandCreateDims.cpp" line="884"/>
+      <location filename="../../CommandCreateDims.cpp" line="922"/>
+      <location filename="../../CommandCreateDims.cpp" line="937"/>
+      <location filename="../../CommandCreateDims.cpp" line="952"/>
+      <location filename="../../CommandCreateDims.cpp" line="986"/>
+      <location filename="../../CommandCreateDims.cpp" line="1020"/>
+      <location filename="../../CommandCreateDims.cpp" line="1041"/>
       <source>Add extent dimension</source>
       <translation>Cuir toise fairsinge leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="895"/>
+      <location filename="../../CommandCreateDims.cpp" line="917"/>
       <source>Add angle dimension</source>
       <translation>Cuir toise uillinne leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="910"/>
+      <location filename="../../CommandCreateDims.cpp" line="932"/>
       <source>Add circle to line distance dimension</source>
       <translation>Cuir ciorcal le toise an achair líne</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="925"/>
+      <location filename="../../CommandCreateDims.cpp" line="947"/>
       <source>Add ellipse to line distance dimension</source>
       <translation>Cuir eilips le toise an achair líne</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="949"/>
-      <location filename="../../CommandCreateDims.cpp" line="983"/>
+      <location filename="../../CommandCreateDims.cpp" line="971"/>
+      <location filename="../../CommandCreateDims.cpp" line="1005"/>
       <source>Add arc length dimension</source>
       <translation>Cuir toise fad an áirse leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="959"/>
+      <location filename="../../CommandCreateDims.cpp" line="981"/>
       <source>Add circle to circle distance dimension</source>
       <translation>Cuir ciorcal le toise an achair chiorcail</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="993"/>
+      <location filename="../../CommandCreateDims.cpp" line="1015"/>
       <source>Add ellipse to ellipse distance dimension</source>
       <translation>Cuir éilips leis an toise achair éilips</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1049"/>
+      <location filename="../../CommandCreateDims.cpp" line="1079"/>
       <source>Add radius dimension</source>
       <translation>Cuir toise ga leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1053"/>
+      <location filename="../../CommandCreateDims.cpp" line="1083"/>
       <source>Add diameter dimension</source>
       <translation>Cuir toise trastomhais leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1148"/>
+      <location filename="../../CommandCreateDims.cpp" line="1178"/>
       <source>Add distanceX dimension</source>
       <translation>Cuir toise acharX leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1155"/>
+      <location filename="../../CommandCreateDims.cpp" line="1185"/>
       <source>Add distanceY chamfer dimension</source>
       <translation>Cuir toise seaimféar acharY leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1158"/>
+      <location filename="../../CommandCreateDims.cpp" line="1188"/>
       <source>Add distanceY dimension</source>
       <translation>Cuir toise acharY leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1203"/>
+      <location filename="../../CommandCreateDims.cpp" line="1233"/>
       <source>Add distanceX extent dimension</source>
       <translation>Cuir toise fairsinge acharX leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1208"/>
+      <location filename="../../CommandCreateDims.cpp" line="1238"/>
       <source>Add distanceY extent dimension</source>
       <translation>Cuir toise fairsinge acharY leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1250"/>
+      <location filename="../../CommandCreateDims.cpp" line="1280"/>
       <source>Add horizontal coord dimensions</source>
       <translation>Cuir toisí comhordanáidí cothrománacha leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1257"/>
+      <location filename="../../CommandCreateDims.cpp" line="1287"/>
       <source>Add vertical chain dimensions</source>
       <translation>Cuir toisí slabhra ingearacha leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1261"/>
+      <location filename="../../CommandCreateDims.cpp" line="1291"/>
       <source>Add vertical coord dimensions</source>
       <translation>Cuir toisí comhordanáidí ingearacha leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1267"/>
+      <location filename="../../CommandCreateDims.cpp" line="1297"/>
       <source>Add oblique chain dimensions</source>
       <translation>Cuir toisí slabhra claonta leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1271"/>
+      <location filename="../../CommandCreateDims.cpp" line="1301"/>
       <source>Add oblique coord dimensions</source>
       <translation>Cuir toisí comhordanáidí claonta leis</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1338"/>
+      <location filename="../../CommandCreateDims.cpp" line="1368"/>
       <source>Dimension</source>
       <translation>Toise</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1963"/>
+      <location filename="../../CommandCreateDims.cpp" line="1992"/>
       <source>Create Dimension DistanceX</source>
       <translation>Cruthaigh Toise AcharX</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1965"/>
+      <location filename="../../CommandCreateDims.cpp" line="1994"/>
       <source>Create Dimension DistanceY</source>
       <translation>Cruthaigh Toise AcharY</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2252"/>
+      <location filename="../../CommandCreateDims.cpp" line="2287"/>
       <source>Create dimension</source>
       <translation>Cruthaigh toise</translation>
     </message>
@@ -2457,12 +2458,12 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Cruthaigh Íomhá</translation>
     </message>
     <message>
-      <location filename="../../QGIViewBalloon.cpp" line="506"/>
+      <location filename="../../QGIViewBalloon.cpp" line="509"/>
       <source>Drag Balloon</source>
       <translation>Balún Tarraingthe</translation>
     </message>
     <message>
-      <location filename="../../QGIViewDimension.cpp" line="306"/>
+      <location filename="../../QGIViewDimension.cpp" line="337"/>
       <source>Drag Dimension</source>
       <translation>Tarraing Toise</translation>
     </message>
@@ -2472,7 +2473,7 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Cruthaigh Balún</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.cpp" line="71"/>
+      <location filename="../../TaskActiveView.cpp" line="75"/>
       <source>Create ActiveView</source>
       <translation>Cruthaigh RadharcGníomhach</translation>
     </message>
@@ -2517,23 +2518,13 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Cuir Ceannaire in Eagar</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.cpp" line="287"/>
-      <source>Create Anno</source>
-      <translation>Cruthaigh Anno</translation>
-    </message>
-    <message>
-      <location filename="../../TaskRichAnno.cpp" line="349"/>
-      <source>Edit Anno</source>
-      <translation>Cuir Anno in Eagar</translation>
-    </message>
-    <message>
       <location filename="../../TaskComplexSection.cpp" line="553"/>
       <source>Create Complex Section</source>
       <translation>Cruthaigh Rannóg Chasta</translation>
     </message>
     <message>
-      <location filename="../../TaskComplexSection.cpp" line="648"/>
       <location filename="../../TaskSectionView.cpp" line="572"/>
+      <location filename="../../TaskComplexSection.cpp" line="648"/>
       <source>Edit Section View</source>
       <translation>Cuir Radharc na Rannóige in Eagar</translation>
     </message>
@@ -2773,7 +2764,7 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>TechDraw Ríomh an Limistéar Roghnaithe</translation>
     </message>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="1980"/>
+      <location filename="../../CommandExtensionPack.cpp" line="1975"/>
       <source>TechDraw Calculate Selected Arc Length</source>
       <translation>TechDraw Ríomh Fad an Stóca Roghnaithe</translation>
     </message>
@@ -2783,7 +2774,7 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Ríomh Achar Aghaidhe</translation>
     </message>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="2017"/>
+      <location filename="../../CommandExtensionPack.cpp" line="2012"/>
       <source>Calculate Edge Length</source>
       <translation>Ríomh Fad an Imeall</translation>
     </message>
@@ -2816,6 +2807,11 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <location filename="../../TaskWeldingSymbol.cpp" line="566"/>
       <source>Edit Weld Symbol</source>
       <translation>Cuir Siombail Táthúcháin in Eagar</translation>
+    </message>
+    <message>
+      <location filename="../../TaskRichAnno.cpp" line="112"/>
+      <source>Edit Annotation</source>
+      <translation>Cuir an nóta in Eagar</translation>
     </message>
   </context>
   <context>
@@ -3006,62 +3002,62 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Tuilleadh feidhmeanna</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="92"/>
+      <location filename="../../mrichtextedit.cpp" line="96"/>
       <source>Standard</source>
       <translation>Caighdeánach</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="93"/>
+      <location filename="../../mrichtextedit.cpp" line="97"/>
       <source>Heading 1</source>
       <translation>Ceannteideal 1</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="94"/>
+      <location filename="../../mrichtextedit.cpp" line="98"/>
       <source>Heading 2</source>
       <translation>Ceannteideal 2</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="95"/>
+      <location filename="../../mrichtextedit.cpp" line="99"/>
       <source>Heading 3</source>
       <translation>Ceannteideal 3</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="96"/>
+      <location filename="../../mrichtextedit.cpp" line="100"/>
       <source>Heading 4</source>
       <translation>Ceannteideal 4</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="97"/>
+      <location filename="../../mrichtextedit.cpp" line="101"/>
       <source>Monospace</source>
       <translation>Monospace</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="157"/>
+      <location filename="../../mrichtextedit.cpp" line="161"/>
       <source>Remove character formatting</source>
       <translation>Bain formáidiú carachtar</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="162"/>
+      <location filename="../../mrichtextedit.cpp" line="166"/>
       <source>Remove all formatting</source>
       <translation>Bain an fhormáidiú go léir</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="166"/>
+      <location filename="../../mrichtextedit.cpp" line="170"/>
       <source>Edit document source</source>
       <translation>Cuir foinse an doiciméid in eagar</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="255"/>
+      <location filename="../../mrichtextedit.cpp" line="256"/>
       <source>Document source</source>
       <translation>Foinse an doiciméid</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="352"/>
+      <location filename="../../mrichtextedit.cpp" line="353"/>
       <source>Create a link</source>
       <translation>Cruthaigh nasc</translation>
     </message>
     <message>
-      <location filename="../../mrichtextedit.cpp" line="353"/>
+      <location filename="../../mrichtextedit.cpp" line="354"/>
       <source>Link URL:</source>
       <translation>URL an naisc:</translation>
     </message>
@@ -3079,24 +3075,6 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
   <context>
     <name>QObject</name>
     <message>
-      <location filename="../../Command.cpp" line="629"/>
-      <location filename="../../Command.cpp" line="639"/>
-      <location filename="../../Command.cpp" line="856"/>
-      <location filename="../../Command.cpp" line="973"/>
-      <location filename="../../Command.cpp" line="980"/>
-      <location filename="../../Command.cpp" line="985"/>
-      <location filename="../../Command.cpp" line="1023"/>
-      <location filename="../../Command.cpp" line="1122"/>
-      <location filename="../../Command.cpp" line="1388"/>
-      <location filename="../../Command.cpp" line="1405"/>
-      <location filename="../../Command.cpp" line="1410"/>
-      <location filename="../../Command.cpp" line="1419"/>
-      <location filename="../../Command.cpp" line="1472"/>
-      <location filename="../../Command.cpp" line="1491"/>
-      <location filename="../../Command.cpp" line="1614"/>
-      <location filename="../../Command.cpp" line="1689"/>
-      <location filename="../../Command.cpp" line="1695"/>
-      <location filename="../../Command.cpp" line="1754"/>
       <location filename="../../CommandAnnotate.cpp" line="115"/>
       <location filename="../../CommandAnnotate.cpp" line="120"/>
       <location filename="../../CommandAnnotate.cpp" line="311"/>
@@ -3126,6 +3104,24 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <location filename="../../CommandAnnotate.cpp" line="1425"/>
       <location filename="../../CommandHelpers.cpp" line="87"/>
       <location filename="../../CommandHelpers.cpp" line="100"/>
+      <location filename="../../Command.cpp" line="629"/>
+      <location filename="../../Command.cpp" line="639"/>
+      <location filename="../../Command.cpp" line="856"/>
+      <location filename="../../Command.cpp" line="973"/>
+      <location filename="../../Command.cpp" line="980"/>
+      <location filename="../../Command.cpp" line="985"/>
+      <location filename="../../Command.cpp" line="1023"/>
+      <location filename="../../Command.cpp" line="1122"/>
+      <location filename="../../Command.cpp" line="1388"/>
+      <location filename="../../Command.cpp" line="1405"/>
+      <location filename="../../Command.cpp" line="1410"/>
+      <location filename="../../Command.cpp" line="1419"/>
+      <location filename="../../Command.cpp" line="1472"/>
+      <location filename="../../Command.cpp" line="1491"/>
+      <location filename="../../Command.cpp" line="1614"/>
+      <location filename="../../Command.cpp" line="1689"/>
+      <location filename="../../Command.cpp" line="1695"/>
+      <location filename="../../Command.cpp" line="1754"/>
       <source>Wrong selection</source>
       <translation>Rogha mícheart</translation>
     </message>
@@ -3175,25 +3171,25 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Níorbh fhéidir le FreeCAD leathanach a aimsiú le honnmhairiú</translation>
     </message>
     <message>
+      <location filename="../../CommandExtensionPack.cpp" line="1865"/>
+      <location filename="../../CommandExtensionPack.cpp" line="1989"/>
+      <location filename="../../TaskDimRepair.cpp" line="137"/>
+      <location filename="../../TaskDimRepair.cpp" line="148"/>
       <location filename="../../Command.cpp" line="1190"/>
       <location filename="../../Command.cpp" line="1197"/>
       <location filename="../../Command.cpp" line="1205"/>
       <location filename="../../Command.cpp" line="1217"/>
+      <location filename="../../CommandCreateDims.cpp" line="2001"/>
+      <location filename="../../CommandCreateDims.cpp" line="2017"/>
+      <location filename="../../CommandCreateDims.cpp" line="2139"/>
+      <location filename="../../CommandCreateDims.cpp" line="2191"/>
+      <location filename="../../CommandCreateDims.cpp" line="2206"/>
+      <location filename="../../CommandCreateDims.cpp" line="2364"/>
+      <location filename="../../CommandCreateDims.cpp" line="2372"/>
+      <location filename="../../CommandCreateDims.cpp" line="2381"/>
       <location filename="../../CommandDecorate.cpp" line="377"/>
       <location filename="../../CommandDecorate.cpp" line="384"/>
       <location filename="../../CommandDecorate.cpp" line="391"/>
-      <location filename="../../TaskDimRepair.cpp" line="137"/>
-      <location filename="../../TaskDimRepair.cpp" line="148"/>
-      <location filename="../../CommandExtensionPack.cpp" line="1865"/>
-      <location filename="../../CommandExtensionPack.cpp" line="1994"/>
-      <location filename="../../CommandCreateDims.cpp" line="1972"/>
-      <location filename="../../CommandCreateDims.cpp" line="1988"/>
-      <location filename="../../CommandCreateDims.cpp" line="2110"/>
-      <location filename="../../CommandCreateDims.cpp" line="2162"/>
-      <location filename="../../CommandCreateDims.cpp" line="2177"/>
-      <location filename="../../CommandCreateDims.cpp" line="2329"/>
-      <location filename="../../CommandCreateDims.cpp" line="2337"/>
-      <location filename="../../CommandCreateDims.cpp" line="2346"/>
       <source>Incorrect selection</source>
       <translation>Rogha mícheart</translation>
     </message>
@@ -3214,13 +3210,6 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Gan cruthanna, grúpaí ná naisc sa rogha seo</translation>
     </message>
     <message>
-      <location filename="../../CommandStack.cpp" line="73"/>
-      <location filename="../../CommandStack.cpp" line="189"/>
-      <location filename="../../CommandStack.cpp" line="249"/>
-      <location filename="../../CommandStack.cpp" line="309"/>
-      <location filename="../../Command.cpp" line="739"/>
-      <location filename="../../Command.cpp" line="832"/>
-      <location filename="../../Command.cpp" line="895"/>
       <location filename="../../CommandAnnotate.cpp" line="100"/>
       <location filename="../../CommandAnnotate.cpp" line="161"/>
       <location filename="../../CommandAnnotate.cpp" line="213"/>
@@ -3236,11 +3225,29 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <location filename="../../CommandAnnotate.cpp" line="1260"/>
       <location filename="../../CommandAnnotate.cpp" line="1341"/>
       <location filename="../../CommandAnnotate.cpp" line="1407"/>
+      <location filename="../../CommandStack.cpp" line="73"/>
+      <location filename="../../CommandStack.cpp" line="189"/>
+      <location filename="../../CommandStack.cpp" line="249"/>
+      <location filename="../../CommandStack.cpp" line="309"/>
       <location filename="../../CommandExtensionPack.cpp" line="290"/>
       <location filename="../../CommandExtensionPack.cpp" line="593"/>
       <location filename="../../CommandExtensionPack.cpp" line="1214"/>
       <location filename="../../CommandExtensionPack.cpp" line="1459"/>
       <location filename="../../CommandExtensionPack.cpp" line="1752"/>
+      <location filename="../../Command.cpp" line="739"/>
+      <location filename="../../Command.cpp" line="832"/>
+      <location filename="../../Command.cpp" line="895"/>
+      <location filename="../../CommandCreateDims.cpp" line="1499"/>
+      <location filename="../../CommandCreateDims.cpp" line="1547"/>
+      <location filename="../../CommandCreateDims.cpp" line="1595"/>
+      <location filename="../../CommandCreateDims.cpp" line="1643"/>
+      <location filename="../../CommandCreateDims.cpp" line="1691"/>
+      <location filename="../../CommandCreateDims.cpp" line="1738"/>
+      <location filename="../../CommandCreateDims.cpp" line="1785"/>
+      <location filename="../../CommandCreateDims.cpp" line="1832"/>
+      <location filename="../../CommandCreateDims.cpp" line="1879"/>
+      <location filename="../../CommandCreateDims.cpp" line="1975"/>
+      <location filename="../../CommandCreateDims.cpp" line="2100"/>
       <location filename="../../CommandExtensionDims.cpp" line="310"/>
       <location filename="../../CommandExtensionDims.cpp" line="519"/>
       <location filename="../../CommandExtensionDims.cpp" line="807"/>
@@ -3248,24 +3255,10 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <location filename="../../CommandExtensionDims.cpp" line="1506"/>
       <location filename="../../CommandExtensionDims.cpp" line="1875"/>
       <location filename="../../CommandExtensionDims.cpp" line="2113"/>
-      <location filename="../../CommandCreateDims.cpp" line="1470"/>
-      <location filename="../../CommandCreateDims.cpp" line="1518"/>
-      <location filename="../../CommandCreateDims.cpp" line="1566"/>
-      <location filename="../../CommandCreateDims.cpp" line="1614"/>
-      <location filename="../../CommandCreateDims.cpp" line="1662"/>
-      <location filename="../../CommandCreateDims.cpp" line="1709"/>
-      <location filename="../../CommandCreateDims.cpp" line="1756"/>
-      <location filename="../../CommandCreateDims.cpp" line="1803"/>
-      <location filename="../../CommandCreateDims.cpp" line="1850"/>
-      <location filename="../../CommandCreateDims.cpp" line="1946"/>
-      <location filename="../../CommandCreateDims.cpp" line="2071"/>
       <source>Task in progress</source>
       <translation>Tasc ar siúl</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="740"/>
-      <location filename="../../Command.cpp" line="833"/>
-      <location filename="../../Command.cpp" line="896"/>
       <location filename="../../CommandAnnotate.cpp" line="101"/>
       <location filename="../../CommandAnnotate.cpp" line="162"/>
       <location filename="../../CommandAnnotate.cpp" line="214"/>
@@ -3281,6 +3274,9 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <location filename="../../CommandAnnotate.cpp" line="1261"/>
       <location filename="../../CommandAnnotate.cpp" line="1342"/>
       <location filename="../../CommandAnnotate.cpp" line="1408"/>
+      <location filename="../../Command.cpp" line="740"/>
+      <location filename="../../Command.cpp" line="833"/>
+      <location filename="../../Command.cpp" line="896"/>
       <location filename="../../CommandExtensionDims.cpp" line="311"/>
       <location filename="../../CommandExtensionDims.cpp" line="520"/>
       <location filename="../../CommandExtensionDims.cpp" line="808"/>
@@ -3309,13 +3305,13 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
     </message>
     <message>
       <location filename="../../Command.cpp" line="1191"/>
-      <location filename="../../CommandCreateDims.cpp" line="2330"/>
+      <location filename="../../CommandCreateDims.cpp" line="2365"/>
       <source>Select an object first</source>
       <translation>Roghnaigh réad ar dtús</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1198"/>
-      <location filename="../../CommandCreateDims.cpp" line="2338"/>
+      <location filename="../../CommandCreateDims.cpp" line="2373"/>
       <source>Too many objects selected</source>
       <translation>An iomarca rudaí roghnaithe</translation>
     </message>
@@ -3395,73 +3391,78 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Ní féidir an rogha a onnmhairiú</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1471"/>
-      <location filename="../../CommandCreateDims.cpp" line="1519"/>
-      <location filename="../../CommandCreateDims.cpp" line="1567"/>
-      <location filename="../../CommandCreateDims.cpp" line="1615"/>
-      <location filename="../../CommandCreateDims.cpp" line="1663"/>
-      <location filename="../../CommandCreateDims.cpp" line="1710"/>
-      <location filename="../../CommandCreateDims.cpp" line="1757"/>
-      <location filename="../../CommandCreateDims.cpp" line="1804"/>
-      <location filename="../../CommandCreateDims.cpp" line="1851"/>
-      <location filename="../../CommandCreateDims.cpp" line="1947"/>
-      <location filename="../../CommandCreateDims.cpp" line="2072"/>
+      <location filename="../../CommandCreateDims.cpp" line="1500"/>
+      <location filename="../../CommandCreateDims.cpp" line="1548"/>
+      <location filename="../../CommandCreateDims.cpp" line="1596"/>
+      <location filename="../../CommandCreateDims.cpp" line="1644"/>
+      <location filename="../../CommandCreateDims.cpp" line="1692"/>
+      <location filename="../../CommandCreateDims.cpp" line="1739"/>
+      <location filename="../../CommandCreateDims.cpp" line="1786"/>
+      <location filename="../../CommandCreateDims.cpp" line="1833"/>
+      <location filename="../../CommandCreateDims.cpp" line="1880"/>
+      <location filename="../../CommandCreateDims.cpp" line="1976"/>
+      <location filename="../../CommandCreateDims.cpp" line="2101"/>
       <source>Close the active task dialog and try again</source>
       <translation>Dún an dialóg tasc gníomhach agus déan iarracht arís</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1973"/>
-      <location filename="../../CommandCreateDims.cpp" line="2163"/>
+      <location filename="../../CommandCreateDims.cpp" line="2002"/>
+      <location filename="../../CommandCreateDims.cpp" line="2192"/>
       <source>No view of a part in selection.</source>
       <translation>Gan radharc ar chuid sa roghnú.</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2015"/>
+      <location filename="../../CommandCreateDims.cpp" line="2044"/>
       <source>Cannot make 2D extent dimension from selection</source>
       <translation>Ní féidir toise fairsinge 2T a chruthú ón rogha</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2031"/>
+      <location filename="../../CommandCreateDims.cpp" line="2060"/>
       <source>Cannot make 3D extent dimension from selection</source>
       <translation>Ní féidir toise fairsinge 3T a chruthú ón rogha</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2111"/>
+      <location filename="../../CommandCreateDims.cpp" line="2140"/>
       <source>There is no dimension in your selection</source>
       <translation>Níl aon toise i do rogha</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2178"/>
+      <location filename="../../CommandCreateDims.cpp" line="2207"/>
       <source>Cannot make 2D dimension from selection</source>
       <translation>Ní féidir toise 2T a chruthú ón rogha</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2194"/>
+      <location filename="../../CommandCreateDims.cpp" line="2214"/>
+      <source>Cannot make 3D dimension without 3d references</source>
+      <translation>Ní féidir toise 3T a chruthú gan tagairtí 3T</translation>
+    </message>
+    <message>
+      <location filename="../../CommandCreateDims.cpp" line="2229"/>
       <source>Cannot make 3D dimension from selection</source>
       <translation>Ní féidir toise 3T a chruthú ón rogha</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2207"/>
+      <location filename="../../CommandCreateDims.cpp" line="2242"/>
       <source>Ellipse curve warning</source>
       <translation>Rabhadh cuar eilipse</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2218"/>
+      <location filename="../../CommandCreateDims.cpp" line="2253"/>
       <source>B-spline curve warning</source>
       <translation>Rabhadh cuar B-splíne</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2229"/>
+      <location filename="../../CommandCreateDims.cpp" line="2264"/>
       <source>B-spline curve error</source>
       <translation>Earráid cuar B-splíne</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2230"/>
+      <location filename="../../CommandCreateDims.cpp" line="2265"/>
       <source>Selected edge is a B-spline and a radius/diameter cannot be calculated.</source>
       <translation>Is splíne-B an imeall roghnaithe agus ní féidir ga/trastomhas a ríomh.</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2347"/>
+      <location filename="../../CommandCreateDims.cpp" line="2382"/>
       <source>Create a page first.</source>
       <translation>Cruthaigh leathanach ar dtús.</translation>
     </message>
@@ -3476,13 +3477,14 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Gach Comhad</translation>
     </message>
     <message>
+      <location filename="../../CommandAlign.cpp" line="53"/>
+      <location filename="../../CommandCreateDims.cpp" line="2043"/>
+      <location filename="../../CommandCreateDims.cpp" line="2059"/>
+      <location filename="../../CommandCreateDims.cpp" line="2213"/>
+      <location filename="../../CommandCreateDims.cpp" line="2228"/>
+      <location filename="../../TaskDimension.cpp" line="551"/>
       <location filename="../../CommandDecorate.cpp" line="398"/>
       <location filename="../../CommandDecorate.cpp" line="404"/>
-      <location filename="../../TaskDimension.cpp" line="551"/>
-      <location filename="../../CommandCreateDims.cpp" line="2014"/>
-      <location filename="../../CommandCreateDims.cpp" line="2030"/>
-      <location filename="../../CommandCreateDims.cpp" line="2193"/>
-      <location filename="../../CommandAlign.cpp" line="53"/>
       <source>Incorrect Selection</source>
       <translation>Rogha Mícheart</translation>
     </message>
@@ -3494,17 +3496,17 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
 </translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2208"/>
+      <location filename="../../CommandCreateDims.cpp" line="2243"/>
       <source>Selected edge is an Ellipse. Value will be approximate. Continue?</source>
       <translation>Is Éilips an imeall roghnaithe. Beidh an luach garbh. Leanfaidh tú ar aghaidh?</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2219"/>
+      <location filename="../../CommandCreateDims.cpp" line="2254"/>
       <source>Selected edge is a B-spline. Value will be approximate. Continue?</source>
       <translation>Is B-splíne an imeall roghnaithe. Beidh an luach garbh. Ar aghaidh?</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1989"/>
+      <location filename="../../CommandCreateDims.cpp" line="2018"/>
       <source>Selection contains both 2D and 3D geometry</source>
       <translation>Tá geoiméadracht 2T agus 3T araon sa rogha</translation>
     </message>
@@ -3564,17 +3566,17 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Gan aon aghaidheanna sa roghnú</translation>
     </message>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="1995"/>
+      <location filename="../../CommandExtensionPack.cpp" line="1990"/>
       <source>No edges in selection</source>
       <translation>Gan aon imill sa roghnú</translation>
     </message>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="2220"/>
+      <location filename="../../CommandExtensionPack.cpp" line="2218"/>
       <source>TechDraw thread hole side</source>
       <translation>Taobh phoill snáithe TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="2221"/>
+      <location filename="../../CommandExtensionPack.cpp" line="2219"/>
       <source>Select 2 straight lines</source>
       <translation>Roghnaigh 2 líne dhíreacha</translation>
     </message>
@@ -3713,12 +3715,12 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
     <message>
       <location filename="../../CommandDecorate.cpp" line="103"/>
       <source>No TechDraw Page</source>
-      <translation type="unfinished">No TechDraw Page</translation>
+      <translation>Gan Leathanach TechDraw</translation>
     </message>
     <message>
       <location filename="../../CommandDecorate.cpp" line="104"/>
       <source>Need a TechDraw Page for this command</source>
-      <translation type="unfinished">Need a TechDraw Page for this command</translation>
+      <translation>Teastaíonn Leathanach TechDraw don ordú seo</translation>
     </message>
     <message>
       <location filename="../../CommandDecorate.cpp" line="173"/>
@@ -3772,46 +3774,50 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Teastaíonn leathanach don fheidhm seo.</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="316"/>
+      <location filename="../../MDIViewPage.cpp" line="572"/>
+      <source>Unable to Write File</source>
+      <translation>Ní féidir an comhad a scríobh</translation>
+    </message>
+    <message>
+      <location filename="../../MDIViewPage.cpp" line="573"/>
+      <source>FreeCAD is unable to open file %1 for writing.  The file may be open in another program.</source>
+      <translation>Ní féidir le FreeCAD an comhad %1 a oscailt le haghaidh scríbhneoireachta. Seans go bhfuil an comhad oscailte i gclár eile.</translation>
+    </message>
+    <message>
+      <location filename="../../MDIViewPage.cpp" line="584"/>
       <source>PDF (*.pdf)</source>
       <translation>PDF (*.pdf)</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="317"/>
-      <location filename="../../MDIViewPage.cpp" line="549"/>
+      <location filename="../../MDIViewPage.cpp" line="585"/>
       <source>All Files (*.*)</source>
       <translation>Gach Comhad (*.*)</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="319"/>
+      <location filename="../../MDIViewPage.cpp" line="588"/>
       <source>Export Page as PDF</source>
       <translation>Easpórtáil Leathanach mar PDF</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="502"/>
-      <location filename="../../MDIViewPage.cpp" line="524"/>
+      <location filename="../../MDIViewPage.cpp" line="507"/>
+      <location filename="../../MDIViewPage.cpp" line="529"/>
       <source>All files (*.*)</source>
       <translation>Gach comhad (*.*)</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="504"/>
+      <location filename="../../MDIViewPage.cpp" line="509"/>
       <source>Export page as SVG</source>
       <translation>Easpórtáil leathanach mar SVG</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="526"/>
+      <location filename="../../MDIViewPage.cpp" line="531"/>
       <source>Export page as DXF</source>
       <translation>Easpórtáil leathanach mar DXF</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="551"/>
-      <source>Export page as PDF</source>
-      <translation>Easpórtáil leathanach mar PDF</translation>
-    </message>
-    <message>
-      <location filename="../../ViewProviderProjGroup.cpp" line="159"/>
       <location filename="../../ViewProviderTemplate.cpp" line="201"/>
       <location filename="../../ViewProviderPage.cpp" line="217"/>
+      <location filename="../../ViewProviderProjGroup.cpp" line="160"/>
       <source>Are you sure you want to continue?</source>
       <translation>An bhfuil tú cinnte gur mian leat leanúint ar aghaidh?</translation>
     </message>
@@ -3836,8 +3842,7 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Cuir Líne Ceannaire in Eagar</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.cpp" line="237"/>
-      <location filename="../../QGIRichAnno.cpp" line="340"/>
+      <location filename="../../TaskRichAnno.cpp" line="376"/>
       <source>Rich text editor</source>
       <translation>Eagarthóir téacs saibhir</translation>
     </message>
@@ -3852,17 +3857,17 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Roghnaigh siombail</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.cpp" line="216"/>
+      <location filename="../../TaskActiveView.cpp" line="230"/>
       <source>Insert Active View</source>
       <translation>Cuir Amharc Gníomhach isteach</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.cpp" line="245"/>
+      <location filename="../../TaskActiveView.cpp" line="274"/>
       <source>No 3D Viewer</source>
       <translation>Gan Amharcóir 3T</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.cpp" line="246"/>
+      <location filename="../../TaskActiveView.cpp" line="275"/>
       <source>Can not find a 3D viewer</source>
       <translation>Ní féidir breathnóir 3T a aimsiú</translation>
     </message>
@@ -3892,14 +3897,14 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Cuir an Rannóg Chasta in Eagar</translation>
     </message>
     <message>
-      <location filename="../../TaskComplexSection.cpp" line="215"/>
       <location filename="../../TaskSectionView.cpp" line="228"/>
+      <location filename="../../TaskComplexSection.cpp" line="215"/>
       <source>Current View Direction</source>
       <translation>Treo an Amhairc Reatha</translation>
     </message>
     <message>
-      <location filename="../../TaskComplexSection.cpp" line="216"/>
       <location filename="../../TaskSectionView.cpp" line="229"/>
+      <location filename="../../TaskComplexSection.cpp" line="216"/>
       <source>The view direction in BaseView coordinates</source>
       <translation>Treo an radhairc i gcomhordanáidí BaseView</translation>
     </message>
@@ -3914,8 +3919,8 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Seiceáil SectionNormal, Direction agus/nó XDirection.</translation>
     </message>
     <message>
-      <location filename="../../TaskComplexSection.cpp" line="714"/>
       <location filename="../../TaskSectionView.cpp" line="638"/>
+      <location filename="../../TaskComplexSection.cpp" line="714"/>
       <source>Operation Failed</source>
       <translation>Theip ar an Oibríocht</translation>
     </message>
@@ -3951,7 +3956,7 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
     </message>
     <message>
       <location filename="../../ViewProviderBalloon.cpp" line="86"/>
-      <location filename="../../ViewProviderDimension.cpp" line="136"/>
+      <location filename="../../ViewProviderDimension.cpp" line="137"/>
       <source>Edit %1</source>
       <translation>Cuir %1 in Eagar</translation>
     </message>
@@ -4086,13 +4091,13 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
     </message>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="1022"/>
-      <location filename="../../CommandExtensionPack.cpp" line="2135"/>
+      <location filename="../../CommandExtensionPack.cpp" line="2130"/>
       <location filename="../../CommandExtensionDims.cpp" line="2329"/>
       <source>Selection is empty</source>
       <translation>Tá an rogha folamh</translation>
     </message>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="2142"/>
+      <location filename="../../CommandExtensionPack.cpp" line="2137"/>
       <location filename="../../CommandExtensionDims.cpp" line="2345"/>
       <source>No object selected</source>
       <translation>Níl aon réad roghnaithe</translation>
@@ -4228,7 +4233,7 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Earráid Paraiméadair</translation>
     </message>
     <message>
-      <location filename="../../PagePrinter.cpp" line="270"/>
+      <location filename="../../PagePrinter.cpp" line="279"/>
       <source>Document Name:</source>
       <translation>Ainm an Doiciméid:</translation>
     </message>
@@ -4263,19 +4268,29 @@ Mura roghnaítear aon réad, osclaítear brabhsálaí comhad chun comhad SVG nó
       <translation>Cuir an Lárlíne in Eagar</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.cpp" line="99"/>
+      <location filename="../../TaskRichAnno.cpp" line="117"/>
       <source>Rich Text Editor</source>
       <translation>Eagarthóir Téacs Saibhir</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.cpp" line="137"/>
+      <location filename="../../TaskRichAnno.cpp" line="156"/>
       <source>Rich Text Creator</source>
       <translation>Cruthaitheoir Téacs Saibhir</translation>
+    </message>
+    <message>
+      <location filename="../../TaskRichAnno.cpp" line="374"/>
+      <source>Rich text creator</source>
+      <translation>Cruthaitheoir téacs saibhir</translation>
     </message>
     <message>
       <location filename="../../TemplateTextField.cpp" line="54"/>
       <source>Click to update text</source>
       <translation>Cliceáil chun an téacs a nuashonrú</translation>
+    </message>
+    <message>
+      <location filename="../../QGIRichAnno.cpp" line="400"/>
+      <source>Resize Rich Annotation</source>
+      <translation>Athraigh Méid an Anótála Saibhir</translation>
     </message>
   </context>
   <context>
@@ -4298,18 +4313,18 @@ go bhfuil siombail táthú inti a bhrisfeadh.</translation>
       <translation>Ní féidir leat an radharc seo a scriosadh mar go bhfuil radharc spleách amháin nó níos mó ann a d'fhéadfadh briseadh.</translation>
     </message>
     <message>
-      <location filename="../../ViewProviderProjGroup.cpp" line="145"/>
-      <location filename="../../ViewProviderProjGroup.cpp" line="162"/>
-      <location filename="../../ViewProviderWeld.cpp" line="143"/>
-      <location filename="../../ViewProviderLeader.cpp" line="212"/>
       <location filename="../../ViewProviderTemplate.cpp" line="205"/>
+      <location filename="../../ViewProviderLeader.cpp" line="212"/>
+      <location filename="../../ViewProviderPage.cpp" line="220"/>
+      <location filename="../../ViewProviderWeld.cpp" line="143"/>
       <location filename="../../ViewProviderViewPart.cpp" line="382"/>
       <location filename="../../ViewProviderViewPart.cpp" line="397"/>
-      <location filename="../../ViewProviderPage.cpp" line="220"/>
       <location filename="../../ViewProviderProjGroupItem.cpp" line="154"/>
       <location filename="../../ViewProviderProjGroupItem.cpp" line="163"/>
       <location filename="../../ViewProviderProjGroupItem.cpp" line="171"/>
       <location filename="../../ViewProviderProjGroupItem.cpp" line="179"/>
+      <location filename="../../ViewProviderProjGroup.cpp" line="146"/>
+      <location filename="../../ViewProviderProjGroup.cpp" line="163"/>
       <source>Object dependencies</source>
       <translation>Spleáchais réada</translation>
     </message>
@@ -4341,14 +4356,14 @@ following referencing objects might be lost:</source>
 na rudaí tagartha seo a leanas a bheith caillte:</translation>
     </message>
     <message>
-      <location filename="../../ViewProviderProjGroup.cpp" line="138"/>
+      <location filename="../../ViewProviderProjGroup.cpp" line="139"/>
       <source>The group cannot be deleted because its items have the following
 section or detail views, or leader lines that would get broken:</source>
       <translation>Ní féidir an grúpa a scriosadh mar go bhfuil na radhairc rannóige
 nó sonraí seo a leanas, nó línte ceannaire a bhristear:</translation>
     </message>
     <message>
-      <location filename="../../ViewProviderProjGroup.cpp" line="153"/>
+      <location filename="../../ViewProviderProjGroup.cpp" line="154"/>
       <source>The projection group is not empty, therefore
 the following referencing objects might be lost:</source>
       <translation>Níl an grúpa teilgean folamh, dá bhrí sin, d’fhéadfadh na
@@ -4370,59 +4385,70 @@ mar go bhfuil táthúchán tíle ann a bhrisfeadh.</translation>
   <context>
     <name>TaskActiveView</name>
     <message>
-      <location filename="../../TaskActiveView.ui" line="26"/>
-      <source>Active View</source>
-      <translation>Radharc Gníomhach</translation>
+      <location filename="../../TaskActiveView.ui" line="14"/>
+      <source>Form</source>
+      <translation>Foirm</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.ui" line="44"/>
-      <source>Crops captured image to this width</source>
-      <translation>Gearradh an íomhá gabhtha go dtí an leithead seo</translation>
+      <location filename="../../TaskActiveView.ui" line="20"/>
+      <source>Crop</source>
+      <translation>Barr</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.ui" line="73"/>
-      <source>Select a color for solid background</source>
-      <translation>Roghnaigh dath le haghaidh cúlra soladach</translation>
+      <location filename="../../TaskActiveView.ui" line="47"/>
+      <source>Crops the captured image to this height</source>
+      <translation>Bearrtar an íomhá a gabhadh go dtí an airde seo</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.ui" line="93"/>
+      <location filename="../../TaskActiveView.ui" line="70"/>
       <source>Crop to height</source>
       <translation>Bearr go dtí airde</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.ui" line="100"/>
-      <source>Use 3D background</source>
-      <translation>Úsáid cúlra 3T</translation>
+      <location filename="../../TaskActiveView.ui" line="89"/>
+      <source>Crops the captured image to this width</source>
+      <translation>Bearrtar an íomhá gafa go dtí an leithead seo</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.ui" line="116"/>
-      <source>Crops captured image to this height</source>
-      <translation>Gabhadh íomhá na mbarr go dtí an airde seo</translation>
+      <location filename="../../TaskActiveView.ui" line="108"/>
+      <source>Background</source>
+      <translation>Cúlra</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.ui" line="139"/>
-      <source>Solid background</source>
-      <translation>Cúlra soladach</translation>
+      <location filename="../../TaskActiveView.ui" line="117"/>
+      <source>Type</source>
+      <comment>Label for the background type combobox</comment>
+      <translation>Cineál</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.ui" line="149"/>
-      <source>No background</source>
-      <translation>Gan chúlra</translation>
+      <location filename="../../TaskActiveView.ui" line="125"/>
+      <source>Transparent</source>
+      <translation>Trédhearcach</translation>
     </message>
     <message>
-      <location filename="../../TaskActiveView.ui" line="162"/>
+      <location filename="../../TaskActiveView.ui" line="130"/>
+      <source>Solid</source>
+      <translation>Soladach</translation>
+    </message>
+    <message>
+      <location filename="../../TaskActiveView.ui" line="135"/>
+      <source>3D View</source>
+      <translation>Radharc 3T</translation>
+    </message>
+    <message>
+      <location filename="../../TaskActiveView.ui" line="152"/>
+      <source>Sets the background color</source>
+      <translation>Socraíonn an dath cúlra</translation>
+    </message>
+    <message>
+      <location filename="../../TaskActiveView.ui" line="159"/>
+      <source>Color</source>
+      <translation>Dath</translation>
+    </message>
+    <message>
+      <location filename="../../TaskActiveView.ui" line="63"/>
       <source>Crop to width</source>
       <translation>Bearr go leithead</translation>
-    </message>
-    <message>
-      <location filename="../../TaskActiveView.ui" line="169"/>
-      <source>Crop image</source>
-      <translation>Bearr íomhá</translation>
-    </message>
-    <message>
-      <location filename="../../TaskActiveView.ui" line="136"/>
-      <source>Paint background yes/no</source>
-      <translation>Péinteáil an chúlra tá/níl</translation>
     </message>
   </context>
   <context>
@@ -4632,32 +4658,32 @@ This directory will be used for the symbol selection.</source>
       <translation>Rannóg dífhabhtaithe</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="75"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="80"/>
       <source>Edge fuzz</source>
       <translation>Fuzz imeall</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="82"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="87"/>
       <source>If checked, FreeCAD will use the new face finder algorithm. If not checked, FreeCAD will use the legacy face finder algorithm.</source>
       <translation>Más seiceáilte é seo, úsáidfidh FreeCAD an algartam nua aimsitheora aghaidhe. Mura bhfuil sé seiceáilte, úsáidfidh FreeCAD an sean-algartam aimsitheora aghaidhe.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="85"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="90"/>
       <source>Use new face finder algorithm</source>
       <translation>Úsáid algartam nua aimsitheora aghaidhe</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="107"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="112"/>
       <source>Dump intermediate results during detail view processing</source>
       <translation>Dumpáil torthaí idirmheánacha le linn próiseála radhairc mhionsonraithe</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="110"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="115"/>
       <source>Debug detail</source>
       <translation>Sonraí dífhabhtaithe</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="129"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="134"/>
       <source>If checked, TechDraw will attempt to build faces using the
 line segments returned by the hidden line removal algorithm.
 Faces must be detected in order to use hatching, but there
@@ -4668,84 +4694,84 @@ Ní mór aghaidheanna a bhrath chun úsáid a bhaint as goráil, ach is féidir 
 pionós feidhmíochta ann i samhlacha casta.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="135"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="140"/>
       <source>Detect faces</source>
       <translation>Aghaidheanna a bhrath</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="177"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="182"/>
       <source>Validate shapes</source>
       <translation>Bailíochtú cruthanna</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="199"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="204"/>
       <source>Allow crazy edges</source>
       <translation>Lig imill craiceáilte</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="212"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="217"/>
       <source>Issue progress messages while building view geometry</source>
       <translation>Teachtaireachtaí dul chun cinn a eisiúint agus geoiméadracht radhairc á tógáil</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="215"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="220"/>
       <source>Report progress</source>
       <translation>Tuairiscigh dul chun cinn</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="228"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="233"/>
       <source>The number of times FreeCAD should try to remove overlapping edges returned by the hidden line removal algorithm. A value of 0 indicates no scrubbing, 1 indicates a single pass and 2 indicates a second pass should be performed. Values above 2 are generally not productive. Each pass adds to the time required to produce the drawing.</source>
       <translation>Líon na n-uaireanta ba chóir do FreeCAD iarracht a dhéanamh imill fhorluiteacha a bhaint a chuirtear ar ais tríd an algartam bainte líne i bhfolach. Léiríonn luach 0 nach ndéantar aon scrobadh, léiríonn 1 pas aonair agus léiríonn 2 gur chóir an dara pas a dhéanamh. De ghnáth ní bhíonn luachanna os cionn 2 táirgiúil. Cuireann gach pas leis an am a theastaíonn chun an líníocht a tháirgeadh.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="258"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="263"/>
       <source>Overlap edges scrub passes</source>
       <translation>Pasanna scrobarnacha imill forluí</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="265"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="275"/>
       <source>Mark fuzz</source>
       <translation>Marc fuzz</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="301"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="311"/>
       <source>Max SVG hatch tiles</source>
       <translation>Tíleanna haiste Max SVG</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="311"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="321"/>
       <source>Debug bad shape</source>
       <translation>Droch chruth dífhabhtaithe</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="335"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="345"/>
       <source>Perform a fuse operation on input shapes before section view processing</source>
       <translation>Déan oibríocht chomhleá ar chruthanna ionchuir roimh phróiseáil radhairc rannóige</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="338"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="348"/>
       <source>Fuse before section</source>
       <translation>Fiús roimh an alt</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="411"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="421"/>
       <source>Size of selection area around edges
 Each unit is approximately 0.1mm wide</source>
       <translation>Méid an limistéir roghnúcháin timpeall na n-imeall
 Tá gach aonad thart ar 0.1mm ar leithead</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="443"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="453"/>
       <source>Show section edges</source>
       <translation>Taispeáin imill na rannóige</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="459"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="469"/>
       <source>Maximum PAT hatch segments</source>
       <translation>Uasmhéid codanna haiste PAT</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="466"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="476"/>
       <source>Limits the number of 64×64 pixel SVG tiles used to hatch a single face.
 For large scales, errors may occur due to excessive tiling.
 Increase the limit if necessary.</source>
@@ -4754,22 +4780,22 @@ I gcás scálaí móra, d’fhéadfadh earráidí tarlú mar gheall ar ró-thíl
 Méadaigh an teorainn más gá.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="501"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="511"/>
       <source>Choose non-conflicting key bindings as some combinations of OS and navigation style key bindings may conflict with the default modifier keys for balloon dragging and view snapping override.</source>
       <translation>Roghnaigh ceangail eochracha neamh-choinbhleachtúla mar d’fhéadfadh roinnt teaglaim de cheanglais eochracha stíl OS agus nascleanúna coimhlint a dhéanamh leis na heochracha modhnóra réamhshocraithe le haghaidh tarraingt balún agus sárú snapála radhairc.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="515"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="525"/>
       <source>Use default</source>
       <translation>Úsáid réamhshocraithe</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="532"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="542"/>
       <source>Balloon drag</source>
       <translation>Tarraingt balún</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="440"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="450"/>
       <source>Highlights border of section cut in section views</source>
       <translation>Aibhsíonn teorainn gearrtha rannóige i radhairc rannóige</translation>
     </message>
@@ -4779,98 +4805,98 @@ Méadaigh an teorainn más gá.</translation>
       <translation>Má tá tic sa bhosca seo, má chliceálann tú faoi dhó ar leathanach sa chrann, aistreofar go TechDraw go huathoibríoch agus beidh an leathanach le feiceáil.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="151"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="156"/>
       <source>If checked, the system will attempt to automatically correct dimension references when the model changes.</source>
       <translation>Má tá sé seo seiceáilte, déanfaidh an córas iarracht tagairtí toise a cheartú go huathoibríoch nuair a athraíonn an tsamhail.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="157"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="162"/>
       <source>Auto-correct dimension references</source>
       <translation>Tagairtí toise uathcheartaithe</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="173"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="178"/>
       <source>If checked, input shapes will be checked for errors before use and invalid shapes will be skipped by the shape extractor. Checking for errors is slower, but can prevent crashes from some geometry problems.
 </source>
       <translation>Má tá sé seo seiceáilte, déanfar cruthanna ionchuir a sheiceáil le haghaidh earráidí roimh úsáid agus scipeálfaidh an t-eastóscóir cruthanna cruthanna neamhbhailí. Tá seiceáil le haghaidh earráidí níos moille, ach is féidir leis tuairteanna de bharr roinnt fadhbanna geoiméadrachta a chosc.
 </translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="196"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="201"/>
       <source>Include edges with unexpected geometry (zero length etc.) in results</source>
       <translation>Cuir imill le geoiméadracht gan choinne (fad nialasach srl.) san áireamh sna torthaí</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="308"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="318"/>
       <source>If checked, shapes that fail validation will be saved as BREP files for later analysis.</source>
       <translation>Má tá sé seo seiceáilte, sábhálfar cruthanna nach dteipeann orthu i mbailíochtú mar chomhaid BREP le haghaidh anailíse níos déanaí.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="512"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="522"/>
       <source>Check this box to use the default modifier keys. Uncheck this box to set a different key combination.</source>
       <translation>Seiceáil an bosca seo chun na heochracha modhnúcháin réamhshocraithe a úsáid. Díthiceáil an bosca seo chun teaglaim eochracha difriúil a shocrú.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="363"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="373"/>
       <source>Selection area around center marks
 Each unit is approx. 0.1 mm wide</source>
       <translation>Limistéar roghnúcháin timpeall na marcanna lárnacha
 Tá gach aonad thart ar 0.1 mm ar leithead</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="272"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="282"/>
       <source>Maximum hatch line segments to use
 when hatching a face with a PAT pattern</source>
       <translation>Uasmhéid codanna líne haisteála le húsáid agus
 aghaidh á haisteáil le patrún PAT</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="504"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="514"/>
       <source>Behaviour Overrides</source>
       <translation>Sáruithe Iompraíochta</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="539"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="549"/>
       <source>Check this box to include the Alt key in the modifiers.</source>
       <translation>Seiceáil an bosca seo chun an eochair Alt a áireamh sna modhnóirí.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="542"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="552"/>
       <source>Alt</source>
       <translation>Alt</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="549"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="559"/>
       <source>Check this box to include the Shift key in the modifiers.</source>
       <translation>Seiceáil an bosca seo chun an eochair Shift a áireamh sna modhnóirí.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="552"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="562"/>
       <source>Shift</source>
       <translation>Shift</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="559"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="569"/>
       <source>Check this box to include the Meta/Start/Super key in the modifiers.</source>
       <translation>Seiceáil an bosca seo chun an eochair Meta/Start/Super a chur san áireamh sna modhnóirí.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="562"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="572"/>
       <source>Meta</source>
       <translation>Meitea</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="569"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="579"/>
       <source>Check this box to include the Control key in the modifiers.</source>
       <translation>Seiceáil an bosca seo chun an eochair Rialaithe a áireamh sna modhnóirí.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="572"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="582"/>
       <source>Control</source>
       <translation>Rialú</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="590"/>
+      <location filename="../../DlgPrefsTechDrawAdvanced.ui" line="600"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Note:&lt;/span&gt; Items in &lt;span style=&quot; font-style:italic;&quot;&gt;italics&lt;/span&gt; are default values for new objects. They have no effect on existing objects.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Nóta:&lt;/span&gt; s luachanna réamhshocraithe iad míreanna i gcló &lt;span style=&quot; font-style:italic;&quot;&gt;Iodálach&lt;/span&gt; le haghaidh réada nua. Níl aon éifeacht acu ar réada atá ann cheana féin.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -5408,7 +5434,7 @@ chun líníochtaí a úsáid mar threoir ghearrtha 1:1.
       <translation>Rialaíonn sé méid na bearna idir an líne thoise agus an téacs toise le haghaidh toisí ISO.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="542"/>
+      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="545"/>
       <source>Tools</source>
       <translation>Uirlisí</translation>
     </message>
@@ -5573,12 +5599,12 @@ De ghnáth, ní úsáidtear aon bhearna. Má úsáidtear bearna, is é 6 an luac
 Is é an luach iolraithe faoi leithead na líne an spásáil líne.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="548"/>
+      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="551"/>
       <source>Dimensioning tools</source>
       <translation>Uirlisí toisithe</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="555"/>
+      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="558"/>
       <source>Choose the type of dimensioning tools shown in the toolbar:
 ‘Single tool’ provides one unified tool for all dimension types (Distance, X/Y, Angle, Radius) with others in a drop-down.
 ‘Separated tools’ displays individual tools for each dimension type.
@@ -5591,12 +5617,12 @@ Cumasaíonn ‘An dá cheann’ an uirlis aontaithe agus na huirlisí aonair ara
 Ní théann sé seo i bhfeidhm ach ar an mbarra uirlisí; fanann na huirlisí uile ar fáil tríd an roghchlár agus aicearraí.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="566"/>
+      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="569"/>
       <source>Dimension tool diameter/radius mode</source>
       <translation>Mód trastomhas/ga uirlis thoise</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="573"/>
+      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="576"/>
       <source>While using the dimension tool you may choose how to handle circles and arcs:
 &apos;Auto&apos;: The tool will apply radius to arcs and diameter to circles.
 &apos;Diameter&apos;: The tool will apply diameter to all.
@@ -5607,7 +5633,7 @@ Ní théann sé seo i bhfeidhm ach ar an mbarra uirlisí; fanann na huirlisí ui
 &apos;Ga&apos;: Cuirfidh an uirlis ga i bhfeidhm ar gach ceann.</translation>
     </message>
     <message>
-      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="526"/>
+      <location filename="../../DlgPrefsTechDrawDimensions.ui" line="529"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Note:&lt;/span&gt; Items in &lt;span style=&quot; font-style:italic;&quot;&gt;italics&lt;/span&gt; are default values for new objects. They have no effect on existing objects.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Nóta:&lt;/span&gt; s luachanna réamhshocraithe iad míreanna i gcló &lt;span style=&quot; font-style:italic;&quot;&gt;Iodálach&lt;/span&gt; le haghaidh réada nua. Níl aon éifeacht acu ar réada atá ann cheana féin.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -5881,7 +5907,7 @@ leathanaigh an paraiméadar domhanda &apos;Nuashonraigh le 3D&apos; a shárú</t
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="853"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Control when the view boundary frames and labels are displayed.&lt;/p&gt;&lt;p&gt;Auto: Show on hover, On: Always show, Off: Never show.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-      <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Control when the view boundary frames and labels are displayed.&lt;/p&gt;&lt;p&gt;Auto: Show on hover, On: Always show, Off: Never show.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Rialaigh cathain a thaispeántar frámaí agus lipéid teorann an radhairc.&lt;/p&gt;&lt;p&gt;Uath: Taispeáin nuair a luíonn tú ar an aer, Ar: Taispeáin i gcónaí, As: Ná taispeáin riamh.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="863"/>
@@ -5901,12 +5927,12 @@ leathanaigh an paraiméadar domhanda &apos;Nuashonraigh le 3D&apos; a shárú</t
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="878"/>
       <source>Manual</source>
-      <translation type="unfinished">Manual</translation>
+      <translation>Lámhleabhar</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="886"/>
       <source>View frames mode</source>
-      <translation type="unfinished">View frames mode</translation>
+      <translation>Mód frámaí féachana</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="910"/>
@@ -6225,61 +6251,61 @@ Go gasta, ach is é an toradh bailiúchán de línte díreacha gearra.</translat
   <context>
     <name>TechDrawGui::MDIViewPage</name>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="90"/>
+      <location filename="../../MDIViewPage.cpp" line="91"/>
       <source>Toggle &amp;Keep Updated</source>
       <translation>Scoraigh &amp;Coinnigh Nuashonraithe</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="93"/>
+      <location filename="../../MDIViewPage.cpp" line="94"/>
       <source>Toggle &amp;Frames</source>
-      <translation type="unfinished">Toggle &amp;Frames</translation>
+      <translation>Scoránaigh &amp;Frámaí</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="96"/>
+      <location filename="../../MDIViewPage.cpp" line="97"/>
       <source>&amp;Export SVG</source>
       <translation>&amp;Easpórtáil SVG</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="100"/>
+      <location filename="../../MDIViewPage.cpp" line="101"/>
       <source>Export DXF</source>
       <translation>Easpórtáil DXF</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="104"/>
+      <location filename="../../MDIViewPage.cpp" line="105"/>
       <source>Export PDF</source>
       <translation>Easpórtáil PDF</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="108"/>
+      <location filename="../../MDIViewPage.cpp" line="109"/>
       <source>Print All Pages</source>
       <translation>Priontáil Gach Leathanach</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="401"/>
+      <location filename="../../MDIViewPage.cpp" line="406"/>
       <source>Different orientation</source>
       <translation>Treoshuíomh difriúil</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="402"/>
+      <location filename="../../MDIViewPage.cpp" line="407"/>
       <source>The printer uses a different orientation than the drawing.
 Do you want to continue?</source>
       <translation>Úsáideann an printéir treoshuíomh difriúil ón líníocht.
 Ar mhaith leat leanúint ar aghaidh?</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="411"/>
+      <location filename="../../MDIViewPage.cpp" line="416"/>
       <source>Different paper size</source>
       <translation>Méid páipéir difriúil</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="412"/>
+      <location filename="../../MDIViewPage.cpp" line="417"/>
       <source>The printer uses a different paper size than the drawing.
 Do you want to continue?</source>
       <translation>Úsáideann an printéir méid páipéir difriúil ón líníocht.
 Ar mhaith leat leanúint ar aghaidh?</translation>
     </message>
     <message>
-      <location filename="../../MDIViewPage.cpp" line="1094"/>
+      <location filename="../../MDIViewPage.cpp" line="1130"/>
       <source>Selected:</source>
       <translation>Roghnaithe:</translation>
     </message>
@@ -6776,20 +6802,20 @@ Ar mhaith leat leanúint ar aghaidh?</translation>
       <translation>Seasamh</translation>
     </message>
     <message>
-      <location filename="../../TaskCosVertex.cpp" line="156"/>
-      <location filename="../../TaskCosVertex.cpp" line="248"/>
-      <source>Pick points</source>
-      <translation>Pointí roghnaithe</translation>
-    </message>
-    <message>
       <location filename="../../TaskCosVertex.cpp" line="170"/>
       <source>Pick a point for cosmetic vertex</source>
       <translation>Roghnaigh pointe le haghaidh buaicphointe cosmaideach</translation>
     </message>
     <message>
+      <location filename="../../TaskCosVertex.cpp" line="156"/>
+      <location filename="../../TaskCosVertex.cpp" line="248"/>
+      <source>Pick Points</source>
+      <translation>Pointí Roghnaigh</translation>
+    </message>
+    <message>
       <location filename="../../TaskCosVertex.cpp" line="173"/>
-      <source>Escape picking</source>
-      <translation>Ag piocadh éalaithe</translation>
+      <source>Escape Picking</source>
+      <translation>Ag Piocadh Éalaithe</translation>
     </message>
     <message>
       <location filename="../../TaskCosVertex.cpp" line="201"/>
@@ -7669,6 +7695,8 @@ diúltach &apos;Ró-fhulaingthe&apos; ina áit.</translation>
     </message>
     <message>
       <location filename="../../TaskLeaderLine.ui" line="118"/>
+      <location filename="../../TaskLeaderLine.cpp" line="224"/>
+      <location filename="../../TaskLeaderLine.cpp" line="499"/>
       <source>Pick Points</source>
       <translation>Pointí Roghnaigh</translation>
     </message>
@@ -7757,30 +7785,10 @@ Is féidir leat pointí breise a roghnú chun codanna líne a fháil.</translati
       <translation>DaisPoncPonc</translation>
     </message>
     <message>
-      <location filename="../../TaskLeaderLine.cpp" line="224"/>
-      <location filename="../../TaskLeaderLine.cpp" line="499"/>
-      <source>Pick points</source>
-      <translation>Pointí roghnaithe</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLeaderLine.cpp" line="272"/>
-      <location filename="../../TaskLeaderLine.cpp" line="513"/>
-      <location filename="../../TaskLeaderLine.cpp" line="686"/>
-      <location filename="../../TaskLeaderLine.cpp" line="757"/>
-      <location filename="../../TaskLeaderLine.cpp" line="779"/>
-      <source>Edit points</source>
-      <translation>Cuir pointí in eagar</translation>
-    </message>
-    <message>
       <location filename="../../TaskLeaderLine.cpp" line="530"/>
       <location filename="../../TaskLeaderLine.cpp" line="582"/>
       <source>Pick a starting point for leader line</source>
       <translation>Roghnaigh pointe tosaigh don líne ceannaire</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLeaderLine.cpp" line="533"/>
-      <source>Save points</source>
-      <translation>Sábháil pointí</translation>
     </message>
     <message>
       <location filename="../../TaskLeaderLine.cpp" line="565"/>
@@ -7788,10 +7796,24 @@ Is féidir leat pointí breise a roghnú chun codanna líne a fháil.</translati
       <translation>Cliceáil agus tarraing marcóirí chun an líne ceannaire a choigeartú</translation>
     </message>
     <message>
+      <location filename="../../TaskLeaderLine.cpp" line="272"/>
+      <location filename="../../TaskLeaderLine.cpp" line="513"/>
+      <location filename="../../TaskLeaderLine.cpp" line="686"/>
+      <location filename="../../TaskLeaderLine.cpp" line="757"/>
+      <location filename="../../TaskLeaderLine.cpp" line="779"/>
+      <source>Edit Points</source>
+      <translation>Cuir Pointí in Eagar</translation>
+    </message>
+    <message>
+      <location filename="../../TaskLeaderLine.cpp" line="533"/>
+      <source>Save Points</source>
+      <translation>Sábháil Pointí</translation>
+    </message>
+    <message>
       <location filename="../../TaskLeaderLine.cpp" line="568"/>
       <location filename="../../TaskLeaderLine.cpp" line="585"/>
-      <source>Save changes</source>
-      <translation>Sábháil athruithe</translation>
+      <source>Save Changes</source>
+      <translation>Sábháil Athruithe</translation>
     </message>
     <message>
       <location filename="../../TaskLeaderLine.cpp" line="616"/>
@@ -8263,102 +8285,92 @@ using the given X/Y spacings</source>
   <context>
     <name>TechDrawGui::TaskRichAnno</name>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="26"/>
+      <location filename="../../TaskRichAnno.ui" line="14"/>
       <source>Rich Text Annotation Block</source>
       <translation>Bloc Anótála Téacs Saibhir</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="74"/>
-      <source>Maximal width, if -1 then automatic width</source>
-      <translation>Leithead uasta, más -1 ansin leithead uathoibríoch</translation>
-    </message>
-    <message>
-      <location filename="../../TaskRichAnno.ui" line="102"/>
-      <source>Start Rich Text Editor</source>
-      <translation>Tosaigh Eagarthóir Téacs Saibhir</translation>
-    </message>
-    <message>
-      <location filename="../../TaskRichAnno.ui" line="53"/>
+      <location filename="../../TaskRichAnno.ui" line="24"/>
       <source>Base feature</source>
       <translation>Gné bhunúsach</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="67"/>
-      <source>Max width</source>
-      <translation>Leithead uasta</translation>
-    </message>
-    <message>
-      <location filename="../../TaskRichAnno.ui" line="121"/>
-      <source>Show frame</source>
-      <translation>Taispeáin fráma</translation>
-    </message>
-    <message>
-      <location filename="../../TaskRichAnno.ui" line="138"/>
+      <location filename="../../TaskRichAnno.ui" line="155"/>
       <source>Color</source>
       <translation>Dath</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="148"/>
+      <location filename="../../TaskRichAnno.ui" line="162"/>
       <source>Line color</source>
       <translation>Dath líne</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="162"/>
+      <location filename="../../TaskRichAnno.ui" line="38"/>
       <source>Width</source>
       <translation>Leithead</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="172"/>
+      <location filename="../../TaskRichAnno.ui" line="45"/>
+      <source>Maximal width of the annotation block, if -1 then automatic width</source>
+      <translation>Leithead uasta an bhloic anótála, más -1 ansin leithead uathoibríoch</translation>
+    </message>
+    <message>
+      <location filename="../../TaskRichAnno.ui" line="61"/>
+      <source>Frame</source>
+      <translation>Fráma</translation>
+    </message>
+    <message>
+      <location filename="../../TaskRichAnno.ui" line="85"/>
+      <source>Thickness</source>
+      <translation>Tiús</translation>
+    </message>
+    <message>
+      <location filename="../../TaskRichAnno.ui" line="92"/>
       <source>Line width</source>
       <translation>Leithead líne</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="188"/>
+      <location filename="../../TaskRichAnno.ui" line="108"/>
       <source>Style</source>
       <translation>Stíl</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="198"/>
+      <location filename="../../TaskRichAnno.ui" line="115"/>
       <source>Line style</source>
       <translation>Stíl líne</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="205"/>
+      <location filename="../../TaskRichAnno.ui" line="122"/>
       <source>NoLine</source>
       <translation>Gan Líne</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="210"/>
+      <location filename="../../TaskRichAnno.ui" line="127"/>
       <source>Continuous</source>
       <translation>Leanúnach</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="215"/>
+      <location filename="../../TaskRichAnno.ui" line="132"/>
       <source>Dash</source>
       <translation>Dais</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="220"/>
+      <location filename="../../TaskRichAnno.ui" line="137"/>
       <source>Dot</source>
       <translation>Ponc</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="225"/>
+      <location filename="../../TaskRichAnno.ui" line="142"/>
       <source>DashDot</source>
       <translation>DaisPonc</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.ui" line="230"/>
+      <location filename="../../TaskRichAnno.ui" line="147"/>
       <source>DashDotDot</source>
       <translation>DaisPoncPonc</translation>
     </message>
     <message>
-      <location filename="../../TaskRichAnno.cpp" line="178"/>
-      <source>Input the annotation text directly or start the rich text editor</source>
-      <translation>Cuir isteach téacs anótála go díreach nó tosaigh an t-eagarthóir téacs saibhir</translation>
-    </message>
-    <message>
-      <location filename="../../TaskRichAnno.cpp" line="280"/>
+      <location filename="../../TaskRichAnno.cpp" line="661"/>
       <source>RichTextAnnotation</source>
       <translation>Anótáil Téacs Saibhir</translation>
     </message>
@@ -8955,11 +8967,6 @@ using the given X/Y spacings</source>
       <translation>Lipéad</translation>
     </message>
     <message>
-      <location filename="../../TaskDimRepair.ui" line="86"/>
-      <source>Replace references with current selection</source>
-      <translation>Cuir tagairtí in ionad an rogha reatha</translation>
-    </message>
-    <message>
       <location filename="../../TaskDimRepair.ui" line="119"/>
       <source>The view that owns this dimension</source>
       <translation>An radharc a bhfuil an toise seo aige</translation>
@@ -8973,6 +8980,11 @@ using the given X/Y spacings</source>
       <location filename="../../TaskDimRepair.ui" line="98"/>
       <source>References 2D</source>
       <translation>Tagairtí 2T</translation>
+    </message>
+    <message>
+      <location filename="../../TaskDimRepair.ui" line="86"/>
+      <source>Replace References With Current Selection</source>
+      <translation>Ionadaigh Tagairtí leis an Roghnú Reatha</translation>
     </message>
     <message>
       <location filename="../../TaskDimRepair.ui" line="106"/>
@@ -8993,17 +9005,17 @@ using the given X/Y spacings</source>
   <context>
     <name>CmdTechDrawDimensionRepair</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2094"/>
+      <location filename="../../CommandCreateDims.cpp" line="2123"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2095"/>
+      <location filename="../../CommandCreateDims.cpp" line="2124"/>
       <source>Repair Dimension References</source>
       <translation>Tagairtí Toise Deisiúcháin</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="2096"/>
+      <location filename="../../CommandCreateDims.cpp" line="2125"/>
       <source>Repairs broken or incorrect dimension references</source>
       <translation>Deisiúcháin ar thagairtí toise briste nó míchearta</translation>
     </message>
@@ -9417,17 +9429,17 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
   <context>
     <name>CmdTechDrawExtensionArcLengthAnnotation</name>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="1965"/>
+      <location filename="../../CommandExtensionPack.cpp" line="1960"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="1966"/>
+      <location filename="../../CommandExtensionPack.cpp" line="1961"/>
       <source>Arc Length Annotation</source>
       <translation>Anótáil Arc Fad</translation>
     </message>
     <message>
-      <location filename="../../CommandExtensionPack.cpp" line="1967"/>
+      <location filename="../../CommandExtensionPack.cpp" line="1962"/>
       <source>Inserts an annotation with the calculated arc length of the selected edges</source>
       <translation>Ionsáigh anótáil a bhfuil fad stua ríofa na himill roghnaithe aige</translation>
     </message>
@@ -9469,10 +9481,6 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
     <name>TechDraw_AddOffsetVertex</name>
     <message>
       <location filename="../../../TechDrawTools/TaskAddOffsetVertex.py" line="45"/>
-      <source>Add offset vertex</source>
-      <translation>Cuir buaicphointe fritháirithe leis</translation>
-    </message>
-    <message>
       <location filename="../../../TechDrawTools/CommandVertexCreations.py" line="81"/>
       <source>Offset Vertex</source>
       <translation>Fritháireamh Buaicphointe</translation>
@@ -9822,14 +9830,14 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
   <context>
     <name>TaskDimension</name>
     <message>
-      <location filename="../../ViewProviderDimension.cpp" line="321"/>
+      <location filename="../../ViewProviderDimension.cpp" line="323"/>
       <source>You cannot delete this dimension now because
 there is an open task dialog.</source>
       <translation>Ní féidir leat an toise seo a scriosadh anois mar
 go bhfuil dialóg tascanna oscailte ann.</translation>
     </message>
     <message>
-      <location filename="../../ViewProviderDimension.cpp" line="324"/>
+      <location filename="../../ViewProviderDimension.cpp" line="326"/>
       <source>Can Not Delete</source>
       <translation>Ní Féidir Scriosadh</translation>
     </message>
@@ -9878,12 +9886,12 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
   <context>
     <name>CmdTechDrawCompDimensionTools</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1403"/>
+      <location filename="../../CommandCreateDims.cpp" line="1432"/>
       <source>Dimension</source>
       <translation>Toise</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1404"/>
+      <location filename="../../CommandCreateDims.cpp" line="1433"/>
       <source>Dimension tools</source>
       <translation>Uirlisí toise</translation>
     </message>
@@ -9891,17 +9899,17 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
   <context>
     <name>CmdTechDrawAreaDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1789"/>
+      <location filename="../../CommandCreateDims.cpp" line="1818"/>
       <source>TechDraw</source>
       <translation>TechDraw</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1790"/>
+      <location filename="../../CommandCreateDims.cpp" line="1819"/>
       <source>Area Annotation</source>
       <translation>Anótáil Limistéir</translation>
     </message>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1791"/>
+      <location filename="../../CommandCreateDims.cpp" line="1820"/>
       <source>Inserts an annotation showing the area of a selected face</source>
       <translation>Cuirtear nóta isteach a thaispeánann limistéar aghaidhe roghnaithe</translation>
     </message>
@@ -10125,7 +10133,7 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
   <context>
     <name>TechDraw_HorizontalExtent</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1907"/>
+      <location filename="../../CommandCreateDims.cpp" line="1936"/>
       <source>Insert horizontal extent dimension</source>
       <translation>Cuir isteach toise cothrománach</translation>
     </message>
@@ -10133,7 +10141,7 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
   <context>
     <name>TechDraw_VerticalExtentDimension</name>
     <message>
-      <location filename="../../CommandCreateDims.cpp" line="1911"/>
+      <location filename="../../CommandCreateDims.cpp" line="1940"/>
       <source>Insert vertical extent dimension</source>
       <translation>Cuir isteach toise ingearach</translation>
     </message>
@@ -10194,14 +10202,6 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
     </message>
   </context>
   <context>
-    <name>TechDrawGui::TaskDlgLineDecor</name>
-    <message>
-      <location filename="../../TaskLineDecor.cpp" line="463"/>
-      <source>Restore invisible lines</source>
-      <translation>Athchóirigh línte dofheicthe</translation>
-    </message>
-  </context>
-  <context>
     <name>CmdMidpoints</name>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="279"/>
@@ -10221,16 +10221,24 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
     <name>Cmd2LineCenterLine</name>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="653"/>
-      <source>Centerline 2 Lines</source>
-      <translation>Líne Láir 2 Líne</translation>
+      <source>Centerline Between 2 Lines</source>
+      <translation>Lárlíne idir 2 líne</translation>
     </message>
   </context>
   <context>
     <name>Cmd2PointCenterLine</name>
     <message>
       <location filename="../../CommandAnnotate.cpp" line="657"/>
-      <source>Centerline 2 Points</source>
-      <translation>Lárlíne 2 Phointe</translation>
+      <source>Centerline Between 2 Points</source>
+      <translation>Lárlíne idir 2 Phointe</translation>
+    </message>
+  </context>
+  <context>
+    <name>TechDrawGui::TaskDlgLineDecor</name>
+    <message>
+      <location filename="../../TaskLineDecor.cpp" line="463"/>
+      <source>Restore Invisible Lines</source>
+      <translation>Athchóirigh Línte Dofheicthe</translation>
     </message>
   </context>
   <context>
@@ -10244,7 +10252,7 @@ go bhfuil dialóg tascanna oscailte ann.</translation>
       <location filename="../../CommandDecorate.cpp" line="76"/>
       <location filename="../../CommandDecorate.cpp" line="77"/>
       <source>Turn View Frames On/Off</source>
-      <translation type="unfinished">Turn View Frames On/Off</translation>
+      <translation>Cas Frámaí Amhairc Air/As</translation>
     </message>
   </context>
 </TS>

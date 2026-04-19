@@ -377,7 +377,7 @@ bool EditorView::saveAs()
         this,
         QObject::tr("Save Macro"),
         QString(),
-        QStringLiteral("%1 (*.FCMacro);;Python (*.py)").arg(tr("FreeCAD macro"))
+        QStringList(QStringLiteral("%1 (*.FCMacro);;Python (*.py)").arg(tr("FreeCAD macro")))
     );
     if (fn.isEmpty()) {
         return false;
@@ -820,11 +820,21 @@ void SearchBar::retranslateUi()
     matchWord->setText(tr("Whole words"));
 }
 
-void SearchBar::activate()
+/**
+ * Show the search bar with optional prefilled text from selection.
+ */
+void SearchBar::activate(const QString& prefill)
 {
     show();
+
+    if (!prefill.isEmpty()) {
+        QSignalBlocker blocker(searchText);  // block auto-search jump to next match after prefill
+        searchText->setText(prefill);
+    }
+
     searchText->selectAll();
     searchText->setFocus(Qt::ShortcutFocusReason);
+    updateButtons();
 }
 
 void SearchBar::deactivate()

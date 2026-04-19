@@ -475,18 +475,12 @@ void FaceMakerExtrusion::Build()
     }
 
     if (!wires.empty()) {
-        // try {
         TopoDS_Shape res = FaceMakerCheese::makeFace(wires);
         if (!res.IsNull()) {
             this->myShape = res;
         }
-        //}
-        // catch (...) {
-
-        //}
     }
-
-    this->Done();
+    postBuild();
 }
 
 void Part::Extrusion::setupObject()

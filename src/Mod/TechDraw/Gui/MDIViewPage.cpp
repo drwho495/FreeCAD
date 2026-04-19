@@ -35,6 +35,7 @@
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
+#include <QMetaObject>
 #include <fastsignals/signal.h>
 #include <cmath>
 
@@ -92,6 +93,9 @@ MDIViewPage::MDIViewPage(ViewProviderPage* pageVp, Gui::Document* doc, QWidget* 
 
     m_toggleFrameAction = new QAction(tr("Toggle &Frames"), this);
     connect(m_toggleFrameAction, &QAction::triggered, this, &MDIViewPage::toggleFrame);
+
+    m_toggleGridAction = new QAction(tr("Toggle &Grid"), this);
+    connect(m_toggleGridAction, &QAction::triggered, this, &MDIViewPage::toggleGrid);
 
     m_exportSVGAction = new QAction(tr("&Export SVG"), this);
 
@@ -171,6 +175,13 @@ void MDIViewPage::closeEvent(QCloseEvent* event)
 
 void MDIViewPage::onDeleteObject(const App::DocumentObject& obj)
 {
+    // Close this MDI tab when its backing DrawPage is deleted (e.g. undo page creation).
+    const char* objName = obj.getNameInDocument();
+    if (obj.isDerivedFrom<TechDraw::DrawPage>() && objName && m_objectName == objName) {
+        QMetaObject::invokeMethod(this, &Gui::MDIView::deleteSelf, Qt::QueuedConnection);
+        return;
+    }
+
     //if this page has a QView for this obj, delete it.
     blockSceneSelection(true);
     if (obj.isDerivedFrom<TechDraw::DrawView>()) {
@@ -290,6 +301,15 @@ void MDIViewPage::setTabText(std::string tabText)
     if (!isPassive() && !tabText.empty()) {
         QString cap = QStringLiteral("%1 [*]").arg(QString::fromUtf8(tabText.c_str()));
         setWindowTitle(cap);
+    }
+}
+
+// The tab title for a TechDraw Page always shows the DrawPage's Label, not the document Label.
+void MDIViewPage::onRelabel(Gui::Document* /*pDoc*/)
+{
+    TechDraw::DrawPage* page = m_vpPage->getDrawPage();
+    if (page) {
+        setTabText(page->Label.getValue());
     }
 }
 
@@ -429,6 +449,7 @@ void MDIViewPage::contextMenuEvent(QContextMenuEvent* event)
 {
     if (isContextualMenuEnabled) {
         QMenu menu;
+        menu.addAction(m_toggleGridAction);
         menu.addAction(m_toggleFrameAction);
         menu.addAction(m_toggleKeepUpdatedAction);
         menu.addAction(m_exportSVGAction);
@@ -445,6 +466,11 @@ void MDIViewPage::contextMenuEvent(QContextMenuEvent* event)
 }
 
 void MDIViewPage::toggleFrame() { m_vpPage->toggleFrameState(); }
+
+void MDIViewPage::toggleGrid()
+{
+    m_vpPage->ShowGrid.setValue(!m_vpPage->ShowGrid.getValue());
+}
 
 void MDIViewPage::toggleKeepUpdated()
 {
@@ -491,7 +517,7 @@ void MDIViewPage::saveSVG()
     QString fn =
         Gui::FileDialog::getSaveFileName(Gui::getMainWindow(), QObject::tr("Export page as SVG"),
 
-                                         defaultFileName(), filter.join(QLatin1String(";;")));
+                                         defaultFileName(), filter);
     if (fn.isEmpty()) {
         return;
     }
@@ -513,7 +539,7 @@ void MDIViewPage::saveDXF()
     QString fn =
         Gui::FileDialog::getSaveFileName(Gui::getMainWindow(), QObject::tr("Export page as DXF"),
 
-                                         defaultFileName(), filter.join(QLatin1String(";;")));
+                                         defaultFileName(), filter);
     if (fn.isEmpty()) {
         return;
     }
@@ -569,7 +595,7 @@ QString MDIViewPage::getPdfFileName() const
     QString fn =
         Gui::FileDialog::getSaveFileName(Gui::getMainWindow(),
                                          QObject::tr("Export Page as PDF"),
-                                         QString(), filter.join(QLatin1String(";;")));
+                                         QString(), filter);
     if (fn.isEmpty()) {
         return {};
     }
