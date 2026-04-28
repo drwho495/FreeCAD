@@ -81,7 +81,7 @@ public:
      * @param nameString The new name. A deep copy is made.
      * @param historyAlgorithm The algorithm used to make `nameString`. Defaulted to `V1`.
      */
-    explicit MappedName(const std::string& nameString, const App::HistoryAlgorithm historyAlgorithm = App::HistoryAlgorithm::V2);
+    explicit MappedName(const std::string& nameString);
 
     /**
      * @brief Create a MappedName from an IndexedName.
@@ -114,12 +114,6 @@ public:
         : raw(false)
     {}
 
-    /// Create a MappedName with a marked history algorithm.
-    MappedName(const App::HistoryAlgorithm historyAlgorithm)
-        : raw(false)
-        , usedHistoryAlgorithm(historyAlgorithm)
-    {}
-
     MappedName(const MappedName& other) = default;
 
     /**
@@ -136,7 +130,7 @@ public:
      * and start positions
      */
     MappedName(const MappedName& other, int startPosition, int size = -1)
-        : raw(false), usedHistoryAlgorithm(other.usedHistoryAlgorithm)
+        : raw(false)
     {
         append(other, startPosition, size);
     }
@@ -153,14 +147,12 @@ public:
         : data(other.data + other.postfix)
         , postfix(postfix)
         , raw(false)
-        , usedHistoryAlgorithm(other.usedHistoryAlgorithm)
     {}
 
     MappedName(MappedName&& other) noexcept
         : data(std::move(other.data))
         , postfix(std::move(other.postfix))
         , raw(other.raw)
-        , usedHistoryAlgorithm(other.usedHistoryAlgorithm)
     {}
 
     ~MappedName() = default;
@@ -233,7 +225,6 @@ public:
 
         MappedName res;
         res.raw = true;
-        res.usedHistoryAlgorithm = other.usedHistoryAlgorithm;
         if (size < 0) {
             size = other.size() - startPosition;
         }
@@ -919,7 +910,6 @@ public:
         MappedName res;
         res.data.append(this->data.constData(), this->data.size());
         res.postfix = this->postfix;
-        res.usedHistoryAlgorithm = this->usedHistoryAlgorithm;
         return res;
     }
 
@@ -1141,14 +1131,6 @@ public:
         return qHash(data, qHash(postfix));
     }
 
-    App::HistoryAlgorithm getHistoryAlgorithm() const {
-        return usedHistoryAlgorithm;
-    };
-
-    void setHistoryAlgorithm(App::HistoryAlgorithm newAlgorithm) {
-        usedHistoryAlgorithm = newAlgorithm;
-    };
-
     std::vector<std::string> toSections() const;
 
     MappedNameDataTree getNameDataTree() const;
@@ -1172,7 +1154,6 @@ private:
     QByteArray data;
     QByteArray postfix;
     bool raw;
-    enum App::HistoryAlgorithm usedHistoryAlgorithm = App::HistoryAlgorithm::V2;
 };
 
 

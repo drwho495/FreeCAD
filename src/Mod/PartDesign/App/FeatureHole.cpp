@@ -2218,7 +2218,7 @@ TopoShape Hole::findHoles(
 
         Part::MappingStatus status = Part::MappingStatus::Modified;
 
-        if (baseshape.getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+        if (App::getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
             // we want to use generated here, because when an element is modified, it is usually split apart into similar elements
             // which is not happening here. what is happening is an edge is creating a face, which is only possible with generated.
             status = Part::MappingStatus::Generated;

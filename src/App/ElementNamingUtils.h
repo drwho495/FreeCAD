@@ -15,6 +15,11 @@ enum HistoryAlgorithm : int {
     V2 = 1
 };
 
+HistoryAlgorithm getHistoryAlgorithm() {
+    // TODO: make changable with a program flag.
+    return HistoryAlgorithm::V2;
+}
+
 /// Return type for lookups of new and old style sub-element names
 struct ElementNamePair
 {

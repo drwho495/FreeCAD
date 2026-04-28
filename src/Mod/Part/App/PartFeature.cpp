@@ -283,7 +283,7 @@ std::vector<Data::MappedElement> Feature::findSimilarNames(const Data::MappedNam
 {
     std::vector<Data::MappedElement> ret { };
 
-    if (searchShape.getHistoryAlgorithm() == App::HistoryAlgorithm::V2 && searchName.getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+    if (App::getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
         for (const Data::MappedElement &loopNamePair : searchShape.getElementMap()) {
             if (loopNamePair.name == searchName || Feature::doNamesMatch(searchName, loopNamePair.name)) {
                 ret.push_back(loopNamePair);
