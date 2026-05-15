@@ -807,7 +807,7 @@ MappedName ElementMap::renameDuplicateElement(int index,
         MappedName renamed(name);
         encodeElementName(element.getType()[0], renamed, ss, &sids, masterTag);
         if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
-            FC_WARN("duplicate element mapping '"  // NOLINT
+            FC_TRACE("duplicate element mapping '"  // NOLINT
                     << name << " -> " << renamed << ' ' << element << '/' << element2);
         }
         return renamed;
