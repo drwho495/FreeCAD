@@ -192,11 +192,18 @@ void FCBRepAlgoAPI_BooleanOperation::RecursiveCutCompound(const TopoDS_Shape& th
 {
     BRep_Builder builder;
     TopoDS_Compound comp;
+    BRepTools_History oldHistory;
     builder.MakeCompound(comp);
 
     // iterate through shapes in argument compound and cut each one with the tool
     TopoDS_Iterator it(theArgument);
     for (; it.More(); it.Next()) {
+        if (myHistory) {
+            oldHistory = BRepTools_History(*myHistory.get());
+        } else {
+            oldHistory.Clear();
+        }
+
         myArguments.Clear();
         myArguments.Append(it.Value());
         Build();
@@ -206,6 +213,16 @@ void FCBRepAlgoAPI_BooleanOperation::RecursiveCutCompound(const TopoDS_Shape& th
             return;
         }
 
+        // running the `Build()` method above causes the history of this operation to be destroyed,
+        // for the sake of the toponaming algorithm we do not want this to happen. to revert this
+        // action we simply try to merge the old history back into `myHistory`.
+        if (oldHistory.HasGenerated() || oldHistory.HasModified() || oldHistory.HasRemoved()) {
+            if (!myHistory) {
+                myHistory = new BRepTools_History;
+            }
+
+            myHistory->Merge(oldHistory);
+        }
         builder.Add(comp, myShape);
     }
 
