@@ -68,7 +68,6 @@
 #include <App/ElementNamingUtils.h>
 #include <App/Placement.h>
 #include <App/Datums.h>
-#include <App/ElementNamingUtils.h>
 #include <Base/Exception.h>
 #include <Base/Placement.h>
 #include <Base/Rotation.h>
@@ -283,7 +282,7 @@ std::vector<Data::MappedElement> Feature::findSimilarNames(const Data::MappedNam
 {
     std::vector<Data::MappedElement> ret { };
 
-    if (App::getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+    if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
         for (const Data::MappedElement &loopNamePair : searchShape.getElementMap()) {
             if (loopNamePair.name == searchName || Feature::doNamesMatch(searchName, loopNamePair.name)) {
                 ret.push_back(loopNamePair);

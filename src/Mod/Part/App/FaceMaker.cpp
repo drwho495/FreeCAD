@@ -249,7 +249,7 @@ void Part::FaceMaker::postBuild()
         TopoShape wire = face.splitWires();
         wire.mapSubElement(face);
 
-        if (App::getHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
+        if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
             std::set<ElementName> edgeNames;
             int count = wire.countSubShapes(TopAbs_EDGE);
             for (int index2 = 1; index2 <= count; ++index2) {
@@ -287,7 +287,7 @@ void Part::FaceMaker::postBuild()
                 nullptr,
                 &sids
             );
-        } else if (App::getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+        } else if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
             std::vector<Data::MappedName> edgeNames;
             std::vector<std::string> edgeIDs;
             
