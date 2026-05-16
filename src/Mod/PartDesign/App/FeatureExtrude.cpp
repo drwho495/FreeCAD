@@ -37,6 +37,7 @@
 
 #include <App/Document.h>
 #include <App/ObjectIdentifier.h>
+#include <App/ElementNamingUtils.h>
 #include <Base/Tools.h>
 #include <Mod/Part/App/ExtrusionHelper.h>
 #include "Mod/Part/App/TopoShapeOpCode.h"
@@ -700,7 +701,7 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
         }
 
         // --- Combine generated prisms (all in global CS) ---
-        TopoShape prism(0, getDocument()->getStringHasher());
+        TopoShape prism(App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2 ? getID() : 0, getDocument()->getStringHasher());
         if (prisms.empty()) {
             return new App::DocumentObjectExecReturn(
                 QT_TRANSLATE_NOOP("Exception", "No extrusion geometry was generated.")
@@ -741,7 +742,7 @@ App::DocumentObjectExecReturn* FeatureExtrude::buildExtrusion(ExtrudeOptions opt
             prism.Tag = -this->getID();
 
             // Let's call algorithm computing a fuse operation:
-            TopoShape result(0, getDocument()->getStringHasher());
+            TopoShape result(App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2 ? getID() : 0, getDocument()->getStringHasher());
             try {
                 const char* maker;
                 switch (getAddSubType()) {
@@ -845,7 +846,7 @@ TopoShape FeatureExtrude::generateSingleExtrusionSide(
     TopLoc_Location& invObjLoc
 )
 {
-    TopoShape prism(0, getDocument()->getStringHasher());
+    TopoShape prism(App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2 ? getID() : 0, getDocument()->getStringHasher());
 
     if (method == "UpToFirst" || method == "UpToLast" || method == "UpToFace"
         || method == "UpToShape") {

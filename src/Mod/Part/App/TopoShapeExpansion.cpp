@@ -993,7 +993,7 @@ void TopoShape::mapSubElement(const TopoShape& other, const char* op, bool force
                 }
                 ss.str("");
                 
-                if (other.getHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
+                if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
                     ensureElementMap()->encodeElementName(shapetype[0], name, ss, &sids, Tag, op, other.Tag);
                 }
                 ensureElementMap()->setElementName(element, name, Tag, &sids);
@@ -1475,7 +1475,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(
     infoMap[TopAbs_COMPOUND] = &faceInfo;
     infoMap[TopAbs_COMPSOLID] = &faceInfo;
 
-    if (ensureElementMap()->getHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
+    if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
         std::ostringstream ss;
         std::string postfix;
         Data::MappedName newName;
@@ -2005,7 +2005,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(
             }
             delayed = true;
         }
-    } else if (ensureElementMap()->getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+    } else if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
         // This algorithm has some edgecase detection from the V1 Algorithm, which is why it looks a little bit copypasted.
 
         std::unordered_map<TopoDS_Shape, ReverseMapBase> reverseGeneratedMap { };
@@ -2128,7 +2128,8 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                                                                              op,
                                                                              modifiedI,
                                                                              (*info->shapetype),
-                                                                             0).c_str());
+                                                                             0,
+                                                                             {"MOD"}).c_str());
                             }
 
                             bool skipMap = false;
@@ -2278,7 +2279,8 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                                                                                           op,
                                                                                           usedLinkedNames.count(linkedNames),
                                                                                           generatedShapeKey.second.masterName.toString()[0],
-                                                                                          0).c_str());
+                                                                                          0,
+                                                                                          {"GEN"}).c_str());
                 
                 usedLinkedNames.insert(linkedNames);
 
@@ -2329,7 +2331,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                                                                                                       usedPartnerNames.count(incomingShapeMapName),
                                                                                                       (*info->shapetype),
                                                                                                       0,
-                                                                                                      "PTN").c_str());
+                                                                                                      {"PTN"}).c_str());
                             
                             usedPartnerNames.insert(incomingShapeMapName);
 
@@ -2361,7 +2363,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                                                                                                   usedAncestorNames.count(linkedAncestorNames),
                                                                                                   (*info->shapetype),
                                                                                                   0,
-                                                                                                  "ANC").c_str());
+                                                                                                  {"ANC"}).c_str());
                         
                         usedAncestorNames.insert(linkedAncestorNames);
                         ensureElementMap()->setElementName(mainElementIndexedName, newName, masterTag);
@@ -2408,7 +2410,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                                                                                                   usedConnectedNames.count(linkedConnectedNames),
                                                                                                   (*info->shapetype),
                                                                                                   0,
-                                                                                                  "CON").c_str());
+                                                                                                  {"CON"}).c_str());
                         
                         usedConnectedNames.insert(linkedConnectedNames);
                         ensureElementMap()->setElementName(mainElementIndexedName, newName, masterTag);
@@ -5066,6 +5068,10 @@ TopoShape& TopoShape::makeElementPrismUntil(
                     FC_THROWM(Base::CADKernelError, "BRepFeat_MakePrism: extrusion failed");
                 }
 
+                if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+                    result.Tag = Tag;
+                }
+                
                 result.makeElementShape(PrismMaker, srcShapes, uptoface, op);
             }
             break;
@@ -6475,27 +6481,43 @@ bool TopoShape::isSame(const Data::ComplexGeoData& _other) const
 
 long TopoShape::isElementGenerated(const Data::MappedName& _name, int depth) const
 {
-    long res = 0;
-    long tag = 0;
-    traceElement(_name, [&](const Data::MappedName& name, int offset, long tag2, long) {
-        (void)offset;
-        if (tag2 < 0) {
-            tag2 = -tag2;
-        }
-        if (tag && tag2 != tag) {
-            if (--depth < 1) {
+    App::HistoryAlgorithm historyAlgo = App::getSelectedHistoryAlgorithm();
+
+    if (historyAlgo == App::HistoryAlgorithm::V1) {
+        long res = 0;
+        long tag = 0;
+        traceElement(_name, [&](const Data::MappedName& name, int offset, long tag2, long) {
+            (void)offset;
+            if (tag2 < 0) {
+                tag2 = -tag2;
+            }
+            if (tag && tag2 != tag) {
+                if (--depth < 1) {
+                    return true;
+                }
+            }
+            tag = tag2;
+            if (depth == 1 && name.startsWith(genPostfix(), offset)) {
+                res = tag;
                 return true;
             }
-        }
-        tag = tag2;
-        if (depth == 1 && name.startsWith(genPostfix(), offset)) {
-            res = tag;
-            return true;
-        }
-        return false;
-    });
+            return false;
+        });
+        
+        return res;
+    } else if (historyAlgo == App::HistoryAlgorithm::V2) {
+        Data::DecodedMappedName _decodedName = _name.getDecodedMappedName();
 
-    return res;
+        if (_decodedName.size()) {
+            Data::DecodedMappedSection lastSection = _decodedName.back();
+
+            if (std::stol(lastSection.iterationTag) == Tag && lastSection.hasMapperFlag("GEN")) { // TODO: globablize mapper flag
+                return true;
+            }
+        }   
+    }
+
+    return false;
 }
 
 void TopoShape::reTagElementMap(long tag, App::StringHasherRef hasher, const char* postfix, bool force)
@@ -6514,19 +6536,19 @@ void TopoShape::reTagElementMap(long tag, App::StringHasherRef hasher, const cha
     Hasher = hasher;
     Tag = tag;
 
-    if (ensureElementMap()->getHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
+    if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
         resetElementMap();
         copyElementMap(tmp, postfix);
-    } else if (ensureElementMap()->getHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+    } else if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
         std::vector<Data::MappedElement> copiedElementMap = tmp.ensureElementMap()->getAll();
 
         for (Data::MappedElement &mappedElement : copiedElementMap) {
-            Data::MappedNameDataTree tree = mappedElement.name.getNameDataTree();
+            Data::DecodedMappedName decodedName = mappedElement.name.getDecodedMappedName();
 
-            if (tree.size() && (tree[tree.size() - 1][2][0] == "0" || force)) {
-                tree[tree.size() - 1][2][0] = std::to_string(tag);
+            if (decodedName.size() && (decodedName.back().iterationTag == "0" || force)) {
+                decodedName.back().iterationTag = std::to_string(tag);
                 
-                mappedElement.name = Data::MappedName::fromNameDataTree(tree);
+                mappedElement.name = Data::MappedName::fromDecodedMappedName(decodedName);
             }
         }
 
