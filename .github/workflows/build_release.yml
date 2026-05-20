@@ -16,7 +16,7 @@ concurrency:
 jobs:
   upload_src:
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'FreeCAD'
+    if: github.repository_owner == 'drwho495'
     permissions:
       contents: write
       actions: write
