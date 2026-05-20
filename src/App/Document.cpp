@@ -917,7 +917,7 @@ void Document::onChanged(const Property* prop)
             this->Uid.setValue(id);
         }
     }
-    else if (prop == &UseHasher || prop == &ToponamingAlgorithmVersion) {
+    else if (prop == &UseHasher) {
         for (auto obj : d->objectArray) {
             auto geofeature = freecad_cast<GeoFeature*>(obj);
             if (geofeature && geofeature->getPropertyOfGeometry()) {
