@@ -175,10 +175,21 @@ void SelectionView::onSelectionChanged(const SelectionChanges& Reason)
             App::ElementNamePair elementName;
             App::GeoFeature::resolveElement(obj, subName, elementName);
             str << elementName.oldName.c_str();  // Use the shortened element name not the full one.
-            /* Mark it visually if there was a history as a "tell" for if a given selection has TNP
-             * fixes in it. */
-            if (elementName.newName.size() > 0) {
-                str << " []";
+            /* Add the 'newName' to the print string to show users the actual history string
+            which represents this element. */
+            if (elementName.newName.size() > 0 && Data::isMappedElement(elementName.newName.c_str())) {
+                Data::MappedName name;
+                
+                const char* newName = elementName.newName.c_str();
+                const char* dot = strchr(newName, '.');
+
+                if (dot) {
+                    name = Data::MappedName(newName, static_cast<int>(dot - newName) - 1);
+                }
+
+                if (name) {
+                    str << " [" << name.toString().c_str() << "]";
+                }
             }
             auto subObj = obj->getSubObject(subName);
             if (subObj) {

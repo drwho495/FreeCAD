@@ -332,7 +332,7 @@ App::DocumentObjectExecReturn* Loft::execute()
             if (!isSingleSolidRuleSatisfied(result.getShape())) {
                 return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                     "Exception",
-                    "Result has multiple solids: enable 'Allow Compound' in the active body."
+                    "Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel."
                 ));
             }
             Shape.setValue(getSolid(result));
@@ -376,7 +376,7 @@ App::DocumentObjectExecReturn* Loft::execute()
         if (!isSingleSolidRuleSatisfied(boolOp.getShape())) {
             return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                 "Exception",
-                "Result has multiple solids: enable 'Allow Compound' in the active body."
+                "Result has multiple solids: enable the 'Allow Compound' property for the active body through the 'Property View' panel."
             ));
         }
         boolOp = getSolid(boolOp);

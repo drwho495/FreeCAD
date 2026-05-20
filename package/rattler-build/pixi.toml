@@ -2,8 +2,9 @@
 channels = [
     "https://prefix.dev/pixi-build-backends",
     "https://prefix.dev/conda-forge",
+    "https://prefix.dev/freecad-context-fork"
 ]
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "linux-aarch64", "win-64"]
 preview = ["pixi-build"]
 
 [package]
@@ -35,19 +36,19 @@ xcb-util-cursor = "==0.1.5"  ## hack to address https://github.com/FreeCAD/FreeC
 coreutils = "*"
 xcb-util-cursor = "==0.1.5"  ## hack to address https://github.com/FreeCAD/FreeCAD/issues/26726
 
-## macOS (Intel)
-[feature.package.target.osx-64.dependencies]
-coreutils = "*"
-dmgbuild = "*"
-pyobjc-framework-Quartz = "*"
-sed = "*"
+# ## macOS (Intel)
+# [feature.package.target.osx-64.dependencies]
+# coreutils = "*"
+# dmgbuild = "*"
+# pyobjc-framework-Quartz = "*"
+# sed = "*"
 
-## macOS (Apple Silicon)
-[feature.package.target.osx-arm64.dependencies]
-coreutils = "*"
-dmgbuild = "*"
-pyobjc-framework-Quartz = "*"
-sed = "*"
+# ## macOS (Apple Silicon)
+# [feature.package.target.osx-arm64.dependencies]
+# coreutils = "*"
+# dmgbuild = "*"
+# pyobjc-framework-Quartz = "*"
+# sed = "*"
 
 ## Windows dependencies (x86-64)
 [feature.package.target.win-64.dependencies]
