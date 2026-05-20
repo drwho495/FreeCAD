@@ -588,18 +588,30 @@ class ObjectHelix(PathCircularHoleBase.ObjectOp):
 
         singleHelix = obj.SingleHelix or obj.SpiralMill
 
-        # build list of solids for collision detection
+        # Prepare linking parameters
         solids = [base.Shape for base in self.job.Model.Group]
-        machinestate = PathMachineState.MachineState()
         linkingArgs = {
             "start_position": None,
             "target_position": None,
             "local_clearance": safeHeight,
             "global_clearance": clearanceHeight,
-            "solids": solids,
-            "tool_shape": self.tool.Shape,
-            "tolerance": abs(safeHeight - obj.StartDepth.Value),
+            "solids": None,
+            "tool_shape": None,
+            "tool_diameter": None,
+            "collision_clearance": obj.CollisionClearance.Value,
         }
+        if obj.CollisionAvoidanceStrategy == "Clearance Height":
+            linkingArgs["local_clearance"] = clearanceHeight
+        elif obj.CollisionAvoidanceStrategy == "Retract Height":
+            pass
+        elif obj.CollisionAvoidanceStrategy == "Line of Sight":
+            linkingArgs["solids"] = solids
+        elif obj.CollisionAvoidanceStrategy == "Tool Diameter":
+            linkingArgs["solids"] = solids
+            linkingArgs["tool_diameter"] = tooldiameter
+        elif obj.CollisionAvoidanceStrategy == "Tool Shape":
+            linkingArgs["solids"] = solids
+            linkingArgs["tool_shape"] = obj.ToolController.Tool.BitBody.Shape
 
         obj.Direction = _caclulatePathDirection(obj)
 
@@ -627,6 +639,7 @@ class ObjectHelix(PathCircularHoleBase.ObjectOp):
         else:
             args["cone_angle_rad"] = -math.radians(obj.HelixConeAngle.Value)
 
+        machinestate = PathMachineState.MachineState()
         self.commandlist.append(Path.Command("(helix cut operation)"))
         for hole_index, hole in enumerate(holes):
             if obj.RotationAngle.Value == -1:
@@ -682,6 +695,20 @@ class ObjectHelix(PathCircularHoleBase.ObjectOp):
                     if args["inner_radius"] > args["outer_radius"]:
                         # exclude overlap inner and outer helices
                         args["inner_radius"] = args["outer_radius"]
+
+            if (args["outer_radius"] < 0 and not Path.Geom.isRoughly(args["outer_radius"], 0)) or (
+                args["inner_radius"] < 0 and not Path.Geom.isRoughly(args["inner_radius"], 0)
+            ):
+                # skip hole which can not be processed
+                posX = hole["x"]
+                posY = hole["y"]
+                posXQty = FreeCAD.Units.Quantity(posX, FreeCAD.Units.Length)
+                posYQty = FreeCAD.Units.Quantity(posY, FreeCAD.Units.Length)
+                posXString = posXQty.getUserPreferred("Length")[0]
+                posYString = posYQty.getUserPreferred("Length")[0]
+                posStr = f"X = {posXString}, Y = {posYString}"
+                Path.Log.warning(translate("PathHelix", "Skipped hole at position %s") % posStr)
+                continue
 
             # Split depth by step down
             work_distance = obj.StartDepth.Value - obj.FinalDepth.Value

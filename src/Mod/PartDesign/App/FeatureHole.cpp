@@ -2035,12 +2035,7 @@ App::DocumentObjectExecReturn* Hole::execute()
                 result = compound;
             }
             else {
-                result.makeElementBoolean(
-                    maker,
-                    {base, compound},
-                    getNameInDocument(),
-                    Precision::Confusion()
-                );
+                result.makeElementBoolean(maker, {base, compound}, nullptr, FuzzyTolerance.getValue());
             }
             result = getSolid(result);
             retry = false;
@@ -2062,12 +2057,7 @@ App::DocumentObjectExecReturn* Hole::execute()
             for (auto& hole : holes) {
                 ++i;
                 try {
-                    result.makeElementBoolean(
-                        maker,
-                        {base, hole},
-                        getNameInDocument(),
-                        Precision::Confusion()
-                    );
+                    result.makeElementBoolean(maker, {base, hole}, nullptr, FuzzyTolerance.getValue());
                 }
                 catch (Standard_Failure&) {
                     std::string msg(
