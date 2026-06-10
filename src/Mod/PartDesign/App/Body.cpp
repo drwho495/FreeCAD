@@ -332,7 +332,12 @@ void Body::setBaseProperty(App::DocumentObject* feature)
         App::DocumentObject* nextSolidFeature = getNextSolidFeature(feature);
         if (nextSolidFeature) {
             assert(nextSolidFeature->isDerivedFrom(PartDesign::Feature::getClassTypeId()));
-            static_cast<PartDesign::Feature*>(nextSolidFeature)->BaseFeature.setValue(feature);
+
+            PartDesign::Feature* nextSolidPartDesignFeature = static_cast<PartDesign::Feature*>(nextSolidFeature);
+            App::DocumentObject* oldBase = nextSolidPartDesignFeature->BaseFeature.getValue();
+            
+            nextSolidPartDesignFeature->BaseFeature.setValue(feature);
+            nextSolidPartDesignFeature->onBaseFeatureRerouted(oldBase, feature);
         }
     }
 }
