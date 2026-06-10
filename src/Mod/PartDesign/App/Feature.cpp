@@ -173,6 +173,91 @@ TopoShape Feature::getSolid(const TopoShape& shape) const
     return shape;
 }
 
+void Feature::onBaseFeatureRerouted(App::DocumentObject* /*oldBase*/, App::DocumentObject* /*newBase*/)
+{}
+
+bool Feature::relinkToMatchingSubelements(
+    App::PropertyLinkSub& link,
+    App::DocumentObject* oldBase,
+    App::DocumentObject* newBase
+)
+{
+    if (!oldBase || !newBase || link.getValue() != oldBase) {
+        return false;
+    }
+
+    auto oldFeature = freecad_cast<Part::Feature*>(oldBase);
+    auto newFeature = freecad_cast<Part::Feature*>(newBase);
+    if (!oldFeature || !newFeature) {
+        return false;
+    }
+
+    const auto& oldShape = oldFeature->Shape.getShape();
+    const auto& newShape = newFeature->Shape.getShape();
+    if (oldShape.isNull() || newShape.isNull()) {
+        return false;
+    }
+
+    const auto& oldSubs = link.getSubValues();
+    std::vector<std::string> newSubs;
+    newSubs.reserve(oldSubs.size());
+
+    App::HistoryAlgorithm selectedHistoryAlgorithm = App::getSelectedHistoryAlgorithm();
+
+    for (const auto& sub : oldSubs) {
+        if (sub.empty()) {
+            newSubs.emplace_back();
+            continue;
+        }
+
+        Data::MappedElement subMappedElement = oldShape.getElementName(sub.c_str());
+        
+        if (!subMappedElement.index) {
+            return false;
+        }
+
+        std::pair<TopAbs_ShapeEnum, int> subDecodedIndexedName = Part::TopoShape::shapeTypeAndIndex(subMappedElement.index);
+        if (subDecodedIndexedName.second <= 0) {
+            return false;
+        }
+
+        auto oldSubShape = oldShape.getSubTopoShape(subDecodedIndexedName.first, subDecodedIndexedName.second, true);
+
+        if (oldSubShape.isNull()) {
+            return false;
+        }
+
+        std::vector<std::string> names;
+
+        if (selectedHistoryAlgorithm == App::HistoryAlgorithm::V1) {
+            auto matches = newShape.findSubShapesWithSharedVertex(
+                oldSubShape,
+                &names,
+                Data::SearchOption::CheckGeometry
+            );
+
+            if (matches.size() != 1) {
+                return false;
+            }
+        } else if (selectedHistoryAlgorithm == App::HistoryAlgorithm::V2) {
+            std::vector<Data::MappedElement> foundNames = findSimilarNames(subMappedElement.name, newShape);
+
+            if (foundNames.size()) {
+                names.push_back(foundNames.front().name.toString());
+            }
+        }
+
+        if (names.size() != 1) {
+            return false;
+        }
+
+        newSubs.push_back(names.front());
+    }
+
+    link.setValue(newBase, std::move(newSubs));
+    return true;
+}
+
 void Feature::onChanged(const App::Property* prop)
 {
     if (!this->isRestoring() && this->getDocument()
