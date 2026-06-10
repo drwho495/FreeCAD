@@ -275,12 +275,7 @@ std::vector<TopoShape> DressUp::getFaces(const TopoShape& shape)
 
 void DressUp::onChanged(const App::Property* prop)
 {
-    if (prop == &Base) {
-        if (BaseFeature.getValue() && Base.getValue() != BaseFeature.getValue()) {
-            BaseFeature.setValue(Base.getValue());
-        }
-    }
-    else if (prop == &Shape || prop == &SupportTransform) {
+    if (prop == &Shape || prop == &SupportTransform) {
         if (!getDocument()->testStatus(App::Document::Restoring)
             && !getDocument()->isPerformingTransaction()) {
             // AddSubShape acts as a shape cache; invalidate so Transformed
@@ -294,7 +289,22 @@ void DressUp::onChanged(const App::Property* prop)
 
 void DressUp::onBaseFeatureRerouted(App::DocumentObject* oldBase, App::DocumentObject* newBase)
 {
-    relinkToMatchingSubelements(Base, oldBase, newBase);
+    // relinkToMatchingSubelements(Base, oldBase, newBase);
+
+    auto subs = Base.getSubValues(false);
+    auto shadows = Base.getShadowSubs();
+
+    Base.setValue(newBase, std::move(subs), std::move(shadows));
+    
+    App::GeoFeature *baseFeatureGeoFeature = static_cast<App::GeoFeature*>(newBase);
+
+    if (baseFeatureGeoFeature) {
+        const Data::ComplexGeoData *geoData = baseFeatureGeoFeature->getPropertyOfGeometry()->getComplexData();
+        
+        if (geoData && geoData->getElementMapSize()) {
+            App::PropertyLinkBase::updateElementReferences(newBase);
+        }
+    }
 }
 
 void DressUp::getAddSubShape(Part::TopoShape& addShape, Part::TopoShape& subShape)
