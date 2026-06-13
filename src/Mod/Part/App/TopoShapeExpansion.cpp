@@ -2086,41 +2086,16 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                         auto& modifiedShape = modifiedShapes[modifiedI];
 
                         if (modifiedShape.ShapeType() >= TopAbs_SHAPE) {
-                            // NOLINTNEXTLINE
-                            FC_ERR(
-                                "unknown modified shape type " << modifiedShape.ShapeType() << " from "
-                                                            << info->shapetype << i
-                            );
                             continue;
                         }
 
                         auto& newInfo = *infoMap.at(modifiedShape.ShapeType());
                         if (newInfo.type != modifiedShape.ShapeType()) {
-                            if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
-                                // TODO: it seems modified shape may report higher
-                                // level shape type just like generated shape below.
-                                // Maybe we shall do the same for name construction.
-                                // NOLINTNEXTLINE
-                                FC_WARN(
-                                    "modified shape type " << shapeName(modifiedShape.ShapeType())
-                                                        << " mismatch with " << info->shapetype << i
-                                );
-                            }
                             continue;
                         }
 
                         int modifiedShapeIndex = newInfo.find(modifiedShape);
                         if (modifiedShapeIndex == 0) {
-                            // This warning occurs in makeElementRevolve. It generates
-                            // some shape from a vertex that never made into the
-                            // final shape. There may be incomingShape cases there.
-                            if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
-                                // NOLINTNEXTLINE
-                                FC_WARN(
-                                    "Cannot find " << op << " modified " << newInfo.shapetype
-                                                << " from " << info->shapetype << i
-                                );
-                            }
                             continue;
                         }
 
@@ -2135,24 +2110,26 @@ TopoShape& TopoShape::makeShapeWithElementMap(
 
                             // we ONLY append a section to the name if something actually changes.
                             if (modifiedShapes.size() > 1) {
-                                newName.append(Data::MappedName::makeSection({},
-                                                                             {},
-                                                                             masterTag,
-                                                                             op,
-                                                                             modifiedI,
-                                                                             (*info->shapetype),
-                                                                             0,
-                                                                             {"MOD"}).c_str());
+                                newName.append(Data::MappedName::makeSection(
+                                    {},
+                                    {},
+                                    masterTag,
+                                    op,
+                                    modifiedI,
+                                    (*info->shapetype),
+                                    0,
+                                    {"MOD"}).c_str()
+                                );
                             }
 
                             bool skipMap = false;
                             
-                            for (const auto& mappedNameInfo : mappedNames) {
-                                if (mappedNameInfo.first == newName) {
-                                    skipMap = true;
-                                    break;
-                                }
-                            }
+                            // for (const auto& mappedNameInfo : mappedNames) {
+                            //     if (mappedNameInfo.first == newName) {
+                            //         skipMap = true;
+                            //         break;
+                            //     }
+                            // }
 
                             if (!skipMap) ensureElementMap()->setElementName(element, newName, masterTag);
                         }
@@ -2162,41 +2139,16 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                         auto& generatedShape = generatedShapes[generatedI];
 
                         if (generatedShape.ShapeType() >= TopAbs_SHAPE) {
-                            // NOLINTNEXTLINE
-                            FC_ERR(
-                                "unknown modified shape type " << generatedShape.ShapeType() << " from "
-                                                            << info->shapetype << i
-                            );
                             continue;
                         }
 
                         auto& newInfo = *infoMap.at(generatedShape.ShapeType());
                         if (newInfo.type != generatedShape.ShapeType()) {
-                            if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
-                                // TODO: it seems modified shape may report higher
-                                // level shape type just like generated shape below.
-                                // Maybe we shall do the same for name construction.
-                                // NOLINTNEXTLINE
-                                FC_WARN(
-                                    "modified shape type " << shapeName(generatedShape.ShapeType())
-                                                        << " mismatch with " << info->shapetype << i
-                                );
-                            }
                             continue;
                         }
 
                         int generatedShapeIndex = newInfo.find(generatedShape);
                         if (generatedShapeIndex == 0) {
-                            // This warning occurs in makeElementRevolve. It generates
-                            // some shape from a vertex that never made into the
-                            // final shape. There may be incomingShape cases there.
-                            if (FC_LOG_INSTANCE.isEnabled(FC_LOGLEVEL_LOG)) {
-                                // NOLINTNEXTLINE
-                                FC_WARN(
-                                    "Cannot find " << op << " generated " << newInfo.shapetype
-                                                << " from " << info->shapetype << i
-                                );
-                            }
                             continue;
                         }
 
@@ -2248,6 +2200,7 @@ TopoShape& TopoShape::makeShapeWithElementMap(
             }
 
             if (linkedNames.size()) {
+                // This mapping routine tries to differentiate between two new elements GENERATED from one single old element.
                 if (linkedNames.size() == 1) {
                     Data::IndexedName linkedIndexName = getIndexedName(linkedNames[0]);
                     auto it = normalGeneratedMap.find(linkedNames[0].toString());
@@ -2255,7 +2208,8 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                     if (linkedIndexName
                         && it != normalGeneratedMap.end()
                         && it->second.size() >= 2
-                        && (generatedShapeKey.first.ShapeType() >= TopAbs_FACE && generatedShapeKey.first.ShapeType() < TopAbs_VERTEX)) 
+                        && (generatedShapeKey.first.ShapeType() >= TopAbs_FACE && generatedShapeKey.first.ShapeType() < TopAbs_VERTEX)
+                    )
                     {
                         auto lowerElementType = static_cast<TopAbs_ShapeEnum>(generatedShapeKey.first.ShapeType() + 1);
                         const char* lowerElementTypeName = shapeName(lowerElementType).c_str();
@@ -2288,14 +2242,16 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                     }
                 }
 
-                Data::MappedName newName = Data::MappedName(Data::MappedName::makeSection({},
-                                                                                          linkedNames,
-                                                                                          masterTag,
-                                                                                          op,
-                                                                                          usedLinkedNames.count(linkedNames),
-                                                                                          generatedShapeKey.second.masterName.toString()[0],
-                                                                                          0,
-                                                                                          {"GEN"}).c_str());
+                Data::MappedName newName = Data::MappedName(Data::MappedName::makeSection(
+                    {},
+                    linkedNames,
+                    masterTag,
+                    op,
+                    usedLinkedNames.count(linkedNames),
+                    generatedShapeKey.second.masterName.toString()[0],
+                    0,
+                    {"GEN"}).c_str()
+                );
                 
                 usedLinkedNames.insert(linkedNames);
 
@@ -2339,14 +2295,16 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                             Data::IndexedName incomingShapeIndexedName = Data::IndexedName::fromConst(info->shapetype, otherI);
                             Data::MappedName incomingShapeMapName = incomingShape.getMappedName(incomingShapeIndexedName);
 
-                            Data::MappedName newName = Data::MappedName(Data::MappedName::makeSection({},
-                                                                                                      {incomingShapeMapName},
-                                                                                                      masterTag,
-                                                                                                      op,
-                                                                                                      usedPartnerNames.count(incomingShapeMapName),
-                                                                                                      (*info->shapetype),
-                                                                                                      0,
-                                                                                                      {"PTN"}).c_str());
+                            Data::MappedName newName = Data::MappedName(Data::MappedName::makeSection(
+                                {},
+                                {incomingShapeMapName},
+                                masterTag,
+                                op,
+                                usedPartnerNames.count(incomingShapeMapName),
+                                (*info->shapetype),
+                                0,
+                                {"PTN"}).c_str()
+                            );
                             
                             usedPartnerNames.insert(incomingShapeMapName);
 
@@ -2371,14 +2329,16 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                     }
 
                     if (linkedAncestorNames.size()) {
-                        Data::MappedName newName = Data::MappedName(Data::MappedName::makeSection({},
-                                                                                                  linkedAncestorNames,
-                                                                                                  masterTag,
-                                                                                                  op,
-                                                                                                  usedAncestorNames.count(linkedAncestorNames),
-                                                                                                  (*info->shapetype),
-                                                                                                  0,
-                                                                                                  {"ANC"}).c_str());
+                        Data::MappedName newName = Data::MappedName(Data::MappedName::makeSection(
+                            {},
+                            linkedAncestorNames,
+                            masterTag,
+                            op,
+                            usedAncestorNames.count(linkedAncestorNames),
+                            (*info->shapetype),
+                            0,
+                            {"ANC"}).c_str()
+                        );
                         
                         usedAncestorNames.insert(linkedAncestorNames);
                         ensureElementMap()->setElementName(mainElementIndexedName, newName, masterTag);
@@ -2418,14 +2378,16 @@ TopoShape& TopoShape::makeShapeWithElementMap(
                     }
 
                     if (linkedConnectedNames.size()) {
-                        Data::MappedName newName = Data::MappedName(Data::MappedName::makeSection({},
-                                                                                                  linkedConnectedNames,
-                                                                                                  masterTag,
-                                                                                                  op,
-                                                                                                  usedConnectedNames.count(linkedConnectedNames),
-                                                                                                  (*info->shapetype),
-                                                                                                  0,
-                                                                                                  {"CON"}).c_str());
+                        Data::MappedName newName = Data::MappedName(Data::MappedName::makeSection(
+                            {},
+                            linkedConnectedNames,
+                            masterTag,
+                            op,
+                            usedConnectedNames.count(linkedConnectedNames),
+                            (*info->shapetype),
+                            0,
+                            {"CON"}).c_str()
+                        );
                         
                         usedConnectedNames.insert(linkedConnectedNames);
                         ensureElementMap()->setElementName(mainElementIndexedName, newName, masterTag);
