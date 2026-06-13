@@ -31,8 +31,10 @@
 
 class QCheckBox;
 class QComboBox;
+class QKeyEvent;
 class QLineEdit;
 class QListWidget;
+class QListWidgetItem;
 class QToolButton;
 
 class Ui_TaskPadPocketParameters;
@@ -111,7 +113,8 @@ public:
         SelectFace,
         SelectShape,
         SelectShapeFaces,
-        SelectReferenceAxis
+        SelectReferenceAxis,
+        SelectProfile
     };
 
     TaskExtrudeParameters(
@@ -230,6 +233,8 @@ protected:
     int getSidesMode() const;
     QString getFaceName(QLineEdit*) const;
     void onSelectionChanged(const Gui::SelectionChanges& msg) override;
+    bool event(QEvent* event) override;
+    void keyPressEvent(QKeyEvent* keyEvent) override;
     void translateSidesList(int index);
     virtual void translateModeList(QComboBox* box, int index);
     virtual void updateUI(Side side);
@@ -245,6 +250,12 @@ private:
     void selectedFace(const Gui::SelectionChanges& msg, SideController& side);
     void selectedShape(const Gui::SelectionChanges& msg, SideController& side);
     void selectedShapeFace(const Gui::SelectionChanges& msg, SideController& side);
+    void selectedProfile(const Gui::SelectionChanges& msg);
+    void updateProfileName();
+    void onSelectProfileToggle(bool checked);
+    void onRemoveProfileFace();
+    void onProfileFaceSelected(QListWidgetItem* current, QListWidgetItem* previous);
+    void onProfileFaceDoubleClicked(QListWidgetItem* item);
 
     void tryRecomputeFeature();
     void translateFaceName(QLineEdit*);
@@ -273,6 +284,7 @@ protected:
     QWidget* proxy;
     QAction* unselectShapeFaceAction;
     QAction* unselectShapeFaceAction2;
+    QAction* removeProfileFaceAction = nullptr;
 
     std::unique_ptr<Ui_TaskPadPocketParameters> ui;
     std::vector<std::unique_ptr<App::PropertyLinkSub>> axesInList;

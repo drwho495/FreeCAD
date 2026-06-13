@@ -22,6 +22,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#include <QKeyEvent>
+#include <QListWidget>
 #include <QSignalBlocker>
 #include <QAction>
 
@@ -104,6 +106,14 @@ void TaskExtrudeParameters::setupDialog()
     ui->ZDirectionEdit->bind(App::ObjectIdentifier::parse(extrude, "Direction.z"));
 
     ui->checkBoxReversed->setChecked(extrude->Reversed.getValue());
+
+    // --- Profile Setup ---
+    removeProfileFaceAction = new QAction(tr("Remove"), this);
+    removeProfileFaceAction->setShortcut(Gui::QtTools::deleteKeySequence());
+    removeProfileFaceAction->setShortcutVisibleInContextMenu(true);
+    ui->listWidgetProfileFaces->addAction(removeProfileFaceAction);
+    ui->listWidgetProfileFaces->setContextMenuPolicy(Qt::ActionsContextMenu);
+    updateProfileName();
 
     // --- Per-Side Setup using the Helper ---
     setupSideDialog(m_side1);
@@ -331,6 +341,14 @@ void TaskExtrudeParameters::connectSlots()
             this, &TaskExtrudeParameters::onSidesModeChanged);
     connect(ui->checkBoxUpdateView, &QCheckBox::toggled,
             this, &TaskExtrudeParameters::onUpdateView);
+    connect(ui->buttonProfile, &QToolButton::toggled,
+            this, &TaskExtrudeParameters::onSelectProfileToggle);
+    connect(removeProfileFaceAction, &QAction::triggered,
+            this, &TaskExtrudeParameters::onRemoveProfileFace);
+    connect(ui->listWidgetProfileFaces, &QListWidget::currentItemChanged,
+            this, &TaskExtrudeParameters::onProfileFaceSelected);
+    connect(ui->listWidgetProfileFaces, &QListWidget::itemDoubleClicked,
+            this, &TaskExtrudeParameters::onProfileFaceDoubleClicked);
     // clang-format on
 }
 
@@ -423,6 +441,14 @@ void TaskExtrudeParameters::setSelectionMode(SelectionMode mode, Side side)
         case SelectReferenceAxis:
             onSelectReference(AllowSelection::EDGE | AllowSelection::PLANAR | AllowSelection::CIRCLE);
             break;
+        case SelectProfile: {
+            this->blockSelection(false);
+            
+            Gui::Selection().clearSelection();
+            Gui::Selection().rmvSelectionGate();
+            Gui::Selection().addSelectionGate(new SelectionFilterGate("SELECT Sketcher::SketchObject SUBELEMENT InternalFace"));
+            break;
+        }
         default:
             getViewObject<ViewProviderExtrude>()->highlightShapeFaces({});
             onSelectReference(AllowSelection::NONE);
@@ -461,6 +487,10 @@ void TaskExtrudeParameters::onSelectionChanged(const Gui::SelectionChanges& msg)
                 selectedReferenceAxis(msg);
                 break;
 
+            case SelectProfile:
+                selectedProfile(msg);
+                break;
+
             default:
                 // no-op
                 break;
@@ -489,6 +519,243 @@ void TaskExtrudeParameters::selectedReferenceAxis(const Gui::SelectionChanges& m
 
         setGizmoPositions();
     }
+}
+
+void TaskExtrudeParameters::selectedProfile(const Gui::SelectionChanges& msg)
+{
+    App::Document* document = getObject()->getDocument();
+    if (strcmp(msg.pDocName, document->getName()) != 0) {
+        return;
+    }
+
+    App::DocumentObject* selObj = document->getObject(msg.pObjectName);
+    if (!selObj) {
+        return;
+    }
+
+    PartDesign::FeatureExtrude* feature = getObject<PartDesign::FeatureExtrude>();
+
+    if (feature && msg.pSubName && strlen(msg.pSubName) > 0) {
+        App::DocumentObject* currentObj = feature->Profile.getValue();
+        std::vector<std::string> currentSubs = feature->Profile.getSubValues();
+
+        if (currentObj && currentObj != selObj) {
+            if (feature->AlongSketchNormal.getValue()) {
+                auto referenceSubs = feature->ReferenceAxis.getSubValues();
+                auto referenceShadowSubs = feature->ReferenceAxis.getShadowSubs();
+
+                feature->ReferenceAxis.setValue(selObj, std::move(referenceSubs), std::move(referenceShadowSubs));
+            }
+
+            Base::Console().log("selObj label: %s\n", feature->ReferenceAxis.getValue()->Label.getValue());
+
+            currentSubs.clear();
+        }
+
+        std::string subName(msg.pSubName);
+
+        auto it = std::find(currentSubs.begin(), currentSubs.end(), subName);
+        if (it != currentSubs.end()) {
+            currentSubs.erase(it);
+        } else {
+            // if we originally selected a SketchObject itself and not one of its faces then a empty sub at the start
+            // of the vector will be present, so we need to prune that before doing anything else.
+            if (currentSubs.size() == 1 && currentSubs.front().empty()) {
+                currentSubs[0] = subName;
+            } else {
+                currentSubs.push_back(subName);
+            }
+        }
+
+        feature->Profile.setValue(selObj, currentSubs);
+        updateProfileName();
+        tryRecomputeFeature();
+
+        Gui::Selection().clearSelection();
+    }
+}
+
+void TaskExtrudeParameters::updateProfileName()
+{
+    PartDesign::ProfileBased* feature = getObject<PartDesign::ProfileBased>();
+    if (!feature) {
+        QSignalBlocker blocker(ui->lineProfileName);
+        ui->lineProfileName->clear();
+        QSignalBlocker listBlocker(ui->listWidgetProfileFaces);
+        ui->listWidgetProfileFaces->clear();
+        ui->listWidgetProfileFaces->hide();
+        return;
+    }
+
+    App::DocumentObject* profile = feature->Profile.getValue();
+    const std::vector<std::string>& subs = feature->Profile.getSubValues();
+
+    QSignalBlocker blocker(ui->lineProfileName);
+    if (!profile) {
+        ui->lineProfileName->clear();
+        QSignalBlocker listBlocker(ui->listWidgetProfileFaces);
+        ui->listWidgetProfileFaces->clear();
+        ui->listWidgetProfileFaces->hide();
+        return;
+    }
+
+    ui->lineProfileName->setText(QString::fromUtf8(profile->Label.getValue()));
+
+    QSignalBlocker listBlocker(ui->listWidgetProfileFaces);
+    ui->listWidgetProfileFaces->clear();
+
+    bool showListProfileWidget = false;
+    
+    for (const auto& sub : subs) {
+        if (!sub.empty()) {
+            showListProfileWidget = true;
+        }
+
+        ui->listWidgetProfileFaces->addItem(QString::fromStdString(sub));
+    }
+
+    ui->listWidgetProfileFaces->setVisible(showListProfileWidget);
+}
+
+void TaskExtrudeParameters::onSelectProfileToggle(bool checked)
+{
+    auto feature = getObject<PartDesign::ProfileBased>();
+
+    if (checked) {
+        if (feature) {
+            if (auto profile = feature->Profile.getValue()) {
+                if (profile->isDerivedFrom<Part::Part2DObject>()) {
+                    if (auto doc = getGuiDocument()) {
+                        doc->setShow(profile->getNameInDocument());
+                    }
+                }
+            }
+        }
+
+        ui->buttonProfile->setText(tr("Confirm Selection"));
+        setSelectionMode(SelectProfile);
+        ui->lineProfileName->setPlaceholderText(tr("Click on a face"));
+    } else {
+        if (feature) {
+            if (auto profile = feature->Profile.getValue()) {
+                if (profile->isDerivedFrom<Part::Part2DObject>()) {
+                    if (auto doc = getGuiDocument()) {
+                        doc->setHide(profile->getNameInDocument());
+                    }
+                }
+            }
+        }
+
+        ui->buttonProfile->setText(tr("Select"));
+        setSelectionMode(None);
+        updateProfileName();
+    }
+}
+
+bool TaskExtrudeParameters::event(QEvent* event)
+{
+    if (event->type() == QEvent::ShortcutOverride) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+
+        if (removeProfileFaceAction 
+            && ui->listWidgetProfileFaces->hasFocus() 
+            && Gui::QtTools::matches(keyEvent, removeProfileFaceAction->shortcut())
+        ) 
+        {
+            keyEvent->accept();
+            return true;
+        }
+    }
+
+    return TaskBox::event(event);
+}
+
+void TaskExtrudeParameters::keyPressEvent(QKeyEvent* keyEvent)
+{
+    if (removeProfileFaceAction 
+        && removeProfileFaceAction->isEnabled()
+        && ui->listWidgetProfileFaces->hasFocus()
+        && Gui::QtTools::matches(keyEvent, removeProfileFaceAction->shortcut())
+    )
+    {
+        removeProfileFaceAction->trigger();
+        return;
+    }
+    TaskFeatureParameters::keyPressEvent(keyEvent);
+}
+
+void TaskExtrudeParameters::onRemoveProfileFace()
+{
+    auto feature = getObject<PartDesign::ProfileBased>();
+    if (!feature) {
+        return;
+    }
+
+    QList<QListWidgetItem*> selectedItems = ui->listWidgetProfileFaces->selectedItems();
+    if (selectedItems.isEmpty()) {
+        return;
+    }
+
+    std::vector<std::string> currentSubs = feature->Profile.getSubValues();
+    QSignalBlocker block(ui->listWidgetProfileFaces);
+    for (int i = selectedItems.count() - 1; i >= 0; i--) {
+        auto it = std::find(currentSubs.begin(), currentSubs.end(), selectedItems.at(i)->text().toStdString());
+        if (it != currentSubs.end()) {
+            currentSubs.erase(it);
+        }
+
+        int row = ui->listWidgetProfileFaces->row(selectedItems.at(i));
+        ui->listWidgetProfileFaces->model()->removeRow(row);
+    }
+
+    feature->Profile.setValue(feature->Profile.getValue(), currentSubs);
+    updateProfileName();
+    tryRecomputeFeature();
+}
+
+void TaskExtrudeParameters::onProfileFaceSelected(QListWidgetItem* current, QListWidgetItem*)
+{
+    if (!current) {
+        return;
+    }
+
+    auto feature = getObject<PartDesign::ProfileBased>();
+    if (!feature) {
+        return;
+    }
+    auto* profile = feature->Profile.getValue();
+    if (!profile) {
+        return;
+    }
+
+    if (selectionMode != SelectProfile) {
+        QSignalBlocker block(ui->buttonProfile);
+        ui->buttonProfile->setChecked(true);
+        onSelectProfileToggle(true);
+    }
+    else {
+        Gui::Selection().clearSelection();
+    }
+
+    std::string docName = feature->getDocument()->getName();
+    std::string objName = profile->getNameInDocument();
+    std::string subName = current->text().toStdString();
+
+    bool block = this->blockSelection(true);
+    try {
+        Gui::Selection().addSelection(docName.c_str(), objName.c_str(), subName.c_str(), 0, 0, 0);
+    }
+    catch (const Base::Exception& e) {
+        e.reportException();
+    }
+    this->blockSelection(block);
+}
+
+void TaskExtrudeParameters::onProfileFaceDoubleClicked(QListWidgetItem*)
+{
+    QSignalBlocker block(ui->buttonProfile);
+    ui->buttonProfile->setChecked(false);
+    onSelectProfileToggle(false);
 }
 
 void TaskExtrudeParameters::selectedShapeFace(const Gui::SelectionChanges& msg, SideController& side)
