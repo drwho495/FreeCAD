@@ -46,6 +46,12 @@
 using App::Application;
 using Base::Console;
 
+#ifdef __EMSCRIPTEN__
+// Defined in the generated WasmInittab.cpp; registers the statically linked
+// Python extension modules before the interpreter is initialized.
+void freecadWasmRegisterInittab();
+#endif
+
 const auto sBanner = fmt::format(
     "(C) 2001-{} FreeCAD contributors\n"
     "FreeCAD is free and open-source software licensed under the terms of LGPL2+ license.\n\n",
@@ -57,6 +63,10 @@ int main(int argc, char** argv)
     // Make sure that we use '.' as decimal point
     setlocale(LC_ALL, "");
     setlocale(LC_NUMERIC, "C");
+
+#ifdef __EMSCRIPTEN__
+    freecadWasmRegisterInittab();
+#endif
 
 #if defined(__MINGW32__)
     const char* mingw_prefix = getenv("MINGW_PREFIX");

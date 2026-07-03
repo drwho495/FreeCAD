@@ -88,6 +88,23 @@ mark_as_advanced(
         FREECAD_USE_SANITIZER_MSAN
 )
 
+if(EMSCRIPTEN)
+    # WebAssembly port: dynamic linking is not used; every SHARED/MODULE target
+    # (core libs and Python extension modules alike) becomes a static archive
+    # linked into the single executable. Python extension modules are then
+    # registered via PyImport_AppendInittab (see src/Main wasm inittab).
+    function(add_library name)
+        set(_args ${ARGN})
+        list(FIND _args IMPORTED _imp)
+        list(FIND _args INTERFACE _ifc)
+        list(FIND _args ALIAS _als)
+        if(_imp EQUAL -1 AND _ifc EQUAL -1 AND _als EQUAL -1)
+            list(TRANSFORM _args REPLACE "^(SHARED|MODULE)$" "STATIC")
+        endif()
+        _add_library(${name} ${_args})
+    endfunction()
+endif()
+
 # include local modules
 include(CheckCXXCompilerFlag)
 include(AddFileDependencies)

@@ -147,8 +147,7 @@
 #include <BRep_Tool.hxx>
 #include <TopoDS.hxx>
 #include <memory>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <mutex>
 
 #include "Geometry.h"
 #include "ArcOfCirclePy.h"
@@ -504,9 +503,9 @@ void Geometry::createNewTag()
     // https://www.boost.org/doc/libs/1_62_0/libs/uuid/uuid.html#Design%20notes
     static boost::mt19937 ran;
     static bool seeded = false;
-    static boost::mutex random_number_mutex;
+    static std::mutex random_number_mutex;
 
-    boost::lock_guard<boost::mutex> guard(random_number_mutex);
+    std::lock_guard<std::mutex> guard(random_number_mutex);
 
     if (!seeded) {
         ran.seed(static_cast<std::uint64_t>(std::time(nullptr)));

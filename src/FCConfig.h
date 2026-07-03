@@ -34,7 +34,16 @@
 // switching the operating systems
 
 // First check for *WIN64* since the *WIN32* are also set on 64-bit platforms
-#if defined(WIN64) || defined(_WIN64) || defined(__WIN64__)
+#if defined(__EMSCRIPTEN__)
+// WebAssembly port: emscripten's libc is POSIX-shaped; the Linux code paths
+// are the closest fit. FC_OS_WASM marks the few places that must diverge.
+#   ifndef FC_OS_LINUX
+#   define FC_OS_LINUX
+#   endif
+#   ifndef FC_OS_WASM
+#   define FC_OS_WASM
+#   endif
+#elif defined(WIN64) || defined(_WIN64) || defined(__WIN64__)
 #   ifndef FC_OS_WIN32
 #   define FC_OS_WIN32
 #   endif

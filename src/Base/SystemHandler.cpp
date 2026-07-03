@@ -64,7 +64,7 @@ static void freecadNewHandler()
 }
 #endif
 
-#if defined(FC_OS_LINUX)
+#if defined(FC_OS_LINUX) && !defined(FC_OS_WASM)
 # include <unistd.h>
 # include <execinfo.h>
 # include <dlfcn.h>
@@ -122,7 +122,7 @@ static void printBacktrace([[maybe_unused]] size_t skip = 0)
 
 void segmentation_fault_handler([[maybe_unused]] int sig)
 {
-#if defined(FC_OS_LINUX)
+#if defined(FC_OS_LINUX) && !defined(FC_OS_WASM)
     std::cerr << "Program received signal SIGSEGV, Segmentation fault.\n";
     printBacktrace(2);
 # if defined(FC_DEBUG)
