@@ -119,12 +119,20 @@ if(BUILD_GUI)
     if(EMSCRIPTEN)
         target_link_options(FreeCADMain PRIVATE
             ${FREECAD_WASM_COMMON_LINK_OPTIONS}
-            # Stopgap 3D path: emulate the fixed-function GL1 subset Coin uses
-            # over WebGL2 until the Coin GLES2 backend (Stage 4) lands.
-            "-sLEGACY_GL_EMULATION=1"
-            "-sGL_UNSAFE_OPTS=0"
-            "-sFULL_ES2=1"
+            # NOTE: Emscripten's LEGACY_GL_EMULATION requires WebGL1, but
+            # Qt-for-wasm forces MAX_WEBGL_VERSION=2 ("cannot emulate both ES2
+            # and legacy GL"), so the two are mutually exclusive. The planned
+            # GL1-emulation stopgap is therefore not viable alongside Qt; the
+            # GUI boots with a non-rendering 3D viewport (Coin's fixed-function
+            # calls no-op against WebGL2) until the real GLES2/WebGL2 Coin
+            # backend lands (Stage 4). See research/R3-graphics-coin-webgl.md.
             "-sMAX_WEBGL_VERSION=2"
+            "-sFULL_ES3=1"
+            "-lEGL"   # Coin's context glue references EGL entry points
+            # Vendored Coin bundles its own copy of expat, whose internal
+            # symbols collide with the expat inside static libpython. Both are
+            # the same upstream library, so tolerate the duplicates here.
+            "-Wl,--allow-multiple-definition"
         )
         if(FREECAD_WASM_NODERAWFS)
             target_link_options(FreeCADMain PRIVATE "-sNODERAWFS=1")

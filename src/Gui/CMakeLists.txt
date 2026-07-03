@@ -1571,7 +1571,7 @@ INSTALL(
 if(EMSCRIPTEN)
     # AUTOMOC picks up FcWasmProcess.h (matching basename) and emits the
     # stub's metaobject + signal definitions exactly once.
-    target_sources(FreeCADGui PRIVATE FcWasmProcess.cpp)
+    target_sources(FreeCADGui PRIVATE FcWasmProcess.cpp WasmGLFixedFunc.cpp)
     # Qt for WebAssembly disables QProcess; force-include an API-compatible
     # no-op stub (see FcWasmProcess.h) across the whole Gui target so every
     # translation unit and generated moc file that references QProcess keeps
