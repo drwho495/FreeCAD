@@ -73,8 +73,13 @@ if(EMSCRIPTEN)
         "-sWASM_BIGINT=1"
         "-sEXIT_RUNTIME=0"
         "-sDISABLE_EXCEPTION_CATCHING=0"
-        "-sEXPORTED_RUNTIME_METHODS=FS,callMain,ENV,ccall,cwrap"
-        "SHELL:-s EXPORTED_FUNCTIONS=_main,__PyRuntime,_PyGILState_GetThisThreadState,__Py_DumpTraceback,__PyEM_EMSCRIPTEN_TRAMPOLINE_OFFSET"
+        # FS/callMain/ENV/ccall/cwrap for our JS API + CPython glue; the rest
+        # (UTF16ToString,stringToUTF16,JSEvents,specialHTMLTargets) are what the
+        # Qt wasm platform plugin needs — see Qt6WasmMacros.cmake. A single
+        # EXPORTED_RUNTIME_METHODS wins at link time, so it must be the union.
+        "-sEXPORTED_RUNTIME_METHODS=FS,callMain,ENV,ccall,cwrap,UTF16ToString,stringToUTF16,JSEvents,specialHTMLTargets,stringToNewUTF8,UTF8ToString"
+        "SHELL:-s EXPORTED_FUNCTIONS=_main,__embind_initialize_bindings,__PyRuntime,_PyGILState_GetThisThreadState,__Py_DumpTraceback,__PyEM_EMSCRIPTEN_TRAMPOLINE_OFFSET"
+        "-sFETCH=1"
         "-sUSE_ZLIB=1"
         "-sUSE_BZIP2=1"
         "-lnodefs.js"

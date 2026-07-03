@@ -1014,6 +1014,14 @@ private:
     static void LoadParameters();
     // puts the given env variable in the config
     static void SaveEnv(const char *);
+#ifdef FC_OS_WASM
+public:
+    /// wasm: bring the singleton + parameter system up on first access, before
+    /// main()'s init(), to satisfy early (static-init-order) Gui/Mod global
+    /// constructors that read the parameter system. See Application.cpp.
+    static void bootstrapEarly();
+private:
+#endif
     // startup configuration container
     static std::map<std::string,std::string> mConfig;
     // Management of and access to applications directories
@@ -1094,6 +1102,13 @@ private:
  * @ingroup ApplicationGroup
  */
 inline App::Application &GetApplication(){
+#ifdef FC_OS_WASM
+    // Static-init-order guard: Gui/Mod global constructors may reach the
+    // application before main() runs init(). Bring it up on demand.
+    if (!App::Application::_pcSingleton) {
+        App::Application::bootstrapEarly();
+    }
+#endif
     return *App::Application::_pcSingleton;
 }
 

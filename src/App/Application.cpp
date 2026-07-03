@@ -421,8 +421,31 @@ Application::Application(std::map<std::string,std::string> &mConfig)
     _recomputeThread = std::thread(&Application::recomputeWorker, this);
 #endif
 
-    setupPythonTypes();
+    // On wasm the singleton may be created early (bootstrapEarly, before
+    // Py_Initialize) to satisfy Gui/Mod global constructors that read the
+    // parameter system. Defer Python-type registration until the interpreter
+    // is up; initApplication() runs it once Python is ready.
+    if (Py_IsInitialized()) {
+        setupPythonTypes();
+    }
 }
+
+#ifdef FC_OS_WASM
+void Application::bootstrapEarly()
+{
+    if (_pcSingleton) {
+        return;
+    }
+    // Statically linked wasm build: Gui/Mod translation units are part of the
+    // single module, so their global constructors run at module load — before
+    // main() and before App::Application::init(). Some of them read the
+    // parameter system (e.g. Gui::ViewParams). Desktop avoids this because
+    // FreeCADGui is dlopen'd only after init(); here we bring the parameter
+    // managers and the singleton up on first access instead.
+    LoadParameters();
+    _pcSingleton = new Application(mConfig);
+}
+#endif
 
 Application::~Application()
 {
@@ -437,6 +460,14 @@ Application::~Application()
 
 void Application::setupPythonTypes()
 {
+    // Idempotent: on wasm the singleton may be bootstrapped before Python is
+    // ready (registration skipped) and completed later by initApplication().
+    static bool s_pythonTypesReady = false;
+    if (s_pythonTypesReady) {
+        return;
+    }
+    s_pythonTypesReady = true;
+
     // setting up Python binding
     Base::PyGILStateLocker lock;
     PyObject* modules = PyImport_GetModuleDict();
@@ -3008,7 +3039,13 @@ void Application::initApplication()
     // creating the application
     if (mConfig["Verbose"] != "Strict")
         Base::Console().log("Create Application\n");
-    Application::_pcSingleton = new Application(mConfig);
+    // On wasm the singleton may already exist (bootstrapEarly); reuse it and
+    // just complete the deferred Python-type registration now that the
+    // interpreter is initialized.
+    if (!Application::_pcSingleton) {
+        Application::_pcSingleton = new Application(mConfig);
+    }
+    setupPythonTypes();
 
     // set up Unit system default
     const ParameterGrp::handle hGrp = GetApplication().GetParameterGroupByPath
@@ -3253,6 +3290,13 @@ void Application::logStatus()
 
 void Application::LoadParameters()
 {
+    // Idempotent: on wasm bootstrapEarly() may load parameters before main's
+    // initConfig() reaches this point; don't recreate the managers (which are
+    // already referenced by the singleton's mpcPramManager map).
+    if (_pcUserParamMngr && _pcSysParamMngr) {
+        return;
+    }
+
     // Init parameter sets ===========================================================
     //
     if (mConfig.find("UserParameter") == mConfig.end())
