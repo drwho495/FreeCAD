@@ -87,6 +87,10 @@ static QString getF3dPath()
 
 static QStringList getF3DOptions(const QString& f3dPath)
 {
+#ifdef Q_OS_WASM
+    Q_UNUSED(f3dPath)   // no external f3d process in the wasm sandbox
+    return {};
+#else
     // F3D is under active development, and the available options change with some regularity.
     // Rather than hardcode per version, just check the ones we care about.
     QStringList optionsToTest {
@@ -117,10 +121,17 @@ static QStringList getF3DOptions(const QString& f3dPath)
         }
     }
     return goodOptions;
+#endif
 }
 
 static void setupF3D()
 {
+#ifdef Q_OS_WASM
+    QMutexLocker locker(&mutex);
+    f3d.initialized = true;
+    f3d.major = 0;
+    return;
+#else
     QMutexLocker locker(&mutex);
     if (f3d.initialized) {
         return;
@@ -152,6 +163,7 @@ static void setupF3D()
         f3d.baseArgs = getF3DOptions(f3dPath);
     }
     Base::Console().log("Running f3d version %d.%d\n", f3d.major, f3d.minor);
+#endif
 }
 
 ThumbnailSource::ThumbnailSource(QString file)
@@ -160,6 +172,9 @@ ThumbnailSource::ThumbnailSource(QString file)
 
 void ThumbnailSource::run()
 {
+#ifdef Q_OS_WASM
+    return;   // thumbnails require the external f3d process
+#else
     _thumbnailPath = getPathToCachedThumbnail(_file);
     if (!useCachedThumbnail(_thumbnailPath, _file)) {
         // Go through the mutex to ensure data is not stale.
@@ -201,4 +216,5 @@ void ThumbnailSource::run()
     if (QFile thumbnailFile(_thumbnailPath); thumbnailFile.open(QIODevice::OpenModeFlag::ReadOnly)) {
         Q_EMIT _signals.thumbnailAvailable(_file, thumbnailFile.readAll());
     }
+#endif
 }

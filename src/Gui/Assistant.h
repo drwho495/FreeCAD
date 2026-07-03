@@ -25,7 +25,13 @@
 
 #include <QObject>
 
+#ifndef __EMSCRIPTEN__
 class QProcess;
+#else
+// On wasm QProcess is a type alias (FcWasmProcess); a forward class
+// declaration would conflict with it, so pull in the definition instead.
+#include "FcWasmProcess.h"
+#endif
 
 namespace Gui
 {

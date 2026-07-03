@@ -1567,3 +1567,15 @@ INSTALL(
     DESTINATION
         ${CMAKE_INSTALL_DATADIR}/3Dconnexion
 )
+
+if(EMSCRIPTEN)
+    # AUTOMOC picks up FcWasmProcess.h (matching basename) and emits the
+    # stub's metaobject + signal definitions exactly once.
+    target_sources(FreeCADGui PRIVATE FcWasmProcess.cpp)
+    # Qt for WebAssembly disables QProcess; force-include an API-compatible
+    # no-op stub (see FcWasmProcess.h) across the whole Gui target so every
+    # translation unit and generated moc file that references QProcess keeps
+    # compiling. The affected features degrade to "unavailable" at run time.
+    target_compile_options(FreeCADGui PRIVATE
+        "-include${CMAKE_CURRENT_SOURCE_DIR}/FcWasmProcess.h")
+endif()

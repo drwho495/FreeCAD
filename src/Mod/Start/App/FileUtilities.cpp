@@ -25,7 +25,6 @@
 #include <QDateTime>
 #include <QFileInfo>
 #include <QString>
-#include <QTimeZone>
 #include <QUrl>
 #include <fmt/format.h>
 
@@ -100,7 +99,7 @@ std::string Start::getLastModifiedAsString(const Base::FileInfo& file)
 {
     Base::TimeInfo lastModified = file.lastModified();
     return QDateTime::fromSecsSinceEpoch(lastModified.getTime_t())
-        .toTimeZone(QTimeZone::utc())
+        .toUTC()
         .toString(Qt::ISODate)
         .toStdString();
 }
