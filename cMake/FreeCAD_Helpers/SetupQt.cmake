@@ -2,11 +2,8 @@
 
 set(FREECAD_QT_COMPONENTS Core Concurrent Network Xml)
 if(EMSCRIPTEN)
-    # Qt for WebAssembly (single-threaded) ships no QtConcurrent, and QtNetwork
-    # is unused in the wasm port (network call sites are stubbed).
     # LinguistTools (host lrelease via QT_HOST_PATH) is needed even for the
     # console build's qt_add_translation calls.
-    list(REMOVE_ITEM FREECAD_QT_COMPONENTS Concurrent Network)
     list(APPEND FREECAD_QT_COMPONENTS LinguistTools)
 endif()
 

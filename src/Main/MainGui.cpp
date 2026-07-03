@@ -148,8 +148,17 @@ static void displayCritical(const QString& msg, bool preformatted = true)
     }
 }
 
+#ifdef __EMSCRIPTEN__
+// Generated WasmInittabGui.cpp: registers statically linked Python extension
+// modules (App + Gui) before the interpreter is initialized.
+void freecadWasmRegisterInittab();
+#endif
+
 int main(int argc, char** argv)
 {
+#ifdef __EMSCRIPTEN__
+    freecadWasmRegisterInittab();
+#endif
 #if defined(FC_OS_LINUX) || defined(FC_OS_BSD)
     setlocale(LC_ALL, "");  // use native environment settings
     // Preserve the resolved numeric locale before forcing LC_NUMERIC=C for XML parsing.
