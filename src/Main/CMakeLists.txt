@@ -134,6 +134,16 @@ if(BUILD_GUI)
             "-sMAX_WEBGL_VERSION=2"
             "-sFULL_ES3=1"
             "-lEGL"   # Coin's context glue references EGL entry points
+            # Asyncify: FreeCAD (and Qt) use synchronous QEventLoop::exec()
+            # (nested event loops, modal dialogs). Qt-for-wasm supports this
+            # only when built with QT_HAVE_EMSCRIPTEN_ASYNCIFY (we build
+            # qt-asyncify from source) AND the app is linked with -sASYNCIFY,
+            # which instruments the whole module to suspend/resume the wasm
+            # stack. See research/R5. -Os keeps the asyncify size blow-up in
+            # check. Whitelisting the suspendable call tree keeps it smaller;
+            # start broad and trim in Stage 6.
+            "-sASYNCIFY=1"
+            "-sASYNCIFY_STACK_SIZE=131072"
             # Vendored Coin bundles its own copy of expat, whose internal
             # symbols collide with the expat inside static libpython. Both are
             # the same upstream library, so tolerate the duplicates here.

@@ -106,23 +106,30 @@ macro(SetupBundledCoinPivy)
         "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/src/3rdParty/coin/include>"
     )
 
-    set(PIVY_USE_SOQT OFF CACHE BOOL "Build bundled Pivy SoQt bindings" FORCE)
-    set(PIVY_PACKAGE_OUTPUT_DIR "${PROJECT_BINARY_DIR}/Mod/pivy"
-        CACHE PATH "Build-tree output directory for bundled Pivy" FORCE)
-    add_subdirectory("${CMAKE_SOURCE_DIR}/src/3rdParty/pivy" "${CMAKE_BINARY_DIR}/src/3rdParty/pivy" EXCLUDE_FROM_ALL)
-    if (NOT DEFINED PIVY_VERSION OR PIVY_VERSION STREQUAL "")
-        message(FATAL_ERROR "Bundled Pivy did not define PIVY_VERSION")
-    endif ()
-    add_custom_target(BundledPivy ALL
-        DEPENDS pivy
-    )
+    # pivy (the Python<->Coin SWIG binding) is only useful with PySide, which
+    # is off in the wasm MVP. Its generated coinPYTHON_wrap.cxx is enormous and
+    # dominates build time/disk for no benefit here, so skip it on wasm.
+    # NOTE: return() inside a CMake macro returns from the *caller's* scope, so
+    # it must NOT be used here — guard the pivy block with an if() instead.
+    if(NOT EMSCRIPTEN)
+        set(PIVY_USE_SOQT OFF CACHE BOOL "Build bundled Pivy SoQt bindings" FORCE)
+        set(PIVY_PACKAGE_OUTPUT_DIR "${PROJECT_BINARY_DIR}/Mod/pivy"
+            CACHE PATH "Build-tree output directory for bundled Pivy" FORCE)
+        add_subdirectory("${CMAKE_SOURCE_DIR}/src/3rdParty/pivy" "${CMAKE_BINARY_DIR}/src/3rdParty/pivy" EXCLUDE_FROM_ALL)
+        if (NOT DEFINED PIVY_VERSION OR PIVY_VERSION STREQUAL "")
+            message(FATAL_ERROR "Bundled Pivy did not define PIVY_VERSION")
+        endif ()
+        add_custom_target(BundledPivy ALL
+            DEPENDS pivy
+        )
 
-    # Install pivy with FreeCAD rather than with the global Python.
-    # We add pivy with EXCLUDE_FROM_ALL to suppress its own install rule.
-    install(
-        DIRECTORY "${PIVY_PACKAGE_OUTPUT_DIR}/"
-        DESTINATION Mod/pivy
-    )
+        # Install pivy with FreeCAD rather than with the global Python.
+        # We add pivy with EXCLUDE_FROM_ALL to suppress its own install rule.
+        install(
+            DIRECTORY "${PIVY_PACKAGE_OUTPUT_DIR}/"
+            DESTINATION Mod/pivy
+        )
+    endif()
 endmacro(SetupBundledCoinPivy)
 
 macro(SetupCoinPivy)
