@@ -190,7 +190,12 @@ int main(int argc, char** argv)
     // See https://forum.freecad.org/viewtopic.php?f=18&t=20600
     // See Gui::Application::runApplication()
     putenv("LC_NUMERIC=C");
+#ifndef FC_OS_WASM
+    // Desktop clears PYTHONPATH so a stray external one can't shadow the
+    // bundled interpreter. On wasm PYTHONPATH is how the embedder points at
+    // the packaged stdlib zip, so it must be preserved.
     putenv("PYTHONPATH=");
+#endif
 #elif defined(FC_OS_MACOSX)
     (void)QLocale::system();
     putenv("PYTHONPATH=");

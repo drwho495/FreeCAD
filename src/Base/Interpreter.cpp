@@ -622,9 +622,40 @@ void initInterpreter(int argc, char* argv[])
     config.user_site_directory = 1;
 #ifdef FC_OS_WASM
     // The wasm build has no baked-in installation prefix that exists at run
-    // time; stdlib location comes from PYTHONHOME/PYTHONPATH set by the
-    // embedding page / node harness.
+    // time. Set the stdlib search paths explicitly from PYTHONPATH (":"/-split)
+    // set by the embedding page / node harness, rather than relying on env
+    // parsing (which the isolated config + FreeCAD's own path setup can
+    // suppress, producing "Failed to import encodings module"). PYTHONHOME
+    // pins the prefix so the zipimport'd stdlib is found.
     config.use_environment = 1;
+    {
+        const char* home = std::getenv("PYTHONHOME");
+        if (home && *home) {
+            PyConfig_SetBytesString(&config, &config.home, home);
+        }
+        const char* pypath = std::getenv("PYTHONPATH");
+        if (pypath && *pypath) {
+            config.module_search_paths_set = 1;
+            std::string paths(pypath);
+            std::string::size_type start = 0;
+            while (start <= paths.size()) {
+                std::string::size_type sep = paths.find(':', start);
+                std::string one = paths.substr(
+                    start, sep == std::string::npos ? std::string::npos : sep - start);
+                if (!one.empty()) {
+                    wchar_t* w = Py_DecodeLocale(one.c_str(), nullptr);
+                    if (w) {
+                        PyWideStringList_Append(&config.module_search_paths, w);
+                        PyMem_RawFree(w);
+                    }
+                }
+                if (sep == std::string::npos) {
+                    break;
+                }
+                start = sep + 1;
+            }
+        }
+    }
 #endif
 
     status = PyConfig_SetBytesArgv(&config, argc, argv);
@@ -634,7 +665,14 @@ void initInterpreter(int argc, char* argv[])
 
     status = Py_InitializeFromConfig(&config);
     if (PyStatus_Exception(status)) {
-        throw Base::RuntimeError("Failed to init from config");
+        std::string msg = "Failed to init from config";
+        if (status.err_msg) {
+            msg += std::string(": ") + status.err_msg;
+        }
+        if (status.func) {
+            msg += std::string(" (in ") + status.func + ")";
+        }
+        throw Base::RuntimeError(msg);
     }
 
     // If FreeCAD was run from within a Python virtual environment, ensure that the site-packages
