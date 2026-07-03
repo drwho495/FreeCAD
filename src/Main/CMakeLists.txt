@@ -148,9 +148,9 @@ if(EMSCRIPTEN)
         "-sSTACK_SIZE=5MB"
         "-sFORCE_FILESYSTEM=1"
         "-sWASM_BIGINT=1"
-        "-sEXIT_RUNTIME=1"
+        "-sEXIT_RUNTIME=0"   # keep the interpreter alive after main(); pages drive freecad_run_python
         "-sDISABLE_EXCEPTION_CATCHING=0"
-        "-sEXPORTED_RUNTIME_METHODS=FS,callMain,ENV"
+        "-sEXPORTED_RUNTIME_METHODS=FS,callMain,ENV,ccall,cwrap"
         # CPython's emscripten JS glue (trampoline, syscalls) needs these:
         "SHELL:-s EXPORTED_FUNCTIONS=_main,__PyRuntime,_PyGILState_GetThisThreadState,__Py_DumpTraceback,__PyEM_EMSCRIPTEN_TRAMPOLINE_OFFSET"
         "-sUSE_ZLIB=1"

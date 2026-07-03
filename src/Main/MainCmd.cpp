@@ -47,9 +47,22 @@ using App::Application;
 using Base::Console;
 
 #ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <Python.h>
+
 // Defined in the generated WasmInittab.cpp; registers the statically linked
 // Python extension modules before the interpreter is initialized.
 void freecadWasmRegisterInittab();
+
+extern "C" {
+// Interactive kernel entry point: with EXIT_RUNTIME=0 the module stays alive
+// after main() returns and the embedding page drives FreeCAD through here.
+EMSCRIPTEN_KEEPALIVE int freecad_run_python(const char* code)
+{
+    Base::PyGILStateLocker lock;
+    return PyRun_SimpleString(code);
+}
+}
 #endif
 
 const auto sBanner = fmt::format(
@@ -160,6 +173,16 @@ int main(int argc, char** argv)
         Console().error("Application unexpectedly terminated\n");
         exit(1);
     }
+
+#ifdef __EMSCRIPTEN__
+    // Interactive kernel mode: keep the fully initialized application alive
+    // after main() returns (EXIT_RUNTIME=0); the page keeps driving it via
+    // freecad_run_python(). Destruction happens with the tab.
+    if (std::getenv("FREECAD_WASM_KERNEL")) {
+        Console().log("FreeCAD wasm kernel ready\n");
+        return 0;
+    }
+#endif
 
     // Destruction phase ===========================================================
     Console().log("FreeCAD terminating...\n");
