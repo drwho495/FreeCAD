@@ -148,7 +148,13 @@ if(EMSCRIPTEN)
         "-sUSE_BZIP2=1"
         "-lnodefs.js"
         "-lidbfs.js"
+        "-lembind"   # Qt for wasm (qlocale/qstdweb) uses embind emval APIs
     )
+    option(FREECAD_WASM_NODERAWFS
+        "Link FreeCADCmd against NODERAWFS (direct host FS) for node-based testing" OFF)
+    if(FREECAD_WASM_NODERAWFS)
+        target_link_options(FreeCADMainCmd PRIVATE "-sNODERAWFS=1")
+    endif()
 endif()
 if (FREECAD_WARN_ERROR)
     target_compile_warn_error(FreeCADMainCmd)

@@ -620,6 +620,12 @@ void initInterpreter(int argc, char* argv[])
     PyConfig_InitIsolatedConfig(&config);
     config.isolated = 0;
     config.user_site_directory = 1;
+#ifdef FC_OS_WASM
+    // The wasm build has no baked-in installation prefix that exists at run
+    // time; stdlib location comes from PYTHONHOME/PYTHONPATH set by the
+    // embedding page / node harness.
+    config.use_environment = 1;
+#endif
 
     status = PyConfig_SetBytesArgv(&config, argc, argv);
     if (PyStatus_Exception(status)) {

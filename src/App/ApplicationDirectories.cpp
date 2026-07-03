@@ -695,6 +695,22 @@ fs::path ApplicationDirectories::findHomePath(const char* sCall)
     return Base::FileInfo::stringToPath(homePath);
 }
 
+#elif defined(FC_OS_WASM)
+#include <cstdlib>
+
+fs::path ApplicationDirectories::findHomePath(const char*)
+{
+    // No /proc/self/exe in the wasm sandbox; the install tree lives at a
+    // fixed virtual location (MEMFS preload) or wherever FREECAD_HOME points
+    // (NODERAWFS test runs).
+    const char* env = std::getenv("FREECAD_HOME");
+    std::string homePath = env ? env : "/freecad";
+    if (homePath.empty() || homePath.back() != '/') {
+        homePath += '/';
+    }
+    return Base::FileInfo::stringToPath(homePath);
+}
+
 #elif defined (FC_OS_LINUX) || defined(FC_OS_CYGWIN) || defined(FC_OS_BSD)
 #include <cstdio>
 #include <cstdlib>
