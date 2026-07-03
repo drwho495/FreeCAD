@@ -354,7 +354,12 @@ void ApplicationDirectories::configureHelpDirectory(const std::map<std::string,s
 fs::path ApplicationDirectories::getUserHome()
 {
     fs::path path;
-#if defined(FC_OS_LINUX) || defined(FC_OS_CYGWIN) || defined(FC_OS_BSD) || defined(FC_OS_MACOSX)
+#if defined(FC_OS_WASM)
+    // No passwd database in the wasm sandbox; $HOME is provided by the
+    // embedding page / node harness.
+    const char* home = std::getenv("HOME");
+    path = Base::FileInfo::stringToPath(sanitizePath(home ? home : "/tmp"));
+#elif defined(FC_OS_LINUX) || defined(FC_OS_CYGWIN) || defined(FC_OS_BSD) || defined(FC_OS_MACOSX)
     // Default paths for the user-specific stuff
     struct passwd pwd {};
     struct passwd *result {};

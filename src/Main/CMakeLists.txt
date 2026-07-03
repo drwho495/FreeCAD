@@ -116,6 +116,13 @@ if(EMSCRIPTEN)
     # Pull the statically-built extension modules into the executable; the
     # generated inittab references their PyInit_* symbols.
     list(APPEND FreeCADMainCmd_LIBS ${FREECAD_WASM_PY_MODULES})
+    # Static libpython's builtin modules need their dependency archives
+    # (mpdecimal for _decimal, libffi for ctypes, ...).
+    set(FREECAD_WASM_EXTRA_LINK_LIBS "" CACHE STRING
+        "Extra static archives appended to the FreeCADCmd wasm link")
+    if(FREECAD_WASM_EXTRA_LINK_LIBS)
+        list(APPEND FreeCADMainCmd_LIBS ${FREECAD_WASM_EXTRA_LINK_LIBS})
+    endif()
 endif()
 
 if(NOT BUILD_DYNAMIC_LINK_PYTHON)
@@ -144,11 +151,15 @@ if(EMSCRIPTEN)
         "-sEXIT_RUNTIME=1"
         "-sDISABLE_EXCEPTION_CATCHING=0"
         "-sEXPORTED_RUNTIME_METHODS=FS,callMain,ENV"
+        # CPython's emscripten JS glue (trampoline, syscalls) needs these:
+        "SHELL:-s EXPORTED_FUNCTIONS=_main,__PyRuntime,_PyGILState_GetThisThreadState,__Py_DumpTraceback,__PyEM_EMSCRIPTEN_TRAMPOLINE_OFFSET"
         "-sUSE_ZLIB=1"
         "-sUSE_BZIP2=1"
         "-lnodefs.js"
         "-lidbfs.js"
         "-lembind"   # Qt for wasm (qlocale/qstdweb) uses embind emval APIs
+        "-sMODULARIZE=1"
+        "-sEXPORT_NAME=createFreeCAD"
     )
     option(FREECAD_WASM_NODERAWFS
         "Link FreeCADCmd against NODERAWFS (direct host FS) for node-based testing" OFF)

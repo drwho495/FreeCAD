@@ -415,7 +415,11 @@ Application::Application(std::map<std::string,std::string> &mConfig)
     mpcPramManager["User parameter"] = _pcUserParamMngr;
 
     _stopRecomputeThread = false;
+#ifndef FC_OS_WASM
+    // Single-threaded wasm build: no worker; queueRecomputeRequest() always
+    // takes the inline path (canRecomputeRequestOnWorker returns false).
     _recomputeThread = std::thread(&Application::recomputeWorker, this);
+#endif
 
     setupPythonTypes();
 }
@@ -836,6 +840,9 @@ bool Application::isFineGrainedRecomputeEnabled()
 
 bool Application::canRecomputeRequestOnWorker(const RecomputeRequest& req) const
 {
+#ifdef FC_OS_WASM
+    return false;  // single-threaded build: recompute inline on the caller
+#endif
     if (DocumentObject* documentObject = req.resolveDocumentObject()) {
         return documentObject->canRecomputeOnWorker();
     }
@@ -3340,7 +3347,11 @@ namespace {
 QString getUserHome()
 {
     QString path;
-#if defined(FC_OS_LINUX) || defined(FC_OS_CYGWIN) || defined(FC_OS_BSD) || defined(FC_OS_MACOSX)
+#if defined(FC_OS_WASM)
+    // No passwd database in the wasm sandbox; $HOME comes from the embedder.
+    const char* home = std::getenv("HOME");
+    path = QString::fromUtf8(home ? home : "/tmp");
+#elif defined(FC_OS_LINUX) || defined(FC_OS_CYGWIN) || defined(FC_OS_BSD) || defined(FC_OS_MACOSX)
     // Default paths for the user specific stuff
     struct passwd pwd;
     struct passwd *result;

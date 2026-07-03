@@ -132,6 +132,11 @@ int main(int argc, char** argv)
         std::cout << std::endl;
         exit(100);
     }
+    catch (const std::exception& e) {
+        std::string appName = App::Application::getExecutableName();
+        std::cout << "Runtime error while initializing " << appName << ": " << e.what() << "\n";
+        exit(101);
+    }
     catch (...) {
         std::string appName = App::Application::getExecutableName();
         std::cout << "Unknown runtime error occurred while initializing " << appName << ".\n\n";
