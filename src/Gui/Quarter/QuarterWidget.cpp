@@ -67,6 +67,10 @@
 #include <QResizeEvent>
 #include <QWindow>
 
+#ifdef __EMSCRIPTEN__
+extern "C" void fcWasmSyncGLContext(void);
+#endif
+
 #include <Inventor/C/basic.h>
 #include <Inventor/SbByteBuffer.h>
 
@@ -995,6 +999,12 @@ void
 QuarterWidget::actualRedraw()
 {
   ZoneScoped;
+#ifdef __EMSCRIPTEN__
+  // Ensure emscripten's current-context global (GLctx) matches the context Qt
+  // made current, so Coin's glGetString/glGetError and our GL emulation act on
+  // a valid WebGL2 context. See Gui/WasmGLFixedFunc.cpp.
+  fcWasmSyncGLContext();
+#endif
   PRIVATE(this)->sorendermanager->render(PRIVATE(this)->clearwindow,
                                          PRIVATE(this)->clearzbuffer);
 }

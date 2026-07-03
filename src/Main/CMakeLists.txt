@@ -133,6 +133,10 @@ if(BUILD_GUI)
             # backend lands (Stage 4). See research/R3-graphics-coin-webgl.md.
             "-sMAX_WEBGL_VERSION=2"
             "-sFULL_ES3=1"
+            # Coin resolves GL entry points at run time via
+            # emscripten_GetProcAddress (see the coin glue patch); this
+            # populates its name->function table.
+            "-sGL_ENABLE_GET_PROC_ADDRESS=1"
             "-lEGL"   # Coin's context glue references EGL entry points
             # Asyncify: FreeCAD (and Qt) use synchronous QEventLoop::exec()
             # (nested event loops, modal dialogs). Qt-for-wasm supports this
