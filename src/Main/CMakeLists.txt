@@ -138,14 +138,19 @@ if(BUILD_GUI)
             # populates its name->function table.
             "-sGL_ENABLE_GET_PROC_ADDRESS=1"
             "-lEGL"   # Coin's context glue references EGL entry points
-            # Asyncify: FreeCAD (and Qt) use synchronous QEventLoop::exec()
-            # (nested event loops, modal dialogs). Qt-for-wasm supports this
-            # only when built with QT_HAVE_EMSCRIPTEN_ASYNCIFY (we build
-            # qt-asyncify from source) AND the app is linked with -sASYNCIFY,
-            # which instruments the whole module to suspend/resume the wasm
-            # stack. See research/R5. -Os keeps the asyncify size blow-up in
-            # check. Whitelisting the suspendable call tree keeps it smaller;
-            # start broad and trim in Stage 6.
+            # Stack switching for synchronous QEventLoop::exec() (nested event
+            # loops, modal dialogs). Currently ASYNCIFY (Qt built with
+            # QT_HAVE_EMSCRIPTEN_ASYNCIFY). This works for the GUI shell but
+            # conflicts with CPython's PY_CALL_TRAMPOLINE for Python->C calls
+            # made *during* the Qt event loop (_PyEM_TrampolineCall
+            # unreachable) — which blocks the 3D viewport path.
+            # THE FIX is JSPI (-sJSPI, Qt -feature-wasm-jspi): it unifies stack
+            # switching with CPython's trampoline. JSPI requires native wasm
+            # exceptions (-fwasm-exceptions) throughout, i.e. every C++ dep
+            # (OCCT, Coin, Boost, xerces, …) rebuilt in that mode — see
+            # research/R5 and toolchain/rebuild-qt-jspi.sh. Switch to:
+            #   "-sJSPI=1"  (and -fwasm-exceptions everywhere)
+            # once the deps are rebuilt.
             "-sASYNCIFY=1"
             "-sASYNCIFY_STACK_SIZE=131072"
             # Vendored Coin bundles its own copy of expat, whose internal
