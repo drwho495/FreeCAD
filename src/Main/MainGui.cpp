@@ -149,14 +149,30 @@ static void displayCritical(const QString& msg, bool preformatted = true)
 }
 
 #ifdef __EMSCRIPTEN__
+#include <QtGlobal>
+#include <cstdio>
 // Generated WasmInittabGui.cpp: registers statically linked Python extension
 // modules (App + Gui) before the interpreter is initialized.
 void freecadWasmRegisterInittab();
+
+// Qt-for-wasm's default message handler runs Qt's message-pattern formatter
+// (qFormatLogMessage), which throws std::bad_variant_access on this build and
+// aborts the app the first time QEventDispatcherWasm emits a qDebug — before
+// FreeCAD installs its own handler in Gui::Application. Install a minimal
+// handler up front so no message ever reaches the buggy default formatter.
+static void freecadWasmEarlyMessageHandler(QtMsgType type,
+                                           const QMessageLogContext&,
+                                           const QString& msg)
+{
+    const QByteArray text = msg.toUtf8();
+    std::fprintf(stderr, "[Qt] %s\n", text.constData());
+}
 #endif
 
 int main(int argc, char** argv)
 {
 #ifdef __EMSCRIPTEN__
+    qInstallMessageHandler(freecadWasmEarlyMessageHandler);
     freecadWasmRegisterInittab();
 #endif
 #if defined(FC_OS_LINUX) || defined(FC_OS_BSD)
