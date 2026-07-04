@@ -4937,6 +4937,12 @@ int System::diagnose(Algorithm alg)
         // identifyDependentParametersDenseQR(J, jacobianconstraintmap, pdiagnoselist, true)
         //
         auto fut = std::async(
+#ifdef __EMSCRIPTEN__
+            // asyncify-singlethread wasm has no pthreads: the default async
+            // policy tries to spawn a thread, which hangs. Run deferred so the QR
+            // executes synchronously at fut.wait() below.
+            std::launch::deferred,
+#endif
             &System::identifyDependentParametersDenseQR,
             this,
             J,
@@ -5014,6 +5020,10 @@ int System::diagnose(Algorithm alg)
         // std::async(std::launch::deferred,&System::identifyDependentParametersSparseQR, this,
         // J, jacobianconstraintmap, pdiagnoselist, false);
         auto fut = std::async(
+#ifdef __EMSCRIPTEN__
+            // See DenseQR above: no pthreads under asyncify-singlethread wasm.
+            std::launch::deferred,
+#endif
             &System::identifyDependentParametersSparseQR,
             this,
             J,
