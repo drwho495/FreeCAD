@@ -929,15 +929,6 @@ void QuarterWidget::paintEvent(QPaintEvent* event)
     {
         QImage frame = w->readbackImage();
         if (!frame.isNull()) {
-            static int dbgN = 0;
-            if (dbgN++ < 8) {
-                const QRgb c = frame.pixel(frame.width()/2, frame.height()/2);
-                const QRgb q = frame.pixel(frame.width()/2, frame.height()*3/8);
-                fprintf(stderr, "FBOSAMPLE %dx%d center=(%d,%d,%d,%d) upper=(%d,%d,%d,%d)\n",
-                        frame.width(), frame.height(),
-                        qRed(c), qGreen(c), qBlue(c), qAlpha(c),
-                        qRed(q), qGreen(q), qBlue(q), qAlpha(q));
-            }
             QPainter painter(this->viewport());
             painter.drawImage(this->viewport()->rect(), frame);
         }

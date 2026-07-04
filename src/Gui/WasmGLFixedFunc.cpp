@@ -217,8 +217,6 @@ EM_JS(void, ff_setup_and_draw, (GLenum prim, GLsizei count, GLenum idxType, GLin
   if (!bind(F.arrays.color, 2, 4)) g.disableVertexAttribArray(2);
 
   g.disable(g.CULL_FACE);
-  if ((F._drawCount=(F._drawCount||0)+1) <= 4)
-    console.log('FF_DRAW #'+F._drawCount+' prim='+prim+' count='+count+' isElem='+isElements+' lit='+F.lighting);
 
   // WebGL2/GLES3 has no GL_QUADS(7)/GL_QUAD_STRIP(8)/GL_POLYGON(9). QUAD_STRIP and
   // POLYGON share vertex order with TRIANGLE_STRIP/TRIANGLE_FAN respectively, so
@@ -293,12 +291,6 @@ EM_JS(void, ffSyncContext, (void), {
       GL.makeContextCurrent(GL.currentContext.handle);
     }
   } catch (e) {}
-  // Reset per-frame draw-diagnostic counters so each rendered frame logs its own
-  // first few draws (fcWasmSyncGLContext runs once per actualRedraw).
-  globalThis.__ffie = 0;
-  if (globalThis.__ff) globalThis.__ff._drawCount = 0;
-  const fn=(globalThis.__ffFrame=(globalThis.__ffFrame||0)+1);
-  if (fn<=12) console.log('FRAME #'+fn+' newlists='+(globalThis.__ffNL||0)+' calllists='+(globalThis.__ffCL||0));
 })
 
 EM_JS(void, ffDbgRedraw, (void), {
@@ -542,21 +534,15 @@ EM_JS(void, ffPassDrawArrays, (GLenum mode, GLint first, GLsizei count), {
 EM_JS(void, ffPassDrawElements, (GLenum mode, GLsizei count, GLenum type, GLintptr indices), {
   const g=globalThis.__ff.gl(); if(g) g.drawElements(mode, count, type, indices);
 })
-EM_JS(void, ffDbgDraw, (int isElem, GLenum mode, GLsizei count, int ffActive), {
-  if((globalThis.__ffdc=(globalThis.__ffdc||0)+1) <= 12)
-    console.log('GLDRAW '+(isElem?'Elem':'Arr')+' #'+globalThis.__ffdc+' mode='+mode+' count='+count+' ffActive='+ffActive);
-})
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
     ensure();
     int ff = ffFixedFuncActive();
-    ffDbgDraw(0, mode, count, ff);
     if (ff) ff_setup_and_draw(mode, count, 0, 0, first, 0);
     else ffPassDrawArrays(mode, first, count);
 }
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices){
     ensure();
     int ff = ffFixedFuncActive();
-    ffDbgDraw(1, mode, count, ff);
     if (ff) ff_setup_and_draw(mode, count, type, (GLintptr)indices, 0, 1);
     else ffPassDrawElements(mode, count, type, (GLintptr)indices);
 }
@@ -570,29 +556,6 @@ EM_JS(void, ffVertex, (GLfloat x,GLfloat y,GLfloat z), {
 })
 EM_JS(void, ffEnd, (void), {
   const F=globalThis.__ff; const g=F.gl(); const im=F.imm; F.imm=null;
-  const isKey = im && (im.mode===4 || (im.mode===7 && im.verts.length>40));
-  if((isKey && (globalThis.__ffKey=(globalThis.__ffKey||0)+1)<=40) ||
-     ((globalThis.__ffFrame||0) <= 2 && (globalThis.__ffie=(globalThis.__ffie||0)+1) <= 40)){
-    let diag='';
-    if(im && im.verts.length>=3 && g){
-      const mvp=F.mul(F.pr[F.pr.length-1], F.mv[F.mv.length-1]);
-      // project ALL verts to NDC, compute AABB (min/max x,y,z) — tells us if the
-      // geometry actually falls inside the [-1,1] clip cube.
-      let mn=[1e9,1e9,1e9], mx=[-1e9,-1e9,-1e9];
-      const nv=im.verts.length/3;
-      for(let i=0;i<nv;i++){
-        const x=im.verts[i*3],y=im.verts[i*3+1],z=im.verts[i*3+2];
-        const c=[0,0,0,0]; for(let r=0;r<4;r++)c[r]=mvp[r]*x+mvp[4+r]*y+mvp[8+r]*z+mvp[12+r];
-        const w=c[3]||1; for(let k=0;k<3;k++){const n=c[k]/w; if(n<mn[k])mn[k]=n; if(n>mx[k])mx[k]=n;}
-      }
-      const dt=g.getParameter(g.DEPTH_TEST), dm=g.getParameter(g.DEPTH_WRITEMASK),
-            df=g.getParameter(g.DEPTH_FUNC), bl=g.getParameter(g.BLEND);
-      diag=' ndcMin=['+mn.map(x=>x.toFixed(2))+'] ndcMax=['+mx.map(x=>x.toFixed(2))+']'
-          +' col=['+F.color.map(x=>x.toFixed(2))+'] lit='+F.lighting
-          +' depthTest='+dt+' depthMask='+dm+' depthFunc='+df+' blend='+bl;
-    }
-    console.log('GLDRAW f'+globalThis.__ffFrame+' #'+globalThis.__ffie+' mode='+(im?im.mode:-1)+' verts='+(im?im.verts.length/3:0)+diag);
-  }
   if(!im || !g || im.verts.length===0) return; if(!F.program())return;
   // Snapshot object-space geometry + material. Matrices are applied at emit time
   // (now, or on each glCallList replay) so cached geometry tracks the camera.
@@ -676,20 +639,10 @@ EM_JS(GLuint, ffGenLists, (GLsizei n), {
 })
 EM_JS(void, ffNewList, (GLuint id, GLenum mode), {
   const F=globalThis.__ff; if(!F) return; F.curList=id; F.curListMode=mode; F.lists[id]=[];
-  globalThis.__ffNL=(globalThis.__ffNL||0)+1;
 })
-EM_JS(void, ffEndList, (void), {
-  const F=globalThis.__ff; if(!F) return;
-  if((globalThis.__ffELdbg=(globalThis.__ffELdbg||0)+1)<=8)
-    console.log('ENDLIST id='+F.curList+' recs='+(F.lists[F.curList]?F.lists[F.curList].length:-1));
-  F.curList=null;
-})
+EM_JS(void, ffEndList, (void), { const F=globalThis.__ff; if(F) F.curList=null; })
 EM_JS(void, ffCallList, (GLuint id), {
-  const F=globalThis.__ff; if(!F) return; globalThis.__ffCL=(globalThis.__ffCL||0)+1;
-  const recs=F.lists[id];
-  if((globalThis.__ffCLdbg=(globalThis.__ffCLdbg||0)<=8?(globalThis.__ffCLdbg||0)+1:9)<=8)
-    console.log('CALLLIST id='+id+' recs='+(recs?recs.length:-1));
-  if(!recs) return;
+  const F=globalThis.__ff; if(!F) return; const recs=F.lists[id]; if(!recs) return;
   for(let i=0;i<recs.length;i++) F.emitImm(recs[i]);
 })
 EM_JS(void, ffDeleteLists, (GLuint id, GLsizei n), {
