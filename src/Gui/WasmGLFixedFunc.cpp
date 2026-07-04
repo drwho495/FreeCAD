@@ -69,6 +69,12 @@ EM_JS(void, ff_init, (void), {
     arrayBuffer: 0,
     prog: null, loc: null,
     posVBO: null, nrmVBO: null, colVBO: null, idxVBO: null,
+    // GL objects (program, uniform locations, VBOs) belong to a specific WebGL
+    // context. Qt-wasm uses several contexts (offscreen FBO, nav-cube, overlays);
+    // caching one context's objects and using them under another triggers
+    // "object does not belong to this context" and nothing draws. Key the cache
+    // by the live context and rebind on every change.
+    progCtx: null, _ctxCache: null,
     imm: null, // immediate-mode accumulation
     lists: {}, curList: null, curListMode: 0, _listCtr: 0, // GL display lists
     mul, ident,
@@ -102,40 +108,50 @@ EM_JS(void, ff_init, (void), {
       } else { const dm=rec.mode===8?g.TRIANGLE_STRIP:rec.mode===9?g.TRIANGLE_FAN:rec.mode; g.drawArrays(dm,0,nv); }
     },
     program() {
-      if (this.prog) return this.prog;
       const g = this.gl(); if (!g) return null;
-      const vs = `attribute vec3 aPos; attribute vec3 aNormal; attribute vec4 aColor;
-        uniform mat4 uMVP; uniform mat3 uNormalMat; uniform vec4 uColor;
-        uniform bool uUseColorArray; uniform bool uLighting; uniform vec3 uLightDir;
-        uniform float uPointSize;
-        varying vec4 vColor;
-        void main(){
-          gl_Position = uMVP * vec4(aPos,1.0);
-          gl_PointSize = uPointSize;
-          vec4 base = uUseColorArray ? aColor : uColor;
-          if(uLighting){
-            vec3 n = normalize(uNormalMat * aNormal);
-            vec3 L = normalize(uLightDir);
-            float d = abs(dot(n, L));        // two-sided
-            vColor = vec4(base.rgb*(0.35+0.65*d), base.a);
-          } else { vColor = base; }
-        }`;
-      const fs = `precision mediump float; varying vec4 vColor;
-        void main(){ gl_FragColor = vColor; }`;
-      const sh=(t,s)=>{ const o=g.createShader(t); g.shaderSource(o,s); g.compileShader(o);
-        if(!g.getShaderParameter(o,g.COMPILE_STATUS)) console.error('ff shader',g.getShaderInfoLog(o)); return o; };
-      const p=g.createProgram();
-      g.attachShader(p,sh(g.VERTEX_SHADER,vs)); g.attachShader(p,sh(g.FRAGMENT_SHADER,fs));
-      g.bindAttribLocation(p,0,'aPos'); g.bindAttribLocation(p,1,'aNormal'); g.bindAttribLocation(p,2,'aColor');
-      g.linkProgram(p);
-      if(!g.getProgramParameter(p,g.LINK_STATUS)) console.error('ff link',g.getProgramInfoLog(p));
-      this.prog=p;
-      this.loc={ mvp:g.getUniformLocation(p,'uMVP'), nm:g.getUniformLocation(p,'uNormalMat'),
-        color:g.getUniformLocation(p,'uColor'), useCol:g.getUniformLocation(p,'uUseColorArray'),
-        lit:g.getUniformLocation(p,'uLighting'), ldir:g.getUniformLocation(p,'uLightDir'),
-        psize:g.getUniformLocation(p,'uPointSize') };
-      this.posVBO=g.createBuffer(); this.nrmVBO=g.createBuffer(); this.colVBO=g.createBuffer(); this.idxVBO=g.createBuffer();
-      return p;
+      // Fast path: cached objects already belong to the current context.
+      if (this.prog && this.progCtx === g) return this.prog;
+      if (!this._ctxCache) this._ctxCache = new Map();
+      let e = this._ctxCache.get(g);
+      if (!e) {
+        const vs = `attribute vec3 aPos; attribute vec3 aNormal; attribute vec4 aColor;
+          uniform mat4 uMVP; uniform mat3 uNormalMat; uniform vec4 uColor;
+          uniform bool uUseColorArray; uniform bool uLighting; uniform vec3 uLightDir;
+          uniform float uPointSize;
+          varying vec4 vColor;
+          void main(){
+            gl_Position = uMVP * vec4(aPos,1.0);
+            gl_PointSize = uPointSize;
+            vec4 base = uUseColorArray ? aColor : uColor;
+            if(uLighting){
+              vec3 n = normalize(uNormalMat * aNormal);
+              vec3 L = normalize(uLightDir);
+              float d = abs(dot(n, L));        // two-sided
+              vColor = vec4(base.rgb*(0.35+0.65*d), base.a);
+            } else { vColor = base; }
+          }`;
+        const fs = `precision mediump float; varying vec4 vColor;
+          void main(){ gl_FragColor = vColor; }`;
+        const sh=(t,s)=>{ const o=g.createShader(t); g.shaderSource(o,s); g.compileShader(o);
+          if(!g.getShaderParameter(o,g.COMPILE_STATUS)) console.error('ff shader',g.getShaderInfoLog(o)); return o; };
+        const p=g.createProgram();
+        g.attachShader(p,sh(g.VERTEX_SHADER,vs)); g.attachShader(p,sh(g.FRAGMENT_SHADER,fs));
+        g.bindAttribLocation(p,0,'aPos'); g.bindAttribLocation(p,1,'aNormal'); g.bindAttribLocation(p,2,'aColor');
+        g.linkProgram(p);
+        if(!g.getProgramParameter(p,g.LINK_STATUS)) console.error('ff link',g.getProgramInfoLog(p));
+        e = { prog:p,
+          loc:{ mvp:g.getUniformLocation(p,'uMVP'), nm:g.getUniformLocation(p,'uNormalMat'),
+            color:g.getUniformLocation(p,'uColor'), useCol:g.getUniformLocation(p,'uUseColorArray'),
+            lit:g.getUniformLocation(p,'uLighting'), ldir:g.getUniformLocation(p,'uLightDir'),
+            psize:g.getUniformLocation(p,'uPointSize') },
+          posVBO:g.createBuffer(), nrmVBO:g.createBuffer(), colVBO:g.createBuffer(), idxVBO:g.createBuffer() };
+        this._ctxCache.set(g, e);
+      }
+      // Point the working fields at this context's objects.
+      this.prog=e.prog; this.loc=e.loc;
+      this.posVBO=e.posVBO; this.nrmVBO=e.nrmVBO; this.colVBO=e.colVBO; this.idxVBO=e.idxVBO;
+      this.progCtx=g;
+      return this.prog;
     },
     normalMat3(m) { // upper-left 3x3 of modelview (good enough for rigid/uniform)
       return [m[0],m[1],m[2], m[4],m[5],m[6], m[8],m[9],m[10]];
