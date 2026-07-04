@@ -2833,6 +2833,17 @@ GLenum View3DInventorViewer::getInternalTextureFormat()
 
 void View3DInventorViewer::setRenderType(RenderType type)
 {
+#ifdef __EMSCRIPTEN__
+    // The Image render type snapshots the scene via grabFramebuffer() and blits
+    // that image during interactive drags (rubber-band / polygon selection). On
+    // wasm the viewport is a Gui::WasmGLWidget (not a QOpenGLWidget), so the grab
+    // comes back blank and the whole viewport turns white mid-drag. Our
+    // offscreen-FBO viewport already re-renders the live scene every frame, so
+    // keep it Native and let selection draw its overlay over the real scene.
+    if (type == Image) {
+        type = Native;
+    }
+#endif
     renderType = type;
 
     glImage = QImage();
