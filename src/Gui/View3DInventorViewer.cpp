@@ -4675,7 +4675,15 @@ void View3DInventorViewer::setSpinningAnimationEnabled(bool enable)
  */
 bool View3DInventorViewer::isAnimationEnabled() const
 {
+#ifdef __EMSCRIPTEN__
+    // Camera animations (viewAll/moveCameraTo) drive a QAbstractAnimation timer
+    // loop that does not cooperate with Emscripten asyncify — a programmatic
+    // fitAll()/ViewFit suspends and never resumes. Take the immediate,
+    // non-animated camera path instead.
+    return false;
+#else
     return navigation->isAnimationEnabled();
+#endif
 }
 
 /**

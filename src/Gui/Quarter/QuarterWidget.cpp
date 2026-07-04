@@ -68,6 +68,8 @@
 #include <QWindow>
 
 #ifdef __EMSCRIPTEN__
+#include <QPainter>
+#include "../WasmGLWidget.h"
 extern "C" void fcWasmSyncGLContext(void);
 #endif
 
@@ -79,6 +81,8 @@ extern "C" void fcWasmSyncGLContext(void);
 #include <Inventor/SoDB.h>
 #include <Inventor/SoEventManager.h>
 #include <Inventor/SoRenderManager.h>
+#include <Inventor/actions/SoGLRenderAction.h>
+#include <Inventor/elements/SoGLCacheContextElement.h>
 #include <Inventor/nodes/SoCamera.h>
 #include <Inventor/nodes/SoDirectionalLight.h>
 #include <Inventor/nodes/SoNode.h>
@@ -135,6 +139,26 @@ using namespace SIM::Coin3D::Quarter;
 
 #define PRIVATE(obj) obj->pimpl
 
+#ifdef __EMSCRIPTEN__
+// On Qt for WebAssembly a child QOpenGLWidget gets its own isolated WebGL
+// context whose FBO the window compositor cannot sample, so the 3D region stays
+// black. CustomGLWidget instead derives from Gui::WasmGLWidget — a raster widget
+// backed by an offscreen GLES3 FBO that QuarterWidget reads back and paints
+// through the ordinary backing store. It exposes the QOpenGLWidget API subset
+// (makeCurrent/doneCurrent/isValid/context/grabFramebuffer) Quarter relies on.
+class CustomGLWidget : public Gui::WasmGLWidget {
+public:
+    QSurfaceFormat myFormat;
+
+    CustomGLWidget(const QSurfaceFormat& format, QWidget* parent = nullptr, const QOpenGLWidget* shareWidget = nullptr, Qt::WindowFlags f = Qt::WindowFlags())
+     : Gui::WasmGLWidget(parent), myFormat(format)
+    {
+        Q_UNUSED(shareWidget);
+        Q_UNUSED(f);
+    }
+    ~CustomGLWidget() override = default;
+};
+#else
 //We need to avoid buffer swapping when initializing a QPainter on this widget
 class CustomGLWidget : public QOpenGLWidget {
 public:
@@ -230,6 +254,7 @@ public:
         update(); // fixes flickering on some systems
     }
 };
+#endif  // __EMSCRIPTEN__
 
 /*! constructor */
 QuarterWidget::QuarterWidget(const QSurfaceFormat & format, QWidget * parent, const QOpenGLWidget * sharewidget, Qt::WindowFlags f)
@@ -858,7 +883,9 @@ void QuarterWidget::paintEvent(QPaintEvent* event)
 
     getSoRenderManager()->activate();
 
-    QOpenGLWidget* w = static_cast<QOpenGLWidget*>(this->viewport());
+    // On wasm CustomGLWidget derives from Gui::WasmGLWidget, not QOpenGLWidget,
+    // but exposes the same isValid/makeCurrent/doneCurrent/context API.
+    CustomGLWidget* w = static_cast<CustomGLWidget*>(this->viewport());
     if (!w->isValid()) {
         qWarning() << "No valid GL context found!";
         return;
@@ -893,6 +920,34 @@ void QuarterWidget::paintEvent(QPaintEvent* event)
 
     w->makeCurrent();
     this->actualRedraw();
+
+#ifdef __EMSCRIPTEN__
+    // Coin rendered into the offscreen FBO; paint it into the viewport's raster
+    // backing store, which is what Qt-wasm actually composites to the page. The
+    // QPainter is scoped so it releases before QGraphicsView draws its overlay
+    // items (nav cube, axis cross) on top via inherited::paintEvent below.
+    {
+        QImage frame = w->readbackImage();
+        if (!frame.isNull()) {
+            static int dbgN = 0;
+            if (dbgN++ < 8) {
+                const QRgb c = frame.pixel(frame.width()/2, frame.height()/2);
+                const QRgb q = frame.pixel(frame.width()/2, frame.height()*3/8);
+                fprintf(stderr, "FBOSAMPLE %dx%d center=(%d,%d,%d,%d) upper=(%d,%d,%d,%d)\n",
+                        frame.width(), frame.height(),
+                        qRed(c), qGreen(c), qBlue(c), qAlpha(c),
+                        qRed(q), qGreen(q), qBlue(q), qAlpha(q));
+            }
+            QPainter painter(this->viewport());
+            painter.drawImage(this->viewport()->rect(), frame);
+        }
+    }
+    inherited::paintEvent(event);
+
+    PRIVATE(this)->autoredrawenabled = true;
+    PRIVATE(this)->processdelayqueue = true;
+    return;
+#endif
 
     QOpenGLFunctions* functions = w->context() ? w->context()->functions() : nullptr;
     const bool multisampleEnabled = functions && functions->glIsEnabled(GL_MULTISAMPLE) == GL_TRUE;
@@ -1007,6 +1062,8 @@ QuarterWidget::actualRedraw()
 #endif
   PRIVATE(this)->sorendermanager->render(PRIVATE(this)->clearwindow,
                                          PRIVATE(this)->clearzbuffer);
+  // On wasm, Coin has now rendered into CustomGLWidget's offscreen FBO. The FBO
+  // is read back and painted through the raster backing store in paintEvent().
 }
 
 

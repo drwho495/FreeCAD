@@ -37,6 +37,7 @@
 #include <QUrl>
 
 class QOpenGLWidget;
+class QWidget;
 
 class SoNode;
 class SoCamera;
@@ -108,11 +109,11 @@ public:
   mutable ContextMenu * contextmenu;
 
   static bool nativeEventFilter(void * message, long * result);
-  void replaceGLWidget(const QOpenGLWidget * newviewport);
+  void replaceGLWidget(const QWidget * newviewport);
 
  private:
-  QuarterWidgetP_cachecontext * findCacheContext(QuarterWidget * widget, const QOpenGLWidget * sharewidget);
-  static void removeFromCacheContext(QuarterWidgetP_cachecontext * context, const QOpenGLWidget * widget);
+  QuarterWidgetP_cachecontext * findCacheContext(QuarterWidget * widget, const QWidget * sharewidget);
+  static void removeFromCacheContext(QuarterWidgetP_cachecontext * context, const QWidget * widget);
 };
 
 }}} // namespace

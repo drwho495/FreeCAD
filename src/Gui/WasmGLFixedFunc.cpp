@@ -70,7 +70,37 @@ EM_JS(void, ff_init, (void), {
     prog: null, loc: null,
     posVBO: null, nrmVBO: null, colVBO: null, idxVBO: null,
     imm: null, // immediate-mode accumulation
+    lists: {}, curList: null, curListMode: 0, _listCtr: 0, // GL display lists
     mul, ident,
+    // Draw one recorded immediate-mode primitive using the CURRENT matrices, so a
+    // replayed display list follows camera changes (correct orbit/pan/zoom).
+    emitImm(rec) {
+      const g=this.gl(); if(!g||!rec||rec.verts.length===0) return; if(!this.program()) return;
+      g.useProgram(this.prog);
+      const mvp=this.mul(this.pr[this.pr.length-1], this.mv[this.mv.length-1]);
+      g.uniformMatrix4fv(this.loc.mvp,false,new Float32Array(mvp));
+      g.uniformMatrix3fv(this.loc.nm,false,new Float32Array(this.normalMat3(this.mv[this.mv.length-1])));
+      g.uniform1i(this.loc.lit, rec.lighting?1:0);
+      g.uniform3fv(this.loc.ldir,new Float32Array(rec.lightDir)); g.uniform1f(this.loc.psize,3.0);
+      g.uniform4fv(this.loc.color,new Float32Array(rec.color));
+      g.bindBuffer(g.ARRAY_BUFFER,this.posVBO); g.bufferData(g.ARRAY_BUFFER,new Float32Array(rec.verts),g.STREAM_DRAW);
+      g.enableVertexAttribArray(0); g.vertexAttribPointer(0,3,g.FLOAT,false,0,0);
+      if(rec.nrms.length>0){ g.bindBuffer(g.ARRAY_BUFFER,this.nrmVBO); g.bufferData(g.ARRAY_BUFFER,new Float32Array(rec.nrms),g.STREAM_DRAW);
+        g.enableVertexAttribArray(1); g.vertexAttribPointer(1,3,g.FLOAT,false,0,0); }
+      else { g.disableVertexAttribArray(1); g.vertexAttrib3f(1,0,0,1); }
+      const useCol = rec.cols.length>0;
+      g.uniform1i(this.loc.useCol, useCol?1:0);
+      if(useCol){ g.bindBuffer(g.ARRAY_BUFFER,this.colVBO); g.bufferData(g.ARRAY_BUFFER,new Float32Array(rec.cols),g.STREAM_DRAW);
+        g.enableVertexAttribArray(2); g.vertexAttribPointer(2,4,g.FLOAT,false,0,0); }
+      else g.disableVertexAttribArray(2);
+      g.disable(g.CULL_FACE);
+      const nv=rec.verts.length/3;
+      if(rec.mode===7){ const nq=(nv/4)|0; const tri=new Uint32Array(nq*6);
+        for(let q=0;q<nq;q++){const b=q*4; tri[q*6]=b;tri[q*6+1]=b+1;tri[q*6+2]=b+2;tri[q*6+3]=b;tri[q*6+4]=b+2;tri[q*6+5]=b+3;}
+        g.bindBuffer(g.ELEMENT_ARRAY_BUFFER,this.idxVBO); g.bufferData(g.ELEMENT_ARRAY_BUFFER,tri,g.STREAM_DRAW);
+        g.drawElements(g.TRIANGLES,nq*6,g.UNSIGNED_INT,0);
+      } else { const dm=rec.mode===8?g.TRIANGLE_STRIP:rec.mode===9?g.TRIANGLE_FAN:rec.mode; g.drawArrays(dm,0,nv); }
+    },
     program() {
       if (this.prog) return this.prog;
       const g = this.gl(); if (!g) return null;
@@ -187,10 +217,56 @@ EM_JS(void, ff_setup_and_draw, (GLenum prim, GLsizei count, GLenum idxType, GLin
   if (!bind(F.arrays.color, 2, 4)) g.disableVertexAttribArray(2);
 
   g.disable(g.CULL_FACE);
+  if ((F._drawCount=(F._drawCount||0)+1) <= 4)
+    console.log('FF_DRAW #'+F._drawCount+' prim='+prim+' count='+count+' isElem='+isElements+' lit='+F.lighting);
+
+  // WebGL2/GLES3 has no GL_QUADS(7)/GL_QUAD_STRIP(8)/GL_POLYGON(9). QUAD_STRIP and
+  // POLYGON share vertex order with TRIANGLE_STRIP/TRIANGLE_FAN respectively, so
+  // they remap directly. GL_QUADS must be expanded to two triangles per quad.
+  const QUADS=7, QUAD_STRIP=8, POLYGON=9;
+  let drawPrim = prim;
+  if (prim===QUAD_STRIP) drawPrim = g.TRIANGLE_STRIP;
+  else if (prim===POLYGON) drawPrim = g.TRIANGLE_FAN;
+
+  const readIdx = () => {
+    // return a JS array of the `count` source indices, from client mem or the
+    // bound element buffer (WebGL2 getBufferSubData).
+    if (isElements && !elemBuf) {
+      const iheap = idxType===0x1405?HEAPU32:idxType===0x1403?HEAPU16:HEAPU8;
+      const div = iheap.BYTES_PER_ELEMENT; const a=new Array(count);
+      for (let i=0;i<count;i++) a[i]=iheap[(idxPtr/div)+i];
+      return a;
+    }
+    if (isElements && elemBuf) {
+      const bpe = idxType===0x1405?4:idxType===0x1403?2:1;
+      const view = idxType===0x1405?new Uint32Array(count):idxType===0x1403?new Uint16Array(count):new Uint8Array(count);
+      g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, elemBuf);
+      g.getBufferSubData(g.ELEMENT_ARRAY_BUFFER, idxPtr, view);
+      return Array.from(view);
+    }
+    return null; // drawArrays: sequential first..first+count
+  };
+
+  if (prim===QUADS) {
+    const nq = (count/4)|0;
+    const tri = new Uint32Array(nq*6);
+    const src = readIdx();
+    for (let q=0;q<nq;q++){
+      const b = src ? null : (first+q*4);
+      const i0 = src ? src[q*4] : b, i1 = src ? src[q*4+1] : b+1,
+            i2 = src ? src[q*4+2] : b+2, i3 = src ? src[q*4+3] : b+3;
+      tri[q*6]=i0; tri[q*6+1]=i1; tri[q*6+2]=i2;
+      tri[q*6+3]=i0; tri[q*6+4]=i2; tri[q*6+5]=i3;
+    }
+    g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, F.idxVBO);
+    g.bufferData(g.ELEMENT_ARRAY_BUFFER, tri, g.STREAM_DRAW);
+    g.drawElements(g.TRIANGLES, nq*6, g.UNSIGNED_INT, 0);
+    return;
+  }
+
   if (isElements) {
     if (elemBuf) {
-      // indices already in the bound element buffer — draw with offset.
-      g.drawElements(prim, count, idxType, idxPtr);
+      g.drawElements(drawPrim, count, idxType, idxPtr);
     } else {
       const iheap = idxType===0x1405?HEAPU32:idxType===0x1403?HEAPU16:HEAPU8;
       const div = iheap.BYTES_PER_ELEMENT;
@@ -198,10 +274,10 @@ EM_JS(void, ff_setup_and_draw, (GLenum prim, GLsizei count, GLenum idxType, GLin
       for (let i=0;i<count;i++) arr[i]=iheap[(idxPtr/div)+i];
       g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, F.idxVBO);
       g.bufferData(g.ELEMENT_ARRAY_BUFFER, arr, g.STREAM_DRAW);
-      g.drawElements(prim, count, idxType===0x1405?g.UNSIGNED_INT:g.UNSIGNED_SHORT, 0);
+      g.drawElements(drawPrim, count, idxType===0x1405?g.UNSIGNED_INT:g.UNSIGNED_SHORT, 0);
     }
   } else {
-    g.drawArrays(prim, first, count);
+    g.drawArrays(drawPrim, first, count);
   }
 });
 
@@ -217,11 +293,83 @@ EM_JS(void, ffSyncContext, (void), {
       GL.makeContextCurrent(GL.currentContext.handle);
     }
   } catch (e) {}
+  // Reset per-frame draw-diagnostic counters so each rendered frame logs its own
+  // first few draws (fcWasmSyncGLContext runs once per actualRedraw).
+  globalThis.__ffie = 0;
+  if (globalThis.__ff) globalThis.__ff._drawCount = 0;
+  const fn=(globalThis.__ffFrame=(globalThis.__ffFrame||0)+1);
+  if (fn<=12) console.log('FRAME #'+fn+' newlists='+(globalThis.__ffNL||0)+' calllists='+(globalThis.__ffCL||0));
+})
+
+EM_JS(void, ffDbgRedraw, (void), {
+  if((globalThis.__ffrd=(globalThis.__ffrd||0)+1) <= 8)
+    console.log('QUARTER_REDRAW #'+globalThis.__ffrd+' hasGL='+(typeof GL!=='undefined'&&!!GL.currentContext));
+})
+
+/* Qt-for-wasm gives a child QOpenGLWidget an OFFSCREEN WebGL canvas and composites
+ * the window through a 2D canvas context (QWasmBackingStore is pure raster), so the
+ * GL content never reaches the screen. Work around it: after Coin renders into the
+ * widget's FBO, glReadPixels the result and putImageData it onto the window's
+ * visible 2D canvas at the widget's device-pixel position. Qt only repaints the 2D
+ * canvas for dirty raster regions and treats the GL-widget rect as externally
+ * managed, so the pixels persist. (dx,dy)=widget top-left in device px. */
+EM_JS(void, ffBlitToCanvas, (int dx, int dy), {
+  const F=globalThis.__ff; const g=F?F.gl():null; if(!g) return;
+  const vp = g.getParameter(g.VIEWPORT); const w=vp[2], h=vp[3];
+  if (w<=0||h<=0) return;
+  const fbo = g.getParameter(g.FRAMEBUFFER_BINDING);
+  let buf;
+  try { buf=new Uint8Array(w*h*4); g.readPixels(0,0,w,h,g.RGBA,g.UNSIGNED_BYTE,buf); }
+  catch(e){ if((globalThis.__ffbc=(globalThis.__ffbc||0)+1)<=3)console.log('BLIT readPixels threw '+e); return; }
+  // GL is bottom-up; ImageData is top-down. Flip rows.
+  const out=new Uint8ClampedArray(w*h*4);
+  for(let row=0; row<h; row++){ const s=(h-1-row)*w*4; out.set(buf.subarray(s,s+w*4), row*w*4); }
+  const img=new ImageData(out, w, h);
+  const ci=(Math.floor(h/2)*w+Math.floor(w/2))*4; // center pixel
+  // Qt-wasm renders inside a shadow DOM and registers the window canvas in
+  // specialHTMLTargets as "!qtwindow...". Find it there (the raster window canvas
+  // has a 2D context we can paint the 3D pixels into).
+  let dbg='';
+  let cv=globalThis.__ffwincanvas;
+  if(!cv || !cv.getContext){
+    cv=null;
+    let tgt=null;
+    if(typeof specialHTMLTargets!=='undefined') { tgt=specialHTMLTargets; dbg='global'; }
+    else if(typeof Module!=='undefined'&&Module.specialHTMLTargets) { tgt=Module.specialHTMLTargets; dbg='module'; }
+    else if(typeof globalThis.Module!=='undefined'&&globalThis.Module.specialHTMLTargets){ tgt=globalThis.Module.specialHTMLTargets; dbg='globalModule'; }
+    else dbg='none';
+    if(tgt){ const keys=Object.keys(tgt);
+      for(const k of keys){ if(k[0]!=='!')continue; const c=tgt[k]; if(!c)continue;
+        let kind='?'; try{ kind=(c.tagName||'obj')+' '+(c.width||0)+'x'+(c.height||0); }catch(e){kind='err';}
+        // is this canvas' context 2d, webgl, or unset?
+        let ctxk='none'; try{
+          if(c.__ctxKind) ctxk=c.__ctxKind;
+          else { const t=c.getContext; ctxk = t?'has-getContext':'no-getContext'; }
+        }catch(e){ctxk='threw';}
+        dbg+=' ['+k.slice(1,14)+' '+kind+' '+ctxk+']';
+        // pick the biggest qtwindow that yields a 2d context
+        if(k.indexOf('qtwindow')>=0 && !cv){ try{ const c2=c.getContext('2d'); if(c2){ cv=c; } }catch(e){} }
+      } }
+    globalThis.__ffwincanvas=cv;
+  } else dbg='cached';
+  let res='no-canvas';
+  if(cv){ let ctx=null; try{ ctx=cv.getContext('2d'); }catch(e){ res='getContext2d threw '+e; }
+    if(ctx){ try{
+      // Put the readback into a scratch canvas, then draw it SCALED to fill the
+      // whole target canvas (temporary: proves visibility; positioning TBD).
+      let tc=globalThis.__fftmpc; if(!tc||tc.width!==w||tc.height!==h){ tc=(typeof OffscreenCanvas!=='undefined')?new OffscreenCanvas(w,h):document.createElement('canvas'); tc.width=w; tc.height=h; globalThis.__fftmpc=tc; }
+      tc.getContext('2d').putImageData(img,0,0);
+      ctx.drawImage(tc, 0,0,w,h, 0,0, cv.width, cv.height);
+      res='ok cv='+cv.width+'x'+cv.height;
+    }catch(e){ res='draw threw '+e; } } }
+  if((globalThis.__ffbc=(globalThis.__ffbc||0)+1)<=3)
+    console.log('BLIT vp='+w+'x'+h+' dxy='+dx+','+dy+' rgba='+buf[ci]+','+buf[ci+1]+','+buf[ci+2]+' tgt['+dbg+'] -> '+res);
 })
 
 extern "C" {
 
 void fcWasmSyncGLContext(void){ ffSyncContext(); }
+void fcWasmBlitToCanvas(int dx, int dy){ (void)dx; (void)dy; /* superseded by WasmGLWidget FBO readback + QPainter blit */ }
 
 /* ---- lifecycle ---- */
 static int g_ff_ready = 0;
@@ -394,14 +542,22 @@ EM_JS(void, ffPassDrawArrays, (GLenum mode, GLint first, GLsizei count), {
 EM_JS(void, ffPassDrawElements, (GLenum mode, GLsizei count, GLenum type, GLintptr indices), {
   const g=globalThis.__ff.gl(); if(g) g.drawElements(mode, count, type, indices);
 })
+EM_JS(void, ffDbgDraw, (int isElem, GLenum mode, GLsizei count, int ffActive), {
+  if((globalThis.__ffdc=(globalThis.__ffdc||0)+1) <= 12)
+    console.log('GLDRAW '+(isElem?'Elem':'Arr')+' #'+globalThis.__ffdc+' mode='+mode+' count='+count+' ffActive='+ffActive);
+})
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
     ensure();
-    if (ffFixedFuncActive()) ff_setup_and_draw(mode, count, 0, 0, first, 0);
+    int ff = ffFixedFuncActive();
+    ffDbgDraw(0, mode, count, ff);
+    if (ff) ff_setup_and_draw(mode, count, 0, 0, first, 0);
     else ffPassDrawArrays(mode, first, count);
 }
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices){
     ensure();
-    if (ffFixedFuncActive()) ff_setup_and_draw(mode, count, type, (GLintptr)indices, 0, 1);
+    int ff = ffFixedFuncActive();
+    ffDbgDraw(1, mode, count, ff);
+    if (ff) ff_setup_and_draw(mode, count, type, (GLintptr)indices, 0, 1);
     else ffPassDrawElements(mode, count, type, (GLintptr)indices);
 }
 
@@ -414,22 +570,41 @@ EM_JS(void, ffVertex, (GLfloat x,GLfloat y,GLfloat z), {
 })
 EM_JS(void, ffEnd, (void), {
   const F=globalThis.__ff; const g=F.gl(); const im=F.imm; F.imm=null;
+  const isKey = im && (im.mode===4 || (im.mode===7 && im.verts.length>40));
+  if((isKey && (globalThis.__ffKey=(globalThis.__ffKey||0)+1)<=40) ||
+     ((globalThis.__ffFrame||0) <= 2 && (globalThis.__ffie=(globalThis.__ffie||0)+1) <= 40)){
+    let diag='';
+    if(im && im.verts.length>=3 && g){
+      const mvp=F.mul(F.pr[F.pr.length-1], F.mv[F.mv.length-1]);
+      // project ALL verts to NDC, compute AABB (min/max x,y,z) — tells us if the
+      // geometry actually falls inside the [-1,1] clip cube.
+      let mn=[1e9,1e9,1e9], mx=[-1e9,-1e9,-1e9];
+      const nv=im.verts.length/3;
+      for(let i=0;i<nv;i++){
+        const x=im.verts[i*3],y=im.verts[i*3+1],z=im.verts[i*3+2];
+        const c=[0,0,0,0]; for(let r=0;r<4;r++)c[r]=mvp[r]*x+mvp[4+r]*y+mvp[8+r]*z+mvp[12+r];
+        const w=c[3]||1; for(let k=0;k<3;k++){const n=c[k]/w; if(n<mn[k])mn[k]=n; if(n>mx[k])mx[k]=n;}
+      }
+      const dt=g.getParameter(g.DEPTH_TEST), dm=g.getParameter(g.DEPTH_WRITEMASK),
+            df=g.getParameter(g.DEPTH_FUNC), bl=g.getParameter(g.BLEND);
+      diag=' ndcMin=['+mn.map(x=>x.toFixed(2))+'] ndcMax=['+mx.map(x=>x.toFixed(2))+']'
+          +' col=['+F.color.map(x=>x.toFixed(2))+'] lit='+F.lighting
+          +' depthTest='+dt+' depthMask='+dm+' depthFunc='+df+' blend='+bl;
+    }
+    console.log('GLDRAW f'+globalThis.__ffFrame+' #'+globalThis.__ffie+' mode='+(im?im.mode:-1)+' verts='+(im?im.verts.length/3:0)+diag);
+  }
   if(!im || !g || im.verts.length===0) return; if(!F.program())return;
-  g.useProgram(F.prog);
-  const mvp=F.mul(F.pr[F.pr.length-1], F.mv[F.mv.length-1]);
-  g.uniformMatrix4fv(F.loc.mvp,false,new Float32Array(mvp));
-  g.uniformMatrix3fv(F.loc.nm,false,new Float32Array(F.normalMat3(F.mv[F.mv.length-1])));
-  g.uniform1i(F.loc.useCol,1); g.uniform1i(F.loc.lit,F.lighting?1:0);
-  g.uniform3fv(F.loc.ldir,new Float32Array(F.lightDir)); g.uniform1f(F.loc.psize,3.0);
-  g.uniform4fv(F.loc.color,new Float32Array(F.color));
-  g.bindBuffer(g.ARRAY_BUFFER,F.posVBO); g.bufferData(g.ARRAY_BUFFER,new Float32Array(im.verts),g.STREAM_DRAW);
-  g.enableVertexAttribArray(0); g.vertexAttribPointer(0,3,g.FLOAT,false,0,0);
-  g.bindBuffer(g.ARRAY_BUFFER,F.nrmVBO); g.bufferData(g.ARRAY_BUFFER,new Float32Array(im.nrms),g.STREAM_DRAW);
-  g.enableVertexAttribArray(1); g.vertexAttribPointer(1,3,g.FLOAT,false,0,0);
-  g.bindBuffer(g.ARRAY_BUFFER,F.colVBO); g.bufferData(g.ARRAY_BUFFER,new Float32Array(im.cols),g.STREAM_DRAW);
-  g.enableVertexAttribArray(2); g.vertexAttribPointer(2,4,g.FLOAT,false,0,0);
-  g.disable(g.CULL_FACE);
-  g.drawArrays(im.mode, 0, im.verts.length/3);
+  // Snapshot object-space geometry + material. Matrices are applied at emit time
+  // (now, or on each glCallList replay) so cached geometry tracks the camera.
+  const rec={mode:im.mode, verts:im.verts, nrms:im.nrms, cols:im.cols,
+             color:F.color.slice(), lighting:F.lighting, lightDir:F.lightDir.slice()};
+  if(F.curList!==null){
+    // Recording a GL display list (Coin's shape render cache). Store the draw;
+    // for GL_COMPILE (0x1300) do NOT execute now — it will render via glCallList.
+    if(F.lists[F.curList]) F.lists[F.curList].push(rec);
+    if(F.curListMode===0x1300) return;
+  }
+  F.emitImm(rec);
 })
 
 void glBegin(GLenum mode){ ensure(); ffBegin(mode); }
@@ -488,13 +663,44 @@ void glPixelTransferi(GLenum,GLint){ }
 void glPixelZoom(GLfloat,GLfloat){ }
 void glPointSize(GLfloat){ }
 void glLoadName(GLuint){ }
-/* display lists: unsupported (Coin has a VBO fallback) */
-GLuint glGenLists(GLsizei){ return 0; }
-void glNewList(GLuint, GLenum){ }
-void glEndList(void){ }
-void glCallList(GLuint){ }
+/* GL display lists: Coin caches shape geometry into a list on one frame and
+ * replays it via glCallList on later frames. Real display lists don't exist in
+ * WebGL2, so we record the immediate-mode primitives emitted during
+ * glNewList..glEndList and re-emit them on glCallList (see ffEnd/emitImm).
+ * Without this, cached geometry renders once then vanishes. */
+EM_JS(GLuint, ffGenLists, (GLsizei n), {
+  const F=globalThis.__ff; if(!F||n<=0) return 0;
+  const base=(F._listCtr||0)+1; F._listCtr=base+n-1;
+  for(let i=0;i<n;i++) F.lists[base+i]=[];
+  return base;
+})
+EM_JS(void, ffNewList, (GLuint id, GLenum mode), {
+  const F=globalThis.__ff; if(!F) return; F.curList=id; F.curListMode=mode; F.lists[id]=[];
+  globalThis.__ffNL=(globalThis.__ffNL||0)+1;
+})
+EM_JS(void, ffEndList, (void), {
+  const F=globalThis.__ff; if(!F) return;
+  if((globalThis.__ffELdbg=(globalThis.__ffELdbg||0)+1)<=8)
+    console.log('ENDLIST id='+F.curList+' recs='+(F.lists[F.curList]?F.lists[F.curList].length:-1));
+  F.curList=null;
+})
+EM_JS(void, ffCallList, (GLuint id), {
+  const F=globalThis.__ff; if(!F) return; globalThis.__ffCL=(globalThis.__ffCL||0)+1;
+  const recs=F.lists[id];
+  if((globalThis.__ffCLdbg=(globalThis.__ffCLdbg||0)<=8?(globalThis.__ffCLdbg||0)+1:9)<=8)
+    console.log('CALLLIST id='+id+' recs='+(recs?recs.length:-1));
+  if(!recs) return;
+  for(let i=0;i<recs.length;i++) F.emitImm(recs[i]);
+})
+EM_JS(void, ffDeleteLists, (GLuint id, GLsizei n), {
+  const F=globalThis.__ff; if(!F) return; for(let i=0;i<n;i++) delete F.lists[id+i];
+})
+GLuint glGenLists(GLsizei n){ ensure(); return ffGenLists(n); }
+void glNewList(GLuint id, GLenum mode){ ensure(); ffNewList(id, mode); }
+void glEndList(void){ ensure(); ffEndList(); }
+void glCallList(GLuint id){ ensure(); ffCallList(id); }
 void glCallLists(GLsizei, GLenum, const void*){ }
-void glDeleteLists(GLuint, GLsizei){ }
+void glDeleteLists(GLuint id, GLsizei n){ ensure(); ffDeleteLists(id, n); }
 void glListBase(GLuint){ }
 
 /* Resolver so Coin's cc_glglue_getprocaddress can find the legacy GL entry
@@ -519,6 +725,25 @@ void* fcWasmResolveGL(const char* name){
         {"glPopMatrix",(void*)glPopMatrix},{"glVertexPointer",(void*)glVertexPointer},
         {"glNormalPointer",(void*)glNormalPointer},{"glColorPointer",(void*)glColorPointer},
         {"glEnableClientState",(void*)glEnableClientState},{"glDisableClientState",(void*)glDisableClientState},
+        {"glTexCoordPointer",(void*)glTexCoordPointer},{"glInterleavedArrays",(void*)glInterleavedArrays},
+        // The main render path: Coin resolves these via getprocaddress. Routing
+        // them to our fixed-function wrappers is what makes geometry actually
+        // draw (and keeps ff_setup_and_draw from being dead-code-eliminated).
+        {"glDrawArrays",(void*)glDrawArrays},{"glDrawElements",(void*)glDrawElements},
+        {"glColor3f",(void*)glColor3f},{"glColor4f",(void*)glColor4f},
+        {"glColor3fv",(void*)glColor3fv},{"glColor4fv",(void*)glColor4fv},
+        {"glNormal3f",(void*)glNormal3f},{"glNormal3fv",(void*)glNormal3fv},
+        {"glLoadMatrixd",(void*)glLoadMatrixd},{"glMultMatrixd",(void*)glMultMatrixd},
+        {"glLoadIdentity",(void*)glLoadIdentity},{"glTranslated",(void*)glTranslated},
+        {"glMaterialfv",(void*)glMaterialfv},{"glLightfv",(void*)glLightfv},
+        // Display lists: Coin probes these via getprocaddress to decide whether GL
+        // render caching is available. Exposing them makes Coin cache shape
+        // geometry through glNewList/glCallList, which we record & replay (see
+        // ffEnd/emitImm) — required so geometry persists past the first frame.
+        {"glGenLists",(void*)glGenLists},{"glNewList",(void*)glNewList},
+        {"glEndList",(void*)glEndList},{"glCallList",(void*)glCallList},
+        {"glCallLists",(void*)glCallLists},{"glDeleteLists",(void*)glDeleteLists},
+        {"glListBase",(void*)glListBase},
     };
     for (const auto& e : tbl) if (std::strcmp(e.n, name)==0) return e.p;
     return nullptr;

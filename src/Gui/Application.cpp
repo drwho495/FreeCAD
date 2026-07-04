@@ -86,6 +86,7 @@
 #include "InputHintPy.h"
 #include "LinkViewPy.h"
 #include "MainWindow.h"
+#include "ViewParams.h"
 #include "Macro.h"
 #include "PreferencePackManager.h"
 #include "PythonConsolePy.h"
@@ -2641,9 +2642,22 @@ void Application::runApplication()
 
     {
         QSurfaceFormat defaultFormat;
+#ifdef FC_OS_WASM
+        // WebGL2 == OpenGL ES 3.0 is the only backend on wasm; a desktop-OpenGL
+        // default format makes context creation fail (Coin then reports "no
+        // current context"). Coin's fixed-function GL is emulated over WebGL2 in
+        // Gui/WasmGLFixedFunc.cpp. Keep a depth/stencil buffer for 3D.
+        defaultFormat.setRenderableType(QSurfaceFormat::OpenGLES);
+        defaultFormat.setMajorVersion(3);
+        defaultFormat.setMinorVersion(0);
+        defaultFormat.setProfile(QSurfaceFormat::NoProfile);
+        defaultFormat.setDepthBufferSize(24);
+        defaultFormat.setStencilBufferSize(8);
+#else
         defaultFormat.setRenderableType(QSurfaceFormat::OpenGL);
         defaultFormat.setProfile(QSurfaceFormat::CompatibilityProfile);
         defaultFormat.setOption(QSurfaceFormat::DeprecatedFunctions, true);
+#endif
 #if defined(FC_OS_LINUX) || defined(FC_OS_BSD)
         // QGuiApplication::platformName() doesn't yet work at this point, so we use the env var
         if (getenv("WAYLAND_DISPLAY")) {
@@ -2715,6 +2729,36 @@ void Application::runApplication()
 
     // gets called once we start the event loop
     QTimer::singleShot(0, &mw, SLOT(delayedStartup()));
+
+#ifdef __EMSCRIPTEN__
+    // Coin's GL display-list render caches are replayed via glCallList, which the
+    // WebGL2 fixed-function emulator (Gui/WasmGLFixedFunc.cpp) cannot fully honor —
+    // cached geometry renders on the first frame and then vanishes. FreeCAD drives
+    // scene caching through the "RenderCache" preference (read by
+    // View3DInventorViewer::setRenderCache when a view is created), so force it to
+    // 2 = Off here, before any 3D view exists, so all geometry is re-emitted every
+    // frame. (A plain SoSeparator::setNumRenderCaches(0) is overridden by
+    // SoFCSeparator::setCacheMode() and does not suffice.)
+    ViewParams::instance()->setRenderCache(2);
+
+    // On wasm, run an optional GUI startup script from a fixed path once the
+    // event loop is live. Doing this through a queued timer (rather than
+    // synchronously during init, or via a reentrant ccall from JS) keeps
+    // asyncify suspend/resume valid, so creating a 3D MDI view — which the
+    // desktop path does asynchronously — works here too.
+    QTimer::singleShot(300, []() {
+        const char* path = "/startup-gui.py";
+        if (FILE* f = fopen(path, "r")) {
+            fclose(f);
+            try {
+                Base::Interpreter().runFile(path, false);
+            }
+            catch (const Base::Exception& e) {
+                Base::Console().error("startup-gui.py failed: %s\n", e.what());
+            }
+        }
+    });
+#endif
 
     // run the Application event loop
     Base::Console().log("Init: Entering event loop\n");
