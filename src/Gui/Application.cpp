@@ -2758,6 +2758,38 @@ void Application::runApplication()
             }
         }
     });
+
+    // JS -> Python command pump. A DOM event handler (e.g. the Open/Save UI in
+    // index.html) cannot ccall into wasm directly: the main loop is suspended
+    // mid-asyncify-unwind and reentering corrupts it. Instead JS writes a Python
+    // snippet to /fc-cmd.py; this repeating timer, firing on the event-loop
+    // stack, renames it aside (so it runs exactly once even if it throws) and
+    // execs it via the same runFile path the startup uses.
+    auto* cmdPump = new QTimer(qApp);
+    QObject::connect(cmdPump, &QTimer::timeout, []() {
+        const char* inpath = "/fc-cmd.py";
+        const char* runpath = "/fc-cmd-run.py";
+        FILE* f = fopen(inpath, "r");
+        if (!f) {
+            return;
+        }
+        fclose(f);
+        ::remove(runpath);
+        if (::rename(inpath, runpath) != 0) {
+            ::remove(inpath);
+            return;
+        }
+        try {
+            Base::Interpreter().runFile(runpath, false);
+        }
+        catch (const Base::Exception& e) {
+            Base::Console().error("fc-cmd failed: %s\n", e.what());
+        }
+        catch (...) {
+            Base::Console().error("fc-cmd failed (unknown)\n");
+        }
+    });
+    cmdPump->start(100);
 #endif
 
     // run the Application event loop
