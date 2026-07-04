@@ -471,25 +471,27 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat* params){
 
 /* ---- glEnable/glDisable: intercept legacy caps, pass real ones to WebGL ---- */
 EM_JS(int, ffCap, (GLenum cap, int enable), {
-  // returns 1 if handled as legacy, 0 if the real GL should handle it
-  const F=globalThis.__ff; const g=F.gl();
+  // returns 1 if handled/swallowed here, 0 if the real WebGL2 context should
+  // handle it. WebGL2 rejects any enum that is not one of its ~10 real
+  // capabilities with INVALID_ENUM, so we WHITELIST the valid ones and swallow
+  // everything else (all the legacy fixed-function caps) instead of leaking
+  // them to gl.enable/gl.disable and spamming the console.
+  const F=globalThis.__ff;
+  if (cap===0x0B50) { F.lighting=!!enable; return 1; }   // GL_LIGHTING (tracked)
   switch(cap){
-    case 0x0B50: F.lighting=!!enable; return 1;       // GL_LIGHTING
-    case 0x0B57: return 1;                             // GL_COLOR_MATERIAL
-    case 0x0BA1: return 1;                             // GL_NORMALIZE
-    case 0x803A: return 1;                             // GL_RESCALE_NORMAL
-    case 0x0BC0: return 1;                             // GL_ALPHA_TEST
-    case 0x0B10: return 1;                             // GL_POINT_SMOOTH
-    case 0x0B20: return 1;                             // GL_LINE_SMOOTH
-    case 0x0B24: return 1;                             // GL_LINE_STIPPLE
-    case 0x0B42: return 1;                             // GL_POLYGON_STIPPLE (0x0B42? actually GL_AUTO_NORMAL) - treat legacy
-    case 0x0DE1: if(g){ enable?g.disable(g.TEXTURE_2D||0):0; } return 1; // GL_TEXTURE_2D: no fixed-func textures
-    case 0x2A20: return 1;                             // GL_POLYGON_OFFSET_LINE
-    case 0x2A02: return 1;                             // GL_POLYGON_OFFSET_POINT
+    case 0x0BE2: // GL_BLEND
+    case 0x0B44: // GL_CULL_FACE
+    case 0x0B71: // GL_DEPTH_TEST
+    case 0x0BD0: // GL_DITHER
+    case 0x8037: // GL_POLYGON_OFFSET_FILL
+    case 0x809E: // GL_SAMPLE_ALPHA_TO_COVERAGE
+    case 0x80A0: // GL_SAMPLE_COVERAGE
+    case 0x0C11: // GL_SCISSOR_TEST
+    case 0x0B90: // GL_STENCIL_TEST
+    case 0x8C89: // GL_RASTERIZER_DISCARD
+      return 0;  // valid in WebGL2 → let the real context handle it
   }
-  if (cap>=0x4000 && cap<=0x4007) return 1;            // GL_LIGHT0..7
-  if (cap>=0x3000 && cap<=0x3007) return 1;            // GL_CLIP_PLANE0..7 (ignored for now)
-  return 0;
+  return 1;      // any other cap is legacy fixed-function → swallow silently
 })
 /* real glEnable/glDisable are provided by emscripten; we override to filter. */
 EM_JS(void, ffRealEnable, (GLenum cap, int enable), {
@@ -616,7 +618,25 @@ void glTexEnvi(GLenum, GLenum, GLint){ }
 void glTexEnvf(GLenum, GLenum, GLfloat){ }
 void glTexEnvfv(GLenum, GLenum, const GLfloat*){ }
 void glGetTexGeniv(GLenum, GLenum, GLint* p){ if(p)p[0]=0; }
-void glGetDoublev(GLenum, GLdouble* p){ if(p)p[0]=0; }
+/* glGetDoublev: WebGL2/GLES has no double getters. Coin/FreeCAD reads real GL
+ * state through it — notably SoNaviCube's ScopedDepthClearState saves and
+ * restores GL_DEPTH_CLEAR_VALUE. A zero-returning stub made the nav cube RESTORE
+ * glClearDepth(0), which then cleared the scene depth buffer to 0 so every
+ * LEQUAL fragment of real geometry was discarded (invisible solids). Forward
+ * scalar/vector params via getParameter; hand back tracked matrices for the
+ * legacy matrix pnames that WebGL2 cannot query. */
+EM_JS(void, ffGetDoublev, (GLenum pname, GLdouble* p), {
+  const F=globalThis.__ff; const g=F.gl(); if(!p) return;
+  const setM=(m)=>{ for(let i=0;i<16;i++) HEAPF64[(p>>3)+i]=m[i]; };
+  if(pname===0x0BA6){ setM(F.mv[F.mv.length-1]); return; }   // GL_MODELVIEW_MATRIX
+  if(pname===0x0BA7){ setM(F.pr[F.pr.length-1]); return; }   // GL_PROJECTION_MATRIX
+  let v=0; try{ v = g ? g.getParameter(pname) : 0; }catch(e){ v=0; }
+  if(v===null||v===undefined) v=0;
+  if(typeof v==='number'){ HEAPF64[p>>3]=v; }
+  else if(typeof v==='boolean'){ HEAPF64[p>>3]=v?1:0; }
+  else if(v.length!==undefined){ for(let i=0;i<v.length;i++) HEAPF64[(p>>3)+i]=v[i]; }
+})
+void glGetDoublev(GLenum pname, GLdouble* p){ ensure(); ffGetDoublev(pname, p); }
 void glGetTexLevelParameteriv(GLenum, GLint, GLenum, GLint* p){ if(p)p[0]=0; }
 void glAccum(GLenum, GLfloat){ }
 void glClipPlane(GLenum, const GLdouble*){ }
