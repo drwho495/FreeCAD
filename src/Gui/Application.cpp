@@ -2790,6 +2790,29 @@ void Application::runApplication()
         }
     });
     cmdPump->start(100);
+
+    // Qt-wasm sizes the top-level window from the screen at show() time, but the
+    // browser canvas often reaches its final size slightly later; without
+    // tracking, the window stays small and the rest of the canvas paints black
+    // until the user manually resizes. Resize the main window to fill the screen
+    // now (a couple of times as the canvas settles) and on every later canvas
+    // (screen) geometry change.
+    if (QScreen* screen = qApp->primaryScreen()) {
+        auto fillScreen = [screen]() {
+            if (QWidget* win = Gui::getMainWindow()) {
+                const QSize sz = screen->availableGeometry().size();
+                if (sz.isValid() && sz != win->size()) {
+                    win->resize(sz);
+                }
+            }
+        };
+        QObject::connect(screen, &QScreen::availableGeometryChanged,
+                         &mw, [fillScreen](const QRect&) { fillScreen(); });
+        QObject::connect(screen, &QScreen::geometryChanged,
+                         &mw, [fillScreen](const QRect&) { fillScreen(); });
+        QTimer::singleShot(200, fillScreen);
+        QTimer::singleShot(900, fillScreen);
+    }
 #endif
 
     // run the Application event loop
