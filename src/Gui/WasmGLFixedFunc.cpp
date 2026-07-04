@@ -637,6 +637,58 @@ EM_JS(void, ffGetDoublev, (GLenum pname, GLdouble* p), {
   else if(v.length!==undefined){ for(let i=0;i<v.length;i++) HEAPF64[(p>>3)+i]=v[i]; }
 })
 void glGetDoublev(GLenum pname, GLdouble* p){ ensure(); ffGetDoublev(pname, p); }
+
+/* glGetFloatv / glGetBooleanv: WebGL2 has no fixed-function state, so Coin's
+ * legacy queries (matrices, lighting / point / line / fog params, texgen, alpha
+ * test, max-* client limits, ...) spam INVALID_ENUM against getParameter every
+ * frame. Intercept: hand back tracked matrices, SWALLOW the known-legacy enums
+ * (WebGL2 has no equivalent — leave the caller's buffer untouched, as the old
+ * emscripten path did on error), and FORWARD everything else to getParameter so
+ * valid queries (viewport, depth range, write masks, limits, ...) never regress. */
+EM_JS(int, ffLegacyGetEnum, (GLenum p), {
+  const F=globalThis.__ff;
+  if(!F._legacyGet){ F._legacyGet=new Set([
+    0x0B00,0x0B01,0x0B02,0x0B03,0x0B04,0x0B05,0x0B06,0x0B07,0x0B08,0x0B09, // current*/raster
+    0x0B10,0x0B11,0x0B12,0x0B13,                       // point (not LINE_WIDTH 0x0B21)
+    0x0B20,0x0B22,0x0B23,0x0B24,0x0B25,0x0B26,          // line smooth/stipple/range
+    0x0B40,0x0B41,0x0B42,                               // polygon mode/smooth/stipple
+    0x0B50,0x0B51,0x0B52,0x0B53,0x0B54,0x0B55,0x0B56,0x0B57, // lighting/shade/colormaterial
+    0x0B60,0x0B61,0x0B62,0x0B63,0x0B64,0x0B65,0x0B66,   // fog
+    0x0BA0,0x0BA1,0x0BA3,0x0BA4,0x0BA5,0x0BA8,          // matrix mode/normalize/stack depths/tex matrix
+    0x0BB0,0x0BB1,                                      // attrib stack depths
+    0x0BC0,0x0BC1,0x0BC2,0x0BC3,0x0BC4,                 // alpha test
+    0x0BF0,0x0BF1,0x0BF2,                               // logic op
+    0x0C50,0x0C60,0x0C61,0x0C62,0x0C63,                 // render mode, texgen S/T/R/Q
+    0x0D31,0x0D32,0x0D34,0x0D35,0x0D36,0x0D37,0x0D38,0x0D39,0x0D3B, // max_* (NOT 0x0D33/0x0D3A which are valid)
+    0x0DE0,0x0DE1                                       // texture_1d/2d enable-state
+  ]); }
+  return F._legacyGet.has(p)?1:0;
+})
+EM_JS(void, ffGetTyped, (GLenum pname, GLintptr dst, int isFloat), {
+  const F=globalThis.__ff; const g=F.gl();
+  const wr=(i,val)=>{ if(isFloat) HEAPF32[(dst>>2)+i]=val; else HEAPU8[dst+i]=val?1:0; };
+  if(isFloat && pname===0x0BA6){ const m=F.mv[F.mv.length-1]; for(let i=0;i<16;i++)HEAPF32[(dst>>2)+i]=m[i]; return; }
+  if(isFloat && pname===0x0BA7){ const m=F.pr[F.pr.length-1]; for(let i=0;i<16;i++)HEAPF32[(dst>>2)+i]=m[i]; return; }
+  // Desktop-GL context-mode queries WebGL2 dropped (always RGBA, single-buffered,
+  // mono). Coin probes GL_RGBA_MODE per frame; answer correctly so it takes the
+  // RGBA render path — do NOT just swallow (an uninitialized bool could read as
+  // color-index mode).
+  switch(pname){
+    case 0x0C31: wr(0,1); return;   // GL_RGBA_MODE  -> true
+    case 0x0C30: wr(0,0); return;   // GL_INDEX_MODE -> false
+    case 0x0C32: wr(0,0); return;   // GL_DOUBLEBUFFER (FBO) -> false
+    case 0x0C33: wr(0,0); return;   // GL_STEREO -> false
+  }
+  if(ffLegacyGetEnum(pname)) return;                   // swallow legacy: leave buffer as-is
+  let v; try{ v = g ? g.getParameter(pname) : null; }catch(e){ v=null; }
+  if(v===null||v===undefined) return;
+  if(typeof v==='number'){ wr(0,v); }
+  else if(typeof v==='boolean'){ wr(0,v?1:0); }
+  else if(typeof v==='object' && v.length!==undefined){ for(let i=0;i<v.length;i++) wr(i, v[i]); }
+  // else: a WebGL object (a binding) — not representable here, leave as-is
+})
+void glGetFloatv(GLenum pname, GLfloat* p){ ensure(); if(p) ffGetTyped(pname,(GLintptr)p,1); }
+void glGetBooleanv(GLenum pname, GLboolean* p){ ensure(); if(p) ffGetTyped(pname,(GLintptr)p,0); }
 void glGetTexLevelParameteriv(GLenum, GLint, GLenum, GLint* p){ if(p)p[0]=0; }
 void glAccum(GLenum, GLfloat){ }
 void glClipPlane(GLenum, const GLdouble*){ }
