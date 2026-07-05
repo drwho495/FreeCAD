@@ -59,13 +59,24 @@ class PartDesignWorkbench(Workbench):
         import PartDesignGui
         import PartDesign
 
-        from PartDesign.InvoluteGearFeature import CommandInvoluteGear
+        # InvoluteGear and Sprocket build their task dialogs with PySide/shiboken.
+        # On builds without PySide (the WebAssembly single-threaded port has
+        # FREECAD_USE_PYSIDE=OFF) importing them raises ImportError and would
+        # abort workbench activation. Guard them so the rest of the native C++
+        # PartDesign workbench (Pad/Pocket/Revolution/.../datums) still comes up.
+        try:
+            from PartDesign.InvoluteGearFeature import CommandInvoluteGear
 
-        Gui.addCommand("PartDesign_InvoluteGear", CommandInvoluteGear())
+            Gui.addCommand("PartDesign_InvoluteGear", CommandInvoluteGear())
 
-        from PartDesign.SprocketFeature import CommandSprocket
+            from PartDesign.SprocketFeature import CommandSprocket
 
-        FreeCADGui.addCommand("PartDesign_Sprocket", CommandSprocket())
+            FreeCADGui.addCommand("PartDesign_Sprocket", CommandSprocket())
+        except ImportError as err:
+            FreeCAD.Console.PrintWarning(
+                "PartDesign: InvoluteGear/Sprocket disabled (PySide unavailable): "
+                "{0}\n".format(err)
+            )
 
     def GetClassName(self):
         return "PartDesignGui::Workbench"
