@@ -29,11 +29,15 @@ set(Dialogs_UIC_SRCS
     DlgDecimating.ui
     DlgSmoothing.ui
     RemoveComponents.ui
-    RemeshGmsh.ui
     Segmentation.ui
     SegmentationBestFit.ui
     Selection.ui
 )
+# The gmsh-based Remesh feature relies on QProcess, which is unavailable in the
+# Emscripten/WebAssembly build (no subprocess support in the browser).
+if(NOT EMSCRIPTEN)
+    list(APPEND Dialogs_UIC_SRCS RemeshGmsh.ui)
+endif()
 
 SET(Dialogs_SRCS
     ${Dialogs_UIC_HDRS}
@@ -61,9 +65,6 @@ SET(Dialogs_SRCS
     RemoveComponents.ui
     RemoveComponents.cpp
     RemoveComponents.h
-    RemeshGmsh.ui
-    RemeshGmsh.cpp
-    RemeshGmsh.h
     Segmentation.ui
     Segmentation.cpp
     Segmentation.h
@@ -74,6 +75,14 @@ SET(Dialogs_SRCS
     Selection.cpp
     Selection.h
 )
+# gmsh-based Remesh uses QProcess: excluded from the WebAssembly build.
+if(NOT EMSCRIPTEN)
+    list(APPEND Dialogs_SRCS
+        RemeshGmsh.ui
+        RemeshGmsh.cpp
+        RemeshGmsh.h
+    )
+endif()
 SOURCE_GROUP("Dialogs" FILES ${Dialogs_SRCS})
 
 SET(Inventor_SRCS

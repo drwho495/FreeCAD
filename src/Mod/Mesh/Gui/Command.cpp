@@ -66,7 +66,10 @@
 #include "DlgRegularSolidImp.h"
 #include "DlgSmoothing.h"
 #include "MeshEditor.h"
+#ifndef __EMSCRIPTEN__
+// gmsh-based Remesh uses QProcess, which is unavailable in the WebAssembly build.
 #include "RemeshGmsh.h"
+#endif
 #include "RemoveComponents.h"
 #include "Segmentation.h"
 #include "SegmentationBestFit.h"
@@ -1213,6 +1216,9 @@ bool CmdMeshRemoveComponents::isActive()
 
 //--------------------------------------------------------------------------------------
 
+#ifndef __EMSCRIPTEN__
+// gmsh-based Remesh uses QProcess to launch the external gmsh executable, which is
+// unavailable in the WebAssembly build (no subprocess support in the browser).
 DEF_STD_CMD_A(CmdMeshRemeshGmsh)
 
 CmdMeshRemeshGmsh::CmdMeshRemeshGmsh()
@@ -1244,6 +1250,7 @@ bool CmdMeshRemeshGmsh::isActive()
 {
     return getSelection().countObjectsOfType<Mesh::Feature>() == 1;
 }
+#endif  // __EMSCRIPTEN__
 
 //--------------------------------------------------------------------------------------
 
@@ -1926,7 +1933,9 @@ void CreateMeshCommands()
     rcCmdMgr.addCommand(new CmdMeshBuildRegularSolid());
     rcCmdMgr.addCommand(new CmdMeshFillupHoles());
     rcCmdMgr.addCommand(new CmdMeshRemoveComponents());
+#ifndef __EMSCRIPTEN__
     rcCmdMgr.addCommand(new CmdMeshRemeshGmsh());
+#endif
     rcCmdMgr.addCommand(new CmdMeshFillInteractiveHole());
     rcCmdMgr.addCommand(new CmdMeshRemoveCompByHand());
     rcCmdMgr.addCommand(new CmdMeshFromGeometry());

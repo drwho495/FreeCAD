@@ -56,10 +56,15 @@ Tessellation::Tessellation(QWidget* parent)
     , ui(new Ui_Tessellation)
 {
     ui->setupUi(this);
+#ifndef __EMSCRIPTEN__
     gmsh = new Mesh2ShapeGmsh(this);
+#endif
     setupConnections();
 
+#ifndef __EMSCRIPTEN__
+    // The gmsh tab drives an external gmsh process (QProcess), unavailable in wasm.
     ui->stackedWidget->addTab(gmsh, tr("Gmsh"));
+#endif
 
     ParameterGrp::handle handle = App::GetApplication().GetParameterGroupByPath(
         "User parameter:BaseApp/Preferences/Mod/Mesh/Meshing/Standard"
@@ -102,7 +107,9 @@ Tessellation::~Tessellation() = default;
 
 void Tessellation::setupConnections()
 {
+#ifndef __EMSCRIPTEN__
     connect(gmsh, &Mesh2ShapeGmsh::processed, this, &Tessellation::gmshProcessed);
+#endif
     connect(
         ui->estimateMaximumEdgeLength,
         &QPushButton::clicked,
@@ -184,6 +191,7 @@ void Tessellation::onCheckQuadDominatedToggled(bool on)
     }
 }
 
+#ifndef __EMSCRIPTEN__
 void Tessellation::gmshProcessed()
 {
     bool doClose = !ui->checkBoxDontQuit->isChecked();
@@ -191,6 +199,7 @@ void Tessellation::gmshProcessed()
         Gui::Control().reject();
     }
 }
+#endif
 
 void Tessellation::changeEvent(QEvent* e)
 {
@@ -298,12 +307,14 @@ bool Tessellation::accept()
     bool doClose = !ui->checkBoxDontQuit->isChecked();
     int method = ui->stackedWidget->currentIndex();
 
+#ifndef __EMSCRIPTEN__
     // For Gmsh the workflow is very different because it uses an executable
     // and therefore things are asynchronous
     if (method == Gmsh) {
         gmsh->process(activeDoc, shapeObjects);
         return false;
     }
+#endif
 
     process(method, activeDoc, shapeObjects);
     return doClose;
@@ -554,6 +565,7 @@ QString Tessellation::getNetgenParameters() const
 
 // ---------------------------------------
 
+#ifndef __EMSCRIPTEN__
 class Mesh2ShapeGmsh::Private
 {
 public:
@@ -693,6 +705,7 @@ bool Mesh2ShapeGmsh::loadOutput()
 
     return true;
 }
+#endif  // __EMSCRIPTEN__
 
 // ---------------------------------------
 

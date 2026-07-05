@@ -205,7 +205,9 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     *mesh << "Mesh_Import"
           << "Mesh_Export"
           << "Mesh_FromPartShape"
+#ifndef __EMSCRIPTEN__
           << "Mesh_RemeshGmsh"
+#endif
           << "Separator" << analyze << "Mesh_VertexCurvature"
           << "Mesh_HarmonizeNormals"
           << "Mesh_FlipNormals"
@@ -256,7 +258,9 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
                << "Mesh_AddFacet"
                << "Mesh_RemoveComponents"
                << "Mesh_Smoothing"
+#ifndef __EMSCRIPTEN__
                << "Mesh_RemeshGmsh"
+#endif
                << "Mesh_Decimating"
                << "Mesh_Scale";
 

@@ -142,6 +142,11 @@ if(EMSCRIPTEN)
         "Extra static archives appended to the FreeCAD wasm links")
     set(FREECAD_WASM_COMMON_LINK_OPTIONS
         "-sALLOW_MEMORY_GROWTH=1"
+        # The indirect function table must grow at runtime: numpy's 12 C-extensions
+        # plus the added workbenches register far more function pointers (asyncify
+        # instruments every function) than fit the static table, so a fixed table
+        # throws "WebAssembly.Table.grow() failed". Allow growth.
+        "-sALLOW_TABLE_GROWTH=1"
         "-sMAXIMUM_MEMORY=4GB"
         "-sINITIAL_MEMORY=128MB"
         "-sSTACK_SIZE=5MB"

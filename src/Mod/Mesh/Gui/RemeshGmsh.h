@@ -28,7 +28,11 @@
 
 #include <memory>
 #include <QDialog>
+#ifndef __EMSCRIPTEN__
+// The gmsh-based remesh feature drives an external gmsh process via QProcess,
+// which is unavailable in the WebAssembly build (no subprocess in the browser).
 #include <QProcess>
+#endif
 
 #include <Gui/TaskView/TaskDialog.h>
 #include <Gui/TaskView/TaskView.h>
@@ -45,6 +49,10 @@ namespace Gui
 class StatusWidget;
 }
 
+#ifndef __EMSCRIPTEN__
+// The entire gmsh-remesh UI relies on QProcess (implemented in RemeshGmsh.cpp,
+// which is excluded from the WebAssembly build). Guarding the declarations keeps
+// `#include "RemeshGmsh.h"` harmless under wasm for consumers such as MeshPart/Gui.
 namespace MeshGui
 {
 
@@ -143,3 +151,4 @@ private:
 };
 
 }  // namespace MeshGui
+#endif  // __EMSCRIPTEN__

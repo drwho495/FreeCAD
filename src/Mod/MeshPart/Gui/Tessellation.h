@@ -27,9 +27,12 @@
 #include <QPointer>
 #include <memory>
 
-#include <Gui/TaskView/TaskDialog.h>
 #include <Gui/TaskView/TaskView.h>
+#include <Gui/TaskView/TaskDialog.h>
+#ifndef __EMSCRIPTEN__
+// GmshWidget uses QProcess and is unavailable in the WebAssembly build.
 #include <Mod/Mesh/Gui/RemeshGmsh.h>
+#endif
 
 
 namespace App
@@ -40,6 +43,7 @@ class SubObjectT;
 namespace MeshPartGui
 {
 
+#ifndef __EMSCRIPTEN__
 /**
  * Non-modal dialog to mesh a shape.
  * @author Werner Mayer
@@ -65,6 +69,7 @@ private:
     class Private;
     std::unique_ptr<Private> d;
 };
+#endif  // __EMSCRIPTEN__
 
 class Ui_Tessellation;
 class Tessellation: public QWidget
@@ -112,11 +117,15 @@ private:
     void onComboFinenessCurrentIndexChanged(int);
     void onCheckSecondOrderToggled(bool);
     void onCheckQuadDominatedToggled(bool);
+#ifndef __EMSCRIPTEN__
     void gmshProcessed();
+#endif
 
 private:
     QString document;
+#ifndef __EMSCRIPTEN__
     QPointer<Mesh2ShapeGmsh> gmsh;
+#endif
     std::unique_ptr<Ui_Tessellation> ui;
 };
 

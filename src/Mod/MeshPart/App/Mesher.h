@@ -33,8 +33,10 @@
 #endif
 
 class TopoDS_Shape;
+#ifdef HAVE_SMESH
 class SMESH_Gen;
 class SMESH_Mesh;
+#endif  // HAVE_SMESH
 
 namespace Mesh
 {
@@ -216,7 +218,9 @@ public:
 
 private:
     Mesh::MeshObject* createStandard() const;
+#ifdef HAVE_SMESH
     Mesh::MeshObject* createFrom(SMESH_Mesh*) const;
+#endif  // HAVE_SMESH
 
 private:
     const TopoDS_Shape& shape;
@@ -241,7 +245,9 @@ private:
 #endif
     std::vector<uint32_t> colors;
 
+#ifdef HAVE_SMESH
     static SMESH_Gen* _mesh_gen;
+#endif  // HAVE_SMESH
 };
 
 class MeshingOutput: public std::streambuf

@@ -81,7 +81,9 @@
 
 using namespace MeshPart;
 
+#ifdef HAVE_SMESH
 SMESH_Gen* Mesher::_mesh_gen = nullptr;
+#endif  // HAVE_SMESH
 
 
 MeshingOutput::MeshingOutput()
@@ -428,6 +430,7 @@ Mesh::MeshObject* Mesher::createMesh() const
 #endif  // HAVE_SMESH
 }
 
+#ifdef HAVE_SMESH
 Mesh::MeshObject* Mesher::createFrom(SMESH_Mesh* mesh) const
 {
     // build up the mesh structure
@@ -580,3 +583,4 @@ Mesh::MeshObject* Mesher::createFrom(SMESH_Mesh* mesh) const
     meshdata->swap(kernel);
     return meshdata;
 }
+#endif  // HAVE_SMESH
