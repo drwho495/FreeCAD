@@ -3294,6 +3294,24 @@ void Application::LoadParameters()
     // initConfig() reaches this point; don't recreate the managers (which are
     // already referenced by the singleton's mpcPramManager map).
     if (_pcUserParamMngr && _pcSysParamMngr) {
+#ifdef __EMSCRIPTEN__
+        // bootstrapEarly() creates the managers at module-load, before the user
+        // config path is resolvable, so their serializers point at a stale root
+        // path ("/user.cfg"): saveParameter() cannot persist and the IDBFS-hydrated
+        // user.cfg is never loaded. Now that _appDirs is ready (this re-entrant call
+        // happens during initConfig), re-point the serializers to the authoritative
+        // path and load any persisted config so preferences survive browser reloads.
+        if (_appDirs) {
+            const std::string ucp = getUserConfigPath();  // ends with PATHSEP
+            mConfig["UserConfigPath"] = ucp;
+            mConfig["UserParameter"]  = ucp + "user.cfg";
+            mConfig["SystemParameter"] = ucp + "system.cfg";
+            _pcUserParamMngr->SetSerializer(new ParameterSerializer(mConfig["UserParameter"]));
+            _pcSysParamMngr->SetSerializer(new ParameterSerializer(mConfig["SystemParameter"]));
+            try { _pcUserParamMngr->LoadOrCreateDocument(); } catch (...) {}
+            try { _pcSysParamMngr->LoadOrCreateDocument(); } catch (...) {}
+        }
+#endif
         return;
     }
 

@@ -215,7 +215,7 @@ macro(InitializeFreeCADBuildOptions)
         option(FREECAD_USE_PCL "Build the features that use PCL libs" OFF)
     endif(NOT MSVC)
 
-    if(BUILD_FEM OR BUILD_MESH_PART)
+    if((BUILD_FEM OR BUILD_MESH_PART) AND NOT EMSCRIPTEN)
         set(FREECAD_USE_SMESH ON)
         if(FREECAD_USE_EXTERNAL_SMESH)
             set(BUILD_SMESH OFF)
