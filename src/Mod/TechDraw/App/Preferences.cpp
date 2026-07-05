@@ -537,7 +537,14 @@ std::string Preferences::currentLineDefFile()
 {
     std::string lineDefDir = Preferences::lineDefinitionLocation();
     std::vector<std::string> choices = LineGenerator::getAvailableLineStandards();
-    std::string fileName = choices.at(Preferences::lineStandard()) + ".LineDef.csv";
+    int index = Preferences::lineStandard();
+    if (choices.empty() || index < 0 || (size_t)index >= choices.size()) {
+        // No line standard definition files available; avoid choices.at() throwing
+        // std::out_of_range ("vector").  Return an empty path so the caller's
+        // ifstream simply fails to open and falls back to solid lines.
+        return {};
+    }
+    std::string fileName = choices.at(index) + ".LineDef.csv";
     return lineDefDir + fileName;
 }
 
@@ -545,7 +552,12 @@ std::string Preferences::currentElementDefFile()
 {
     std::string lineDefDir = Preferences::lineElementsLocation();
     std::vector<std::string> choices = LineGenerator::getAvailableLineStandards();
-    std::string fileName = choices.at(Preferences::lineStandard()) + ".ElementDef.csv";
+    int index = Preferences::lineStandard();
+    if (choices.empty() || index < 0 || (size_t)index >= choices.size()) {
+        // See currentLineDefFile(): guard against an empty/short choices vector.
+        return {};
+    }
+    std::string fileName = choices.at(index) + ".ElementDef.csv";
     return lineDefDir + fileName;
 }
 

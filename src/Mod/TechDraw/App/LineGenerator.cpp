@@ -337,6 +337,16 @@ std::string  LineGenerator::getLineStandardsBody()
 {
     int activeStandard = Preferences::lineStandard();
     std::vector<std::string> choices = getAvailableLineStandards();
+    if (choices.empty()) {
+        // No line standard definition files could be found (for example the
+        // Mod/TechDraw/LineGroup resource directory is missing).  Without this
+        // guard choices.at(...) below would throw std::out_of_range ("vector"),
+        // which surfaces as Base::FreeCADError and aborts construction of every
+        // DrawViewPart (its ViewProvider calls this from its constructor).  Fall
+        // back to the ISO standards body so the object can still be created and
+        // recomputed; lines will simply be drawn without dash patterns.
+        return "ISO";
+    }
     if (activeStandard < 0 ||
         (size_t) activeStandard >= choices.size()) {
         // there is a condition where the LineStandard parameter exists, but is -1 (the
@@ -367,8 +377,10 @@ bool LineGenerator::isCurrentProportional()
 bool LineGenerator::isProportional(size_t standardIndex)
 {
     std::vector<std::string> choices = getAvailableLineStandards();
-    if (standardIndex > choices.size()) {
-        // we don't have a standard for the specified index.
+    if (choices.empty() || standardIndex >= choices.size()) {
+        // we don't have a standard for the specified index (or no standards at
+        // all).  choices.at(standardIndex) would throw here, so return the ISO
+        // default (proportional) instead.
         return true;
     }
     std::string bodyName = getBodyFromString(choices.at(standardIndex));
