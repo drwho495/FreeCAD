@@ -2832,6 +2832,40 @@ void Application::initConfig(int argc, char ** argv)
     // extract home paths
     _appDirs = std::make_unique<ApplicationDirectories>(mConfig);
 
+#ifdef __EMSCRIPTEN__
+    // The parameter managers are created at module load (bootstrapEarly) BEFORE
+    // the user config path is known, so their serializers point at a stale
+    // "/user.cfg" (empty UserConfigPath + "user.cfg" resolved against "/"). Now
+    // that _appDirs is valid, authoritatively re-point them to the real versioned
+    // path AND create that directory: nobody creates it before the first save,
+    // and a missing parent dir makes Xerces' LocalFileFormatTarget throw, which
+    // ParameterManager::SaveDocument silently swallows — so saveParameter()
+    // no-ops and nothing persists to the IDBFS mount. Doing it here (not only in
+    // LoadParameters()'s bootstrap guard) makes persistence deterministic.
+    {
+        const std::string ucp = getUserConfigPath();  // .../FreeCAD/vNN-M/ (ends in sep)
+        try { std::filesystem::create_directories(std::filesystem::path(ucp)); }
+        catch (const std::exception& e) { Base::Console().warning("[wasm] mkdir %s failed: %s\n", ucp.c_str(), e.what()); }
+        mConfig["UserConfigPath"]  = ucp;
+        mConfig["UserParameter"]   = ucp + "user.cfg";
+        mConfig["SystemParameter"] = ucp + "system.cfg";
+        const bool hadUser = (_pcUserParamMngr != nullptr);
+        if (_pcUserParamMngr) {
+            _pcUserParamMngr->SetSerializer(new ParameterSerializer(mConfig["UserParameter"]));
+            try { _pcUserParamMngr->LoadOrCreateDocument(); } catch (...) {}
+        }
+        if (_pcSysParamMngr) {
+            _pcSysParamMngr->SetSerializer(new ParameterSerializer(mConfig["SystemParameter"]));
+            try { _pcSysParamMngr->LoadOrCreateDocument(); } catch (...) {}
+        }
+        (void)hadUser;
+        // NOTE: at this early point the managers usually don't exist yet
+        // (created later, possibly on-demand with a stale serializer), so the
+        // authoritative save target lives in mConfig["UserParameter"] and is
+        // re-applied at save time in ApplicationPy::sSaveParameter().
+    }
+#endif
+
 #   ifdef FC_DEBUG
     mConfig["Debug"] = "1";
 #   else
@@ -2928,6 +2962,26 @@ void Application::initConfig(int argc, char ** argv)
         }
     }
     LoadParameters();
+
+#ifdef __EMSCRIPTEN__
+    // wasm: make the just-initialized managers reflect the IDBFS-hydrated config.
+    // On reload the serializer may have been created with a stale path, so the
+    // in-memory manager wouldn't contain the persisted user.cfg even though the
+    // file is on the (hydrated) FS. Re-point to the authoritative target and
+    // explicitly load it if present, so preferences survive browser reloads.
+    if (_pcUserParamMngr && !mConfig["UserParameter"].empty()) {
+        _pcUserParamMngr->SetSerializer(new ParameterSerializer(mConfig["UserParameter"]));
+        if (std::filesystem::exists(std::filesystem::path(mConfig["UserParameter"]))) {
+            try { _pcUserParamMngr->LoadDocument(mConfig["UserParameter"].c_str()); } catch (...) {}
+        }
+    }
+    if (_pcSysParamMngr && !mConfig["SystemParameter"].empty()) {
+        _pcSysParamMngr->SetSerializer(new ParameterSerializer(mConfig["SystemParameter"]));
+        if (std::filesystem::exists(std::filesystem::path(mConfig["SystemParameter"]))) {
+            try { _pcSysParamMngr->LoadDocument(mConfig["SystemParameter"].c_str()); } catch (...) {}
+        }
+    }
+#endif
 
     auto loglevelParam = _pcUserParamMngr->GetGroup("BaseApp/LogLevels");
     const auto &loglevels = loglevelParam->GetIntMap();

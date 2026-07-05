@@ -633,6 +633,30 @@ PyObject* ApplicationPy::sSaveParameter(PyObject* /*self*/, PyObject* args)
             return nullptr;
         }
 
+#ifdef __EMSCRIPTEN__
+        // wasm: the manager's serializer may have been created at an early init
+        // stage with a stale path ("/user.cfg", not under the IDBFS mount), so the
+        // save silently no-ops / writes outside the persisted dir. Re-point it to
+        // the authoritative target (mConfig, resolved to the versioned config dir)
+        // and create the directory right before saving, so prefs persist across
+        // browser reloads regardless of init ordering.
+        {
+            const auto& cfg = App::Application::Config();
+            const std::string key = (std::string(pstr) == "System parameter")
+                ? "SystemParameter" : "UserParameter";
+            const auto it = cfg.find(key);
+            if (it != cfg.end() && !it->second.empty()) {
+                try {
+                    std::filesystem::create_directories(
+                        std::filesystem::path(it->second).parent_path());
+                }
+                catch (...) {
+                }
+                param->SetSerializer(new ParameterSerializer(it->second));
+            }
+        }
+#endif
+
         param->SaveDocument();
         Py_INCREF(Py_None);
         return Py_None;
