@@ -36,7 +36,11 @@ macro(CheckInterModuleDependencies)
     REQUIRES_MODS(BUILD_REVERSEENGINEERING BUILD_PART BUILD_MESH BUILD_POINTS)
     REQUIRES_MODS(BUILD_ROBOT              BUILD_PART)
     REQUIRES_MODS(BUILD_SKETCHER           BUILD_PART)
-    REQUIRES_MODS(BUILD_SPREADSHEET        BUILD_DRAFT)
+    # Spreadsheet's only Draft coupling is optional DXF import/export helpers;
+    # the App/Gui workbench builds and runs without Draft. Requiring BUILD_DRAFT
+    # blocks it on the (PySide-gated) Draft workbench for no core-functionality
+    # reason. Gate on Part instead (already required transitively).
+    REQUIRES_MODS(BUILD_SPREADSHEET        BUILD_PART)
     REQUIRES_MODS(BUILD_SURFACE            BUILD_PART)
     REQUIRES_MODS(BUILD_TECHDRAW           BUILD_PART BUILD_PART_DESIGN BUILD_SPREADSHEET BUILD_MEASURE BUILD_IMPORT)
 endmacro(CheckInterModuleDependencies)

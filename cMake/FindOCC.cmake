@@ -131,11 +131,17 @@ if (OCC_FOUND)
             TKLCAF
             TKVCAF
             TKCDF
-            TKMeshVS
             TKService
             TKV3d
             TKRWMesh
     )
+    if(NOT EMSCRIPTEN)
+        # TKMeshVS is OCCT's mesh-visualization toolkit (for OCCT's own V3d
+        # viewer). FreeCAD renders via Coin3D and only the unbuilt SMESH module
+        # touches MeshVS_*, so the wasm OCCT does not ship libTKMeshVS.a. Keep it
+        # for desktop, drop it for the WebAssembly build.
+        list(APPEND OCC_OCAF_LIBRARIES TKMeshVS)
+    endif()
 
     if (OCC_VERSION_STRING VERSION_LESS 7.8.0)
         list(APPEND OCC_LIBRARIES TKIGES TKSTL TKSTEPBase TKSTEPAttr TKSTEP209 TKSTEP)

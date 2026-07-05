@@ -24,7 +24,11 @@
 import FreeCAD
 from FreeCAD import Units, Placement
 from UtilsMeasure import MeasureBasePython
-from PySide.QtCore import QT_TRANSLATE_NOOP
+try:
+    from PySide.QtCore import QT_TRANSLATE_NOOP
+except ImportError:  # no PySide/shiboken (e.g. the WebAssembly port)
+    def QT_TRANSLATE_NOOP(context, text):
+        return text
 
 __title__ = "Measure Center of Mass Object"
 __author__ = "David Friedli"
