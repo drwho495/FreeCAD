@@ -460,7 +460,14 @@ void Application::initStyleParameterManager()
             return path;
         }
 
+#ifdef __EMSCRIPTEN__
+        // wasm has no Start-page theme selection / durable config, so default to a
+        // real parametrized theme (not "Classic", which has no yaml -> all @color
+        // tokens unresolved -> unstyled task panel/menus/hover).
+        return fmt::format("qss:parameters/{}.yaml", hMainWindowGrp->GetASCII("Theme", "FreeCAD Light"));
+#else
         return fmt::format("qss:parameters/{}.yaml", hMainWindowGrp->GetASCII("Theme", "Classic"));
+#endif
     };
 
     auto themeParametersSource = new StyleParameters::YamlParameterSource(
@@ -2735,11 +2742,13 @@ void Application::runApplication()
     // WebGL2 fixed-function emulator (Gui/WasmGLFixedFunc.cpp) cannot fully honor —
     // cached geometry renders on the first frame and then vanishes. FreeCAD drives
     // scene caching through the "RenderCache" preference (read by
-    // View3DInventorViewer::setRenderCache when a view is created), so force it to
-    // 2 = Off here, before any 3D view exists, so all geometry is re-emitted every
-    // frame. (A plain SoSeparator::setNumRenderCaches(0) is overridden by
-    // SoFCSeparator::setCacheMode() and does not suffice.)
-    ViewParams::instance()->setRenderCache(2);
+    // View3DInventorViewer::setRenderCache when a view is created). The original
+    // "solid renders once then vanishes" bug that motivated forcing caching Off
+    // was actually the glGetDoublev GL_DEPTH_CLEAR_VALUE stub (since fixed), so
+    // re-enable render caching (1 = On) — the display-list replay (glNewList/
+    // glCallList) skips the per-frame scenegraph re-traversal + per-vertex JS
+    // marshaling that dominates redraw cost in the browser.
+    ViewParams::instance()->setRenderCache(1);
 
     // On wasm, run an optional GUI startup script from a fixed path once the
     // event loop is live. Doing this through a queued timer (rather than

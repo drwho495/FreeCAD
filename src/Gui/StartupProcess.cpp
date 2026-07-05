@@ -538,6 +538,22 @@ void StartupPostProcess::setStyleSheet()
         "User parameter:BaseApp/Preferences/MainWindow"
     );
     std::string style = hGrp->GetASCII("StyleSheet");
+#ifdef __EMSCRIPTEN__
+    // wasm: default to the parametrized FreeCAD theme when nothing is configured
+    // (its assets are packaged but never selected; empty => only the 20-line
+    // defaults.qss applies => unstyled UI). Seed the params so the Theme (yaml)
+    // + overlay stylesheet stay consistent with deduceParametersFilePath().
+    if (style.empty()) {
+        style = "FreeCAD.qss";
+        hGrp->SetASCII("StyleSheet", style);
+        if (hGrp->GetASCII("Theme").empty()) {
+            hGrp->SetASCII("Theme", "FreeCAD Light");
+        }
+        if (hGrp->GetASCII("OverlayActiveStyleSheet").empty()) {
+            hGrp->SetASCII("OverlayActiveStyleSheet", "Freecad Overlay.qss");
+        }
+    }
+#endif
     if (style.empty()) {
         // check the branding settings
         const auto& config = App::Application::Config();

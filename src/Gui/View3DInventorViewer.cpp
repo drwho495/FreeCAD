@@ -1995,7 +1995,10 @@ void View3DInventorViewer::setRenderCache(int mode)
         //
         // For more details see:
         // https://forum.freecad.org/viewtopic.php?f=18&t=43305&start=10#p412537
+#ifndef __EMSCRIPTEN__
         coin_setenv("COIN_AUTO_CACHING", "0", TRUE);
+#endif  // wasm: honor render caching (the transparency-sort issue this guarded
+        // against is outweighed by the huge immediate-mode redraw cost in-browser)
 
         int setting = ViewParams::instance()->getRenderCache();
         if (mode == -2) {
