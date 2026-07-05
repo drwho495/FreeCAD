@@ -474,22 +474,12 @@ void DrawViewSection::sectionExec(TopoDS_Shape& baseShape)
     }
 
     try {
-        // note that &m_cutWatcher in the third parameter is not strictly required,
-        // but using the 4 parameter signature instead of the 3 parameter signature
-        // prevents clazy warning:
-        // https://github.com/KDE/clazy/blob/1.11/docs/checks/README-connect-3arg-lambda.md
-        connectCutWatcher =
-            QObject::connect(&m_cutWatcher, &QFutureWatcherBase::finished, &m_cutWatcher, [this] {
-                this->onSectionCutFinished();
-            });
-
-        // We create a lambda closure to hold a copy of baseShape.
-        // This is important because this variable might be local to the calling
-        // function and might get destructed before the parallel processing finishes.
-        auto lambda = [this, baseShape]{this->makeSectionCut(baseShape);};
-        m_cutFuture = QtConcurrent::run(std::move(lambda));
-        m_cutWatcher.setFuture(m_cutFuture);
-        waitingForCut(true);
+        // WASM single-thread build (QT_FEATURE_thread=-1): run the section cut synchronously
+        // inline and invoke the completion handler directly.  There is no worker thread and
+        // thus no QFutureWatcher::finished notification.
+        makeSectionCut(baseShape);
+        waitingForCut(false);
+        onSectionCutFinished();
     }
     catch (...) {
         Base::Console().message("DVS::sectionExec - failed to make section cut");
@@ -634,9 +624,9 @@ void DrawViewSection::onSectionCutFinished()
 
     // display geometry for cut shape is in geometryObject as in DVP
     m_tempGeometryObject = buildGeometryObject(m_preparedShape, getProjectionCS());
-    if (!DU::isGuiUp()) {
-        onHlrFinished();
-    }
+    // WASM single-thread build: buildGeometryObject() runs HLR synchronously, so the post-HLR
+    // processing must always be invoked here (there is no QFutureWatcher to fire it).
+    onHlrFinished();
 }
 
 // activities that depend on updated geometry object

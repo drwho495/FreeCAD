@@ -310,16 +310,21 @@ void CrossSections::apply()
 
         // NOLINTBEGIN
         MeshCrossSection cs(kernel, grid, a, b, c, connectEdges, eps);
-        QFuture<std::list<TopoDS_Wire>> future
-            = QtConcurrent::mapped(d, std::bind(&MeshCrossSection::section, &cs, sp::_1));
-        future.waitForFinished();
+        // wasm single-thread port: QtConcurrent::mapped -> serial loop
+        // (Qt built with QT_FEATURE_thread=OFF). Behavior preserved: same
+        // per-plane MeshCrossSection::section() results in the same order.
+        std::vector<std::list<TopoDS_Wire>> sections;
+        sections.reserve(d.size());
+        for (double dist : d) {
+            sections.push_back(cs.section(dist));
+        }
         // NOLINTEND
 
         TopoDS_Compound comp;
         BRep_Builder builder;
         builder.MakeCompound(comp);
 
-        for (const auto& w : future) {
+        for (const auto& w : sections) {
             for (const auto& wt : w) {
                 if (!wt.IsNull()) {
                     builder.Add(comp, wt);

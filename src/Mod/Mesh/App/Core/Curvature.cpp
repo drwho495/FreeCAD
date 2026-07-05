@@ -81,15 +81,11 @@ void MeshCurvature::ComputePerFace(bool parallel)
         }
     }
     else {
-        // NOLINTBEGIN
-        QFuture<CurvatureInfo> future
-            = QtConcurrent::mapped(mySegment, std::bind(&FacetCurvature::Compute, &face, sp::_1));
-        // NOLINTEND
-        QFutureWatcher<CurvatureInfo> watcher;
-        watcher.setFuture(future);
-        watcher.waitForFinished();
-        for (const auto& it : future) {
-            myCurvature.push_back(it);
+        // wasm single-thread: QtConcurrent has no worker threads under
+        // QT_FEATURE_thread=-1, so run the map serially (same result).
+        myCurvature.reserve(mySegment.size());
+        for (FacetIndex it : mySegment) {
+            myCurvature.push_back(face.Compute(it));
         }
     }
 }

@@ -51,6 +51,14 @@
 #include <QStyle>
 #include <QUrl>
 
+#ifdef FC_OS_WASM
+# include <QByteArray>
+# include <QEventLoop>
+# include <QFile>
+# include <QFileInfo>
+# include <QMetaObject>
+#endif
+
 #include <Base/Parameter.h>
 #include <App/Application.h>
 #include <App/Document.h>
@@ -509,6 +517,97 @@ void FileDialogInternal::normalizeSavePath(QString& path, const FileDialog::Filt
     }
 }
 
+#ifdef FC_OS_WASM
+namespace
+{
+// Staging directory on the in-memory (MEMFS) filesystem where wasm import/export
+// files are parked. The browser has no persistent native filesystem, so every
+// in-app Open/Save/Import/Export is bridged to the browser upload/download flow
+// through this directory using Qt-for-wasm's async QFileDialog helpers.
+const char* const fcWasmIoDir = "/tmp/fc_io";
+
+QString fcWasmEnsureIoDir()
+{
+    QDir().mkpath(QString::fromLatin1(fcWasmIoDir));
+    return QString::fromLatin1(fcWasmIoDir);
+}
+
+// Build a browser <input accept="..."> filter (e.g. ".step,.stp,.iges") from a
+// FreeCAD FilterList. An empty string means "accept anything".
+QString fcWasmAcceptFromFilters(const FileDialog::FilterList& filters)
+{
+    QStringList exts;
+    for (const auto& filter : filters) {
+        for (const auto& pat : filter.patterns) {
+            const auto dot = pat.indexOf(QLatin1Char('.'));
+            if (dot >= 0) {
+                const QString ext = pat.mid(dot);
+                if (ext != QLatin1String(".*") && !exts.contains(ext, Qt::CaseInsensitive)) {
+                    exts << ext;
+                }
+            }
+        }
+    }
+    return exts.join(QLatin1Char(','));
+}
+
+// Blocking upload: pops the browser file picker via Qt-for-wasm, writes the
+// chosen file onto MEMFS and returns its path (empty string on cancel). Blocks
+// the synchronous C++ caller by spinning a nested event loop that is unwound by
+// ASYNCIFY until the async JS <input type=file> resolves.
+QString fcWasmOpenFileToFs(const FileDialog::FilterList& filters)
+{
+    QString resultPath;
+    QEventLoop loop;
+    const QString accept = fcWasmAcceptFromFilters(filters);
+    QFileDialog::getOpenFileContent(
+        accept,
+        [&resultPath, &loop](const QString& name, const QByteArray& data) {
+            if (!name.isEmpty()) {
+                const QString dir = fcWasmEnsureIoDir();
+                QString base = QFileInfo(name).fileName();
+                if (base.isEmpty()) {
+                    base = QStringLiteral("upload.bin");
+                }
+                const QString path = dir + QLatin1Char('/') + base;
+                QFile file(path);
+                if (file.open(QIODevice::WriteOnly)) {
+                    file.write(data);
+                    file.close();
+                    resultPath = path;
+                }
+            }
+            loop.quit();
+        });
+    loop.exec();
+    return resultPath;
+}
+
+// Schedule a browser download for a file the synchronous caller is about to
+// write to `stagePath`. The queued lambda runs once control returns to the Qt
+// event loop, i.e. after the export/save has finished writing the bytes; it
+// reads them back and hands them to Qt-for-wasm's saveFileContent() which
+// triggers the browser Blob download, then removes the staging file.
+void fcWasmScheduleDownload(const QString& stagePath, const QString& downloadName)
+{
+    QMetaObject::invokeMethod(
+        qApp,
+        [stagePath, downloadName]() {
+            QFile file(stagePath);
+            if (file.exists() && file.open(QIODevice::ReadOnly)) {
+                const QByteArray bytes = file.readAll();
+                file.close();
+                if (!bytes.isEmpty()) {
+                    QFileDialog::saveFileContent(bytes, downloadName);
+                }
+            }
+            file.remove();
+        },
+        Qt::QueuedConnection);
+}
+}  // namespace
+#endif
+
 /**
  * This is a convenience static function that will return a file name selected by the user. The file
  * does not have to exist.
@@ -559,6 +658,34 @@ QString FileDialog::getSaveFileName(
     }
 
     options |= QFileDialog::HideNameFilterDetails;
+
+#ifdef FC_OS_WASM
+    // Browser bridge: there is no OS "Save As" picker and no persistent native
+    // filesystem. Return a deterministic MEMFS staging path (with the correct
+    // extension for the selected filter) that the synchronous caller writes to,
+    // and queue a browser download of those bytes once the write completes.
+    {
+        const qsizetype fidx =
+            (actuallySelectedFilterIndex >= 0 && actuallySelectedFilterIndex < filters.size())
+            ? actuallySelectedFilterIndex
+            : 0;
+        QString stage = suggestedPath;
+        if (fidx >= 0 && fidx < filters.size()) {
+            FileDialogInternal::normalizeSavePath(stage, filters[fidx]);
+        }
+        QString base = QFileInfo(stage).fileName();
+        if (base.isEmpty()) {
+            base = QStringLiteral("export.dat");
+        }
+        const QString stagePath = fcWasmEnsureIoDir() + QLatin1Char('/') + base;
+        fcWasmScheduleDownload(stagePath, base);
+        if (selectedFilterIndex != nullptr) {
+            *selectedFilterIndex = fidx;
+        }
+        setWorkingDirectory(stagePath);
+        return stagePath;
+    }
+#endif
 
     QString file;
     if (DialogOptions::dontUseNativeFileDialog()) {
@@ -698,6 +825,23 @@ QString FileDialog::getOpenFileName(
     qsizetype actuallySelectedFilterIndex = selectedFilterIndex != nullptr ? *selectedFilterIndex
                                                                            : -1;
 
+#ifdef FC_OS_WASM
+    // Browser bridge: upload a file from the user's machine into MEMFS and hand
+    // the caller its staged path so the existing open/import codepaths run
+    // unchanged. Filter index defaults to 0 (the "all supported" filter) when
+    // the caller did not preselect one, so extension-based module dispatch works.
+    {
+        const QString path = fcWasmOpenFileToFs(filters);
+        if (selectedFilterIndex != nullptr && *selectedFilterIndex < 0) {
+            *selectedFilterIndex = 0;
+        }
+        if (!path.isEmpty()) {
+            setWorkingDirectory(path);
+        }
+        return path;
+    }
+#endif
+
     QString file;
     if (DialogOptions::dontUseNativeFileDialog()) {
         const bool showPatterns = FileDialogInternal::getPreferShowFilterPatterns();
@@ -792,6 +936,23 @@ QStringList FileDialog::getOpenFileNames(
 
     qsizetype actuallySelectedFilterIndex = selectedFilterIndex != nullptr ? *selectedFilterIndex
                                                                            : -1;
+
+#ifdef FC_OS_WASM
+    // Browser bridge: the wasm file picker yields a single file, so multi-select
+    // import degrades to one file per invocation. Return it wrapped in a list.
+    {
+        const QString path = fcWasmOpenFileToFs(filters);
+        if (selectedFilterIndex != nullptr && *selectedFilterIndex < 0) {
+            *selectedFilterIndex = 0;
+        }
+        QStringList picked;
+        if (!path.isEmpty()) {
+            picked << path;
+            setWorkingDirectory(path);
+        }
+        return picked;
+    }
+#endif
 
     QStringList files;
     if (DialogOptions::dontUseNativeFileDialog()) {

@@ -23,6 +23,7 @@
  ***************************************************************************/
 
 #include <QtConcurrentMap>
+#include <algorithm>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <cmath>
 #include <iostream>
@@ -93,7 +94,8 @@ void PointKernel::transformGeometry(const Base::Matrix4D& rclMat)
         value = rclMat * value;
     });
 #else
-    QtConcurrent::blockingMap(kernel, [rclMat](value_type& value) { rclMat.multVec(value, value); });
+    // wasm single-thread: QtConcurrent unavailable, run serially
+    std::for_each(kernel.begin(), kernel.end(), [rclMat](value_type& value) { rclMat.multVec(value, value); });
 #endif
 }
 
@@ -106,7 +108,8 @@ void PointKernel::moveGeometry(const Base::Vector3d& vec)
         value += offset;
     });
 #else
-    QtConcurrent::blockingMap(kernel, [offset](value_type& value) { value += offset; });
+    // wasm single-thread: QtConcurrent unavailable, run serially
+    std::for_each(kernel.begin(), kernel.end(), [offset](value_type& value) { value += offset; });
 #endif
 }
 

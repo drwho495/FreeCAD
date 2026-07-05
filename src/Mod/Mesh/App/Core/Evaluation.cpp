@@ -990,7 +990,9 @@ void MeshKernel::RebuildNeighbours(FacetIndex index)
 
     // sort the edges
     // std::sort(edges.begin(), edges.end(), Edge_Less());
-    int threads = int(std::thread::hardware_concurrency());
+    // wasm single-thread: force serial std::sort path in parallel_sort
+    // (std::async spawns threads, unsupported under QT_FEATURE_thread=-1).
+    int threads = 1;
     MeshCore::parallel_sort(edges.begin(), edges.end(), Edge_Less(), threads);
 
     PointIndex p0 = POINT_INDEX_MAX, p1 = POINT_INDEX_MAX;

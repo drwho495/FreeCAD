@@ -299,11 +299,10 @@ void DrawViewPart::partExec(TopoDS_Shape& shape)
 
     //we need to keep using the old geometryObject until the new one is fully populated
     m_tempGeometryObject = makeGeometryForShape(shape);
-    if (CoarseView.getValue() ||
-        !DU::isGuiUp()) {
-        onHlrFinished();//poly algo and console mode do not run in separate thread, so we need to invoke
-                        //the post hlr processing manually
-    }
+    // WASM single-thread build: HLR always completes synchronously inside
+    // makeGeometryForShape() (see buildGeometryObject), so the post-HLR processing is
+    // always invoked here now that m_tempGeometryObject has been assigned.
+    onHlrFinished();
 }
 
 //! prepare the shape for HLR processing by centering, scaling and rotating it
@@ -361,28 +360,11 @@ TechDraw::GeometryObjectPtr DrawViewPart::buildGeometryObject(const TopoDS_Shape
         return go;
     }
 
-    if (!DU::isGuiUp()) {
-        // if the Gui is not running (actual the event loop), we cannot use the separate thread,
-        // since we will never be notified of thread completion.
-        go->projectShape(shape, viewAxis);
-        return go;
-    }
-
-    //projectShape (the HLR process) runs in a separate thread since it can take a long time
-    //note that &m_hlrWatcher in the third parameter is not strictly required, but using the
-    //4 parameter signature instead of the 3 parameter signature prevents clazy warning:
-    //https://github.com/KDE/clazy/blob/1.11/docs/checks/README-connect-3arg-lambda.md
-    connectHlrWatcher = QObject::connect(&m_hlrWatcher, &QFutureWatcherBase::finished,
-                                         &m_hlrWatcher, [this] { this->onHlrFinished(); });
-
-    // We create a lambda closure to hold a copy of go, shape and viewAxis.
-    // This is important because those variables might be local to the calling
-    // function and might get destructed before the parallel processing finishes.
-    auto lambda = [go, shape, viewAxis]{go->projectShape(shape, viewAxis);};
-    m_hlrFuture = QtConcurrent::run(std::move(lambda));
-    m_hlrWatcher.setFuture(m_hlrFuture);
-    waitingForHlr(true);
-
+    // WASM single-thread build (QT_FEATURE_thread=-1): there is no worker thread and
+    // therefore no QFutureWatcher::finished notification.  Run the HLR process (projectShape)
+    // synchronously inline and return the populated GeometryObject.  The post-HLR processing
+    // (onHlrFinished) is invoked by partExec() once m_tempGeometryObject has been assigned.
+    go->projectShape(shape, viewAxis);
     return go;
 }
 
@@ -423,17 +405,10 @@ void DrawViewPart::onHlrFinished()
 
     if (handleFaces() && !CoarseView.getValue()) {
         try {
-            //note that &m_faceWatcher in the third parameter is not strictly required, but using the
-            //4 parameter signature instead of the 3 parameter signature prevents clazy warning:
-            //https://github.com/KDE/clazy/blob/1.11/docs/checks/README-connect-3arg-lambda.md
-            connectFaceWatcher =
-                QObject::connect(&m_faceWatcher, &QFutureWatcherBase::finished, &m_faceWatcher,
-                                 [this] { this->onFacesFinished(); });
-
-            auto lambda = [this]{this->extractFaces();};
-            m_faceFuture = QtConcurrent::run(std::move(lambda));
-            m_faceWatcher.setFuture(m_faceFuture);
-            waitingForFaces(true);
+            // WASM single-thread build: extract faces synchronously inline and invoke the
+            // completion handler directly (no worker thread / QFutureWatcher notification).
+            extractFaces();
+            onFacesFinished();
         }
         catch (Standard_Failure& e) {
             waitingForFaces(false);

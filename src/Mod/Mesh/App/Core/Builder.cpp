@@ -365,7 +365,9 @@ void MeshFastBuilder::Finish()
     }
 
     // std::sort(verts.begin(), verts.end());
-    int threads = int(std::thread::hardware_concurrency());
+    // wasm single-thread: force serial std::sort path in parallel_sort
+    // (std::async spawns threads, unsupported under QT_FEATURE_thread=-1).
+    int threads = 1;
     MeshCore::parallel_sort(verts.begin(), verts.end(), std::less<>(), threads);
 
     QVector<FacetIndex> indices(ulCtPts);

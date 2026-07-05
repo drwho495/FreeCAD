@@ -19,7 +19,14 @@ macro(CheckInterModuleDependencies)
 
     REQUIRES_MODS(BUILD_ASSEMBLY           BUILD_PART BUILD_PART_DESIGN BUILD_SPREADSHEET)
     REQUIRES_MODS(BUILD_BIM                BUILD_PART BUILD_MESH BUILD_MESH_PART BUILD_DRAFT)
-    REQUIRES_MODS(BUILD_DRAFT              BUILD_SKETCHER BUILD_TECHDRAW)
+    # Draft's TechDraw coupling is limited to lazy `import TechDraw` calls inside
+    # Shape2DView / Hatch objects and the 3D-shape->SVG/DXF projection export
+    # helpers (draftfunctions/svg.py, dxf.py, importDXF.py). Core 2D drafting and
+    # 2D DXF/SVG import do not need TechDraw. Requiring the (large, currently
+    # unbuilt) TechDraw module would block the whole Draft workbench for no
+    # core-functionality reason; those lazy imports degrade gracefully when the
+    # specific feature is used. Gate on Sketcher only (already ON).
+    REQUIRES_MODS(BUILD_DRAFT              BUILD_SKETCHER)
     REQUIRES_MODS(BUILD_FEM                BUILD_PART)
     REQUIRES_MODS(BUILD_IMPORT             BUILD_PART BUILD_PART_DESIGN)
     REQUIRES_MODS(BUILD_INSPECTION         BUILD_MESH BUILD_POINTS BUILD_PART)

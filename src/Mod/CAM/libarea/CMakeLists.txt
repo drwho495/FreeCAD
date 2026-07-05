@@ -128,7 +128,11 @@ target_link_libraries(area area-native ${area_LIBS} ${area_native_LIBS})
 
 # TODO why CMAKE_SHARED_LINKER_FLAGS is not used here?
 # This is a dirty workaround!
-if(NOT BUILD_DYNAMIC_LINK_PYTHON AND CMAKE_COMPILER_IS_CLANGXX)
+# wasm: the '-Wl,--undefined,dynamic_lookup' flag is a native-toolchain hack for
+# resolving the CPython symbols at load time in a shared .so. Under EMSCRIPTEN the
+# 'area' module is a STATIC archive linked into the single executable (no dlopen),
+# and wasm-ld rejects that flag, so it must be suppressed.
+if(NOT EMSCRIPTEN AND NOT BUILD_DYNAMIC_LINK_PYTHON AND CMAKE_COMPILER_IS_CLANGXX)
     if(APPLE)
         target_link_libraries(area "-Wl,-undefined,dynamic_lookup")
     else(UNIX)

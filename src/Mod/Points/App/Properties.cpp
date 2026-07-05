@@ -388,7 +388,8 @@ void PropertyNormalList::transformGeometry(const Base::Matrix4D& mat)
         value = rot * value;
     });
 #else
-    QtConcurrent::blockingMap(_lValueList, [rot](Base::Vector3f& value) {
+    // wasm single-thread: QtConcurrent unavailable, run serially
+    std::for_each(_lValueList.begin(), _lValueList.end(), [rot](Base::Vector3f& value) {
         rot.multVec(value, value);
     });
 #endif

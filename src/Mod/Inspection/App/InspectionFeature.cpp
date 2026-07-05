@@ -793,7 +793,11 @@ short Feature::mustExecute() const
 
 App::DocumentObjectExecReturn* Feature::execute()
 {
-    bool useMultithreading = true;
+    // wasm single-thread port: force the serial map-reduce path below.
+    // Qt is built with QT_FEATURE_thread=OFF, so QtConcurrent::mappedReduced +
+    // QFutureWatcher/QEventLoop cannot run. The else-branch produces an identical
+    // result (same fMap accumulation into res/vals), so behavior is preserved.
+    bool useMultithreading = false;
 
     App::DocumentObject* pcActual = Actual.getValue();
     if (!pcActual) {

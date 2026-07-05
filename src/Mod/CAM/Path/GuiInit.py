@@ -54,8 +54,20 @@ def Startup():
 
         from Path.Main.Gui import Fixture
         from Path.Main.Gui import Inspect
-        from Path.Main.Gui import Simulator
-        from Path.Main.Gui import SimulatorGL
+
+        # The simulators depend on native C extension modules (PathSimulator for
+        # the volumetric simulator, CAMSimulator for the OpenGL simulator). On
+        # platforms where those modules are not built (e.g. the WebAssembly port,
+        # whose GL simulator is excluded), importing them raises ModuleNotFoundError.
+        # Guard the imports so the rest of the CAM workbench still initialises.
+        try:
+            from Path.Main.Gui import Simulator
+        except ImportError as exc:
+            Path.Log.warning("CAM: volumetric simulator unavailable: %s" % exc)
+        try:
+            from Path.Main.Gui import SimulatorGL
+        except ImportError as exc:
+            Path.Log.warning("CAM: OpenGL simulator unavailable: %s" % exc)
 
         from Path.Main.Sanity import Sanity
 

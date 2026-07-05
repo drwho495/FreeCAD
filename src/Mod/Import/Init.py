@@ -41,3 +41,22 @@ FreeCAD.addTranslatableExportType(
     translate("FileFormat", "STEPZ (Zipped STEP)"), ["stpZ", "stpz"], "stepZ"
 )
 FreeCAD.addExportType("glTF (*.gltf *.glb)", "ImportGui")
+
+# Native DXF import/export.
+#
+# The DXF reader/writer (Import.readDXF / Import.writeDXFShape / writeDXFObject)
+# is compiled into this Import module (src/Mod/Import/App/dxf). The actual
+# open/insert/export dispatch for *.dxf is registered by Draft/Init.py
+# ("importDXF"), whose modern path calls Import.readDXF / ImportGui.readDXF.
+# Import.open()/insert() themselves only handle STEP/IGES/glTF, so we do not
+# re-register *.dxf -> "Import" here (that would create a non-functional,
+# duplicate handler that raises "no supported file format").
+#
+# What we DO enforce is that the native C++ importer is used: the legacy
+# pure-Python DXF importer (dxfUseLegacyImporter=True) calls getDXFlibs(),
+# which downloads the dxf library over the network at import time. That is
+# impossible in the wasm build (no network / no subprocess), so pin the
+# preference to the native reader.
+_dxfGrp = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Draft")
+_dxfGrp.SetBool("dxfUseLegacyImporter", False)
+_dxfGrp.SetBool("dxfUseLegacyExporter", False)

@@ -2,9 +2,13 @@
 
 add_subdirectory(App)
 
-IF (BUILD_GUI)
+# wasm port: the host PySide6 rcc tool (PYSIDE_RCC_EXECUTABLE) is not available
+# in this cross toolchain (PySide6_DIR-NOTFOUND), so PYSIDE_WRAP_RC would
+# FATAL_ERROR at configure time. Draft_rc.py is pre-generated (icons + .ui,
+# translations stripped) and shipped in the packaged Python tree instead.
+IF (BUILD_GUI AND PYSIDE_RCC_EXECUTABLE)
     PYSIDE_WRAP_RC(Draft_QRC_SRCS Resources/Draft.qrc)
-ENDIF (BUILD_GUI)
+ENDIF ()
 
 SET(Draft_SRCS_base
     Init.py
@@ -331,12 +335,12 @@ fc_copy_sources(Draft "${CMAKE_BINARY_DIR}/Mod/Draft" ${Draft_SRCS_all})
 
 fc_copy_sources(Draft "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/Draft" ${DraftGuiIcon_SVG})
 
-IF (BUILD_GUI)
+IF (BUILD_GUI AND PYSIDE_RCC_EXECUTABLE)
     fc_target_copy_resource(Draft
         "${CMAKE_CURRENT_BINARY_DIR}"
         "${CMAKE_BINARY_DIR}/Mod/Draft"
         Draft_rc.py)
-ENDIF (BUILD_GUI)
+ENDIF ()
 
 INSTALL(
     FILES

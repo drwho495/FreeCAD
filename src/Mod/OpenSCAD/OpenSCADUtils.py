@@ -60,6 +60,14 @@ class OpenSCADError(BaseError):
 
 
 def getopenscadexe(osfilename=None):
+    # wasm/emscripten port: no subprocess support. The external OpenSCAD binary
+    # cannot be launched, so report it as unavailable. This makes every code path
+    # that would otherwise spawn the binary (callopenscad, getopenscadversion,
+    # callopenscadstring, mesh-refine helpers) fail cleanly with
+    # 'OpenSCAD executable unavailable' instead of attempting a forbidden spawn.
+    # In-process CSG import (processcsg / importCSG of .csg files) is unaffected.
+    if sys.platform == 'emscripten':
+        return None
     if not osfilename:
         osfilename = FreeCAD.ParamGet(\
             "User parameter:BaseApp/Preferences/Mod/OpenSCAD").\
@@ -188,6 +196,11 @@ def call_openscad_with_pipes(input_filename, output_filename, output_extension, 
     ''' Call OpenSCAD by sending input data to stdin, and read the output from stdout.
         Returns the tempfile the output is stored in on success, or None on failure.
         NOTE: This feature was added to OpenSCAD in 2021.01'''
+
+    # wasm/emscripten port: no subprocess support — cannot pipe to the external
+    # OpenSCAD binary. Fail cleanly rather than attempting a forbidden spawn.
+    if sys.platform == 'emscripten':
+        raise OpenSCADError('OpenSCAD executable unavailable')
 
     # For testing purposes continue using temp files, but now OpenSCAD does not need
     # read or write access to the files, only the FreeCAD process does. In the future

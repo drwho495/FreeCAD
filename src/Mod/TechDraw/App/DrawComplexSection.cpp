@@ -259,17 +259,12 @@ void DrawComplexSection::makeSectionCut(const TopoDS_Shape& baseShape)
     }
 
     try {
-        connectAlignWatcher =
-            QObject::connect(&m_alignWatcher, &QFutureWatcherBase::finished, &m_alignWatcher,
-                             [this] { this->onSectionCutFinished(); });
-
-        // We create a lambda closure to hold a copy of baseShape.
-        // This is important because this variable might be local to the calling
-        // function and might get destructed before the parallel processing finishes.
-        auto lambda = [this, baseShape]{this->makeAlignedPieces(baseShape);};
-        m_alignFuture = QtConcurrent::run(std::move(lambda));
-        m_alignWatcher.setFuture(m_alignFuture);
-        waitingForAlign(true);
+        // WASM single-thread build (QT_FEATURE_thread=-1): build the aligned pieces
+        // synchronously inline instead of offloading to a worker thread.  onSectionCutFinished()
+        // is invoked by DrawViewSection::sectionExec() after this returns; it proceeds because
+        // the (default-constructed) m_alignFuture / m_cutFuture are not running.
+        makeAlignedPieces(baseShape);
+        waitingForAlign(false);
     }
     catch (...) {
         Base::Console().warning("%s failed to make alignedPieces\n", Label.getValue());

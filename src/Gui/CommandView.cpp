@@ -2293,6 +2293,24 @@ void StdViewScreenShot::activated(int iMsg)
                     pixmap.save(fn);
                 }
             }
+
+#ifdef __EMSCRIPTEN__
+            // Browser bridge: saveImage() wrote the screenshot to the in-memory
+            // filesystem. There is no native filesystem in the browser, so route
+            // the just-written bytes through Qt-for-wasm's saveFileContent() to
+            // trigger a Blob download, then drop the staging file.
+            {
+                QFile imgFile(fn);
+                if (imgFile.exists() && imgFile.open(QIODevice::ReadOnly)) {
+                    const QByteArray bytes = imgFile.readAll();
+                    imgFile.close();
+                    if (!bytes.isEmpty()) {
+                        QFileDialog::saveFileContent(bytes, QFileInfo(fn).fileName());
+                    }
+                    imgFile.remove();
+                }
+            }
+#endif
         }
     }
 }
