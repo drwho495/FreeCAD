@@ -1665,9 +1665,21 @@ void EditModeCoinManager::createEditModeInventorNodes()
     visibleOrigin->addChild(editModeScenegraphNodes.OriginPointSet);
 
     // pass for occluded transparency
+    // The occluded RootCross axis overlay below is stretched to fill the whole
+    // viewport by updateAxesLength(). The visible axes (crossRoot) and origin
+    // (originPointRoot) are SoSkipBoundingGroups, but this occluded copy was a
+    // plain SoSeparator, so it leaked into the scene bbox used by
+    // View3DInventorViewer::viewAll()/fitAll() — a feedback loop where fitAll
+    // fits viewport-sized axes, the camera zooms out, onCameraChanged regrows
+    // the axes, and the view diverges to "infinite zoom" in sketch edit mode.
+    // Wrap it in a SoSkipBoundingGroup so viewAll excludes it.
+    auto* occludedSkipBBox = new Gui::SoSkipBoundingGroup;
+    occludedSkipBBox->setName("OccludedOverlayRoot_SkipBBox");
+    editModeScenegraphNodes.EditRoot->addChild(occludedSkipBBox);
+
     auto* occludedOverlayRoot = new SoSeparator;
     occludedOverlayRoot->setName("OccludedOverlayRoot");
-    editModeScenegraphNodes.EditRoot->addChild(occludedOverlayRoot);
+    occludedSkipBBox->addChild(occludedOverlayRoot);
 
     auto* overlayPick = new SoPickStyle;
     overlayPick->style = SoPickStyle::UNPICKABLE;

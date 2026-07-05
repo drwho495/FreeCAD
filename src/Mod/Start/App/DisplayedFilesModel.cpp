@@ -165,7 +165,18 @@ void DisplayedFilesModel::addFile(const QString& filePath)
             this,
             &DisplayedFilesModel::processNewFcstdInfo
         );
+#ifdef FC_OS_WASM
+        // No worker threads under asyncify-singlethread wasm: QThreadPool::start
+        // would never run the runnable (the thumbnail/info would never appear and
+        // the pool spins). Run it inline; its signal fires synchronously to the
+        // slot on this (the only) thread.
+        runner->run();
+        if (runner->autoDelete()) {
+            delete runner;
+        }
+#else
         QThreadPool::globalInstance()->start(runner);
+#endif
         return;
     }
     const QStringList ignoredExtensions {

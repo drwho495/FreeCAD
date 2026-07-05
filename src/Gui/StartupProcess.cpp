@@ -237,7 +237,12 @@ void StartupPostProcess::execute()
     showMainWindow();
     activateWorkbench();
     checkParameters();
+#ifndef FC_OS_WASM
+    // checkVersionMigration() runs DlgVersionMigrator::exec() (a modal dialog)
+    // which also spawns a QThread size-calculation worker. On the single-threaded
+    // asyncify wasm build the worker thread ctor hangs; skip migration entirely.
     checkVersionMigration();
+#endif
 }
 
 void StartupPostProcess::setWindowTitle()
