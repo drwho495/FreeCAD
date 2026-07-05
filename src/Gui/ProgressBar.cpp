@@ -185,7 +185,13 @@ void SequencerBar::checkAbort()
             return;
         }
         d->checkAbortTime.restart();
+#ifndef __EMSCRIPTEN__
+        // On wasm (asyncify) processEvents() suspends the stack; when a recompute
+        // or boolean is driven from outside the main event loop (a JS ccall or a
+        // startup script) that suspend has no promise to resume and deadlocks.
+        // Skip it — the operation runs to completion with the UI briefly frozen.
         qApp->processEvents();
+#endif
         return;
     }
     // restore cursor
@@ -272,7 +278,9 @@ void SequencerBar::setValue(int step)
             }
             else {
                 d->bar->setValueEx(d->bar->value() + 1);
-                qApp->processEvents();
+#ifndef __EMSCRIPTEN__
+                qApp->processEvents();  // suspends under asyncify — see checkAbort()
+#endif
             }
         }
     }
@@ -298,7 +306,9 @@ void SequencerBar::setValue(int step)
                     showRemainingTime();
                 }
                 d->bar->resetObserveEventFilter();
-                qApp->processEvents();
+#ifndef __EMSCRIPTEN__
+                qApp->processEvents();  // suspends under asyncify — see checkAbort()
+#endif
             }
         }
     }

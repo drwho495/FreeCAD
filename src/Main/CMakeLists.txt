@@ -72,13 +72,23 @@ if(EMSCRIPTEN)
         "-sFORCE_FILESYSTEM=1"
         "-sWASM_BIGINT=1"
         "-sEXIT_RUNTIME=0"
+        # ASYNCIFY + JS-EH build (see research/R10). This is the only combination
+        # that yields a VALID module, a rendering GUI, and working Python->OCCT:
+        #  * wasm-EH is out: LLVM mis-compiles OCCT's try_table/catch_all_ref to an
+        #    invalid br_table (V8 rejects it).
+        #  * JSPI is out: JS-EH's invoke_* frames can't be suspended across; and
+        #    wasm-EH is invalid. ASYNCIFY instruments the whole module so any
+        #    function can suspend — Qt's synchronous exec() works.
+        #  * CPython's wasm-gc trampoline crashes under asyncify, so we force the
+        #    JS trampoline (getPyEMTrampolinePtr->0, applied post-link). It's
+        #    asyncify-safe for non-suspending Python->C calls (verified: makeBox).
         "-sDISABLE_EXCEPTION_CATCHING=0"
         # FS/callMain/ENV/ccall/cwrap for our JS API + CPython glue; the rest
         # (UTF16ToString,stringToUTF16,JSEvents,specialHTMLTargets) are what the
         # Qt wasm platform plugin needs — see Qt6WasmMacros.cmake. A single
         # EXPORTED_RUNTIME_METHODS wins at link time, so it must be the union.
         "-sEXPORTED_RUNTIME_METHODS=FS,callMain,ENV,ccall,cwrap,UTF16ToString,stringToUTF16,JSEvents,specialHTMLTargets,stringToNewUTF8,UTF8ToString"
-        "SHELL:-s EXPORTED_FUNCTIONS=_main,__embind_initialize_bindings,__PyRuntime,_PyGILState_GetThisThreadState,__Py_DumpTraceback,__PyEM_EMSCRIPTEN_TRAMPOLINE_OFFSET"
+        "SHELL:-s EXPORTED_FUNCTIONS=_main,_freecad_run_python,__embind_initialize_bindings,__PyRuntime,_PyGILState_GetThisThreadState,__Py_DumpTraceback,__PyEM_EMSCRIPTEN_TRAMPOLINE_OFFSET"
         "-sFETCH=1"
         "-sUSE_ZLIB=1"
         "-sUSE_BZIP2=1"
@@ -139,20 +149,12 @@ if(BUILD_GUI)
             "-sGL_ENABLE_GET_PROC_ADDRESS=1"
             "-lEGL"   # Coin's context glue references EGL entry points
             # Stack switching for synchronous QEventLoop::exec() (nested event
-            # loops, modal dialogs). Currently ASYNCIFY (Qt built with
-            # QT_HAVE_EMSCRIPTEN_ASYNCIFY). This works for the GUI shell but
-            # conflicts with CPython's PY_CALL_TRAMPOLINE for Python->C calls
-            # made *during* the Qt event loop (_PyEM_TrampolineCall
-            # unreachable) — which blocks the 3D viewport path.
-            # THE FIX is JSPI (-sJSPI, Qt -feature-wasm-jspi): it unifies stack
-            # switching with CPython's trampoline. JSPI requires native wasm
-            # exceptions (-fwasm-exceptions) throughout, i.e. every C++ dep
-            # (OCCT, Coin, Boost, xerces, …) rebuilt in that mode — see
-            # research/R5 and toolchain/rebuild-qt-jspi.sh. Switch to:
-            #   "-sJSPI=1"  (and -fwasm-exceptions everywhere)
-            # once the deps are rebuilt.
+            # loops, modal dialogs) — ASYNCIFY (Qt built QT_EMSCRIPTEN_ASYNCIFY=1).
+            # Large asyncify stack: OCCT's boolean/geometry code recurses deeply,
+            # and a Qt event pump mid-operation can unwind with OCCT on the stack;
+            # the default 128 KB overflows -> silent hang. See research/R10.
             "-sASYNCIFY=1"
-            "-sASYNCIFY_STACK_SIZE=131072"
+            "-sASYNCIFY_STACK_SIZE=67108864"
             # Vendored Coin bundles its own copy of expat, whose internal
             # symbols collide with the expat inside static libpython. Both are
             # the same upstream library, so tolerate the duplicates here.
@@ -161,6 +163,18 @@ if(BUILD_GUI)
         if(FREECAD_WASM_NODERAWFS)
             target_link_options(FreeCADMain PRIVATE "-sNODERAWFS=1")
         endif()
+        # Force CPython's backwards-compatible JS call-trampoline. The default
+        # wasm-gc trampoline (getPyEMTrampolinePtr) CRASHES under ASYNCIFY
+        # ("unreachable" in _PyEM_TrampolineCall) once the first stack unwind
+        # happens; returning 0 makes CPython fall back to _PyEM_TrampolineCall_JS,
+        # which is asyncify-safe for non-suspending Python->C calls. This MUST be
+        # baked in — a bare relink regenerates FreeCAD.js from the unpatched EM_JS
+        # and silently reintroduces the crash. See research/R10.
+        add_custom_command(TARGET FreeCADMain POST_BUILD
+            COMMAND sed -i "s/function getPyEMTrampolinePtr(){/function getPyEMTrampolinePtr(){return 0;/"
+                    "$<TARGET_FILE_DIR:FreeCADMain>/FreeCAD.js"
+            COMMENT "wasm: force CPython JS call-trampoline (asyncify-safe, R10)"
+            VERBATIM)
     endif()
     if(BUILD_TEST)
         add_dependencies(FreeCADMain TestSources)

@@ -167,6 +167,29 @@ static void freecadWasmEarlyMessageHandler(QtMsgType type,
     const QByteArray text = msg.toUtf8();
     std::fprintf(stderr, "[Qt] %s\n", text.constData());
 }
+
+#include <emscripten.h>
+// Run a Python snippet in the GUI process from JS. Unlike a script passed on the
+// command line (which executes synchronously before QApplication::exec() and so
+// deadlocks anything that needs the running event loop — e.g. creating a 3D
+// MDI view whose QOpenGLWidget context is set up asynchronously), this can be
+// invoked from a browser callback (setTimeout/event) so it runs *inside* the
+// live event loop. Returns 0 on success.
+extern "C" EMSCRIPTEN_KEEPALIVE int freecad_run_python(const char* code)
+{
+    try {
+        Base::Interpreter().runString(code);
+        return 0;
+    }
+    catch (Base::Exception& e) {
+        std::fprintf(stderr, "freecad_run_python error: %s\n", e.what());
+        return 1;
+    }
+    catch (...) {
+        std::fprintf(stderr, "freecad_run_python unknown error\n");
+        return 2;
+    }
+}
 #endif
 
 int main(int argc, char** argv)
