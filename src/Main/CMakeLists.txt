@@ -53,6 +53,18 @@ if(EMSCRIPTEN)
         set(_decls "")
         set(_regs "")
         foreach(_mod IN LISTS ARGN)
+            # An entry may be "RegName=CInitSuffix" to decouple the Python import
+            # name (possibly dotted, e.g. PySide6.QtCore) from the C symbol
+            # PyInit_<CInitSuffix> (e.g. PyInit_QtCore). Used for the statically
+            # linked PySide6/shiboken6 bindings.
+            if(_mod MATCHES "=")
+                string(REPLACE "=" ";" _kv "${_mod}")
+                list(GET _kv 0 _regname)
+                list(GET _kv 1 _pymodx)
+                string(APPEND _decls "extern \"C\" PyObject* PyInit_${_pymodx}();\n")
+                string(APPEND _regs "    PyImport_AppendInittab(\"${_regname}\", PyInit_${_pymodx});\n")
+                continue()
+            endif()
             # A Python C-extension's module name equals its library OUTPUT_NAME,
             # which usually matches the CMake target name we pass here. A few
             # modules ship a Python *package* of that name wrapping an
@@ -75,10 +87,15 @@ if(EMSCRIPTEN)
             "${_regs}"
             "}\n")
     endfunction()
+    # Extra statically-linked Python C-extension modules (e.g. the PySide6 /
+    # shiboken6 bindings). Each entry is "RegName=CInitSuffix" (or a plain name),
+    # e.g. "PySide6.QtCore=QtCore", "shiboken6.Shiboken=Shiboken", "minimal".
+    set(FREECAD_WASM_EXTRA_PY_MODULES "" CACHE STRING
+        "Extra 'RegName=CInitSuffix' python modules to add to the wasm inittab")
     freecad_wasm_generate_inittab(${CMAKE_CURRENT_BINARY_DIR}/WasmInittab.cpp
-        ${FREECAD_WASM_PY_MODULES})
+        ${FREECAD_WASM_PY_MODULES} ${FREECAD_WASM_EXTRA_PY_MODULES})
     freecad_wasm_generate_inittab(${CMAKE_CURRENT_BINARY_DIR}/WasmInittabGui.cpp
-        ${FREECAD_WASM_PY_MODULES} ${FREECAD_WASM_PY_GUI_MODULES})
+        ${FREECAD_WASM_PY_MODULES} ${FREECAD_WASM_PY_GUI_MODULES} ${FREECAD_WASM_EXTRA_PY_MODULES})
 
     set(FREECAD_WASM_EXTRA_LINK_LIBS "" CACHE STRING
         "Extra static archives appended to the FreeCAD wasm links")
