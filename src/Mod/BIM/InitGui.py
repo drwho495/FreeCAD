@@ -28,7 +28,10 @@ import os
 
 import FreeCAD
 import FreeCADGui
-import Arch_rc
+try:
+    import Arch_rc  # noqa: F401  (Qt icon resources; ~45MB, omitted on wasm to save memory/download)
+except ImportError:
+    pass
 
 
 class BIMWorkbench(Workbench):

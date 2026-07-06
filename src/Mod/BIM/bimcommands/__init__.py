@@ -3,7 +3,10 @@
 import glob
 import os
 
-import Arch_rc
+try:
+    import Arch_rc  # noqa: F401  (Qt icon resources; omitted on wasm)
+except ImportError:
+    pass
 import PartGui
 
 # populate the list of submodules

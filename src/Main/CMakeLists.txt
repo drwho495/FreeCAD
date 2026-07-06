@@ -77,6 +77,13 @@ if(EMSCRIPTEN)
         list(APPEND FREECAD_WASM_PY_MODULES Assembly)
         list(APPEND FREECAD_WASM_PY_GUI_MODULES AssemblyGui)
     endif()
+    if(BUILD_CAM)
+        # CAM/Path: target Path -> PyInit_PathApp (mapped below); area + tsp_solver
+        # are pybind11 modules (PyInit_area / PyInit_tsp_solver); PathSimulator is the
+        # CPU volumetric sim (its GL AppGL/CAMSimulator is excluded on wasm).
+        list(APPEND FREECAD_WASM_PY_MODULES Path area tsp_solver PathSimulator)
+        list(APPEND FREECAD_WASM_PY_GUI_MODULES PathGui)
+    endif()
     if(BUILD_START)
         list(APPEND FREECAD_WASM_PY_GUI_MODULES StartGui)
     endif()

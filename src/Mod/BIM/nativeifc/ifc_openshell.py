@@ -28,7 +28,11 @@ from packaging.version import Version
 
 import FreeCAD
 import FreeCADGui
-from addonmanager_utilities import create_pip_call
+# NOTE(wasm): addonmanager_utilities pulls subprocess/pip/PySide bits that are not
+# available in the WebAssembly build, and importing it at module load broke the
+# whole BIM workbench (nativeifc -> ifc_commands -> ifc_openshell). It is now
+# imported lazily inside run_pip() (which is only reachable via the IFC-updater
+# command, itself never usable without ifcopenshell), so BIM loads on wasm.
 from . import has_ifcopenshell
 from . import invalidate_ifcopenshell_cache
 
@@ -141,6 +145,7 @@ class IFC_UpdateIOS:
         """Runs a pip command"""
 
         import addonmanager_utilities as utils
+        from addonmanager_utilities import create_pip_call
         import freecad.utils
         from subprocess import CalledProcessError
 
