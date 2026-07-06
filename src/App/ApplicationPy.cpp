@@ -60,6 +60,12 @@ PyMethodDef ApplicationPy::Methods[] = {
      METH_VARARGS,
      "saveParameter(config='User parameter') -> None\n"
      "Save parameter set to file. The default set is 'User parameter'"},
+    {"reloadParameter",
+     (PyCFunction)ApplicationPy::sReloadParameter,
+     METH_VARARGS,
+     "reloadParameter(config='User parameter') -> bool\n"
+     "Re-load a parameter set from its file into the live manager (wasm: used\n"
+     "after the async IDBFS hydrate lands so reloaded prefs take effect)."},
     {"Version",
      (PyCFunction)ApplicationPy::sGetVersion,
      METH_VARARGS,
@@ -660,6 +666,49 @@ PyObject* ApplicationPy::sSaveParameter(PyObject* /*self*/, PyObject* args)
         param->SaveDocument();
         Py_INCREF(Py_None);
         return Py_None;
+    }
+    PY_CATCH;
+}
+
+PyObject* ApplicationPy::sReloadParameter(PyObject* /*self*/, PyObject* args)
+{
+    const char* pstr = "User parameter";
+    if (!PyArg_ParseTuple(args, "|s", &pstr)) {
+        return nullptr;
+    }
+    PY_TRY
+    {
+        ParameterManager* param = App::GetApplication().GetParameterSet(pstr);
+        if (!param) {
+            std::stringstream str;
+            str << "No parameter set found with name: " << pstr;
+            PyErr_SetString(PyExc_ValueError, str.str().c_str());
+            return nullptr;
+        }
+        bool loaded = false;
+#ifdef __EMSCRIPTEN__
+        // wasm: on a browser reload the IDBFS hydrate is async and lands AFTER
+        // initConfig/LoadParameters has already loaded an empty document, so the
+        // live manager never sees the persisted user.cfg. Re-point the serializer
+        // at the authoritative path and re-load it now (called from boot.py, on
+        // the event loop, once hydrate has completed). ParameterManager::LoadDocument
+        // re-binds the sub-group handles created in between (ParameterGrp::
+        // _RebindGroups), so already-handed-out ParameterGrp references resolve
+        // against the hydrated DOM.
+        {
+            const auto& cfg = App::Application::Config();
+            const std::string key = (std::string(pstr) == "System parameter")
+                ? "SystemParameter" : "UserParameter";
+            const auto it = cfg.find(key);
+            if (it != cfg.end() && !it->second.empty()
+                && std::filesystem::exists(std::filesystem::path(it->second))) {
+                param->SetSerializer(new ParameterSerializer(it->second));
+                param->LoadDocument(it->second.c_str());
+                loaded = true;
+            }
+        }
+#endif
+        return Py_BuildValue("O", loaded ? Py_True : Py_False);
     }
     PY_CATCH;
 }

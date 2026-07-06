@@ -437,6 +437,13 @@ protected:
     bool ShouldRemove() const;
 
     void _Reset();
+    /// After the underlying XML document is (re)loaded, re-resolve every cached
+    /// sub-group handle in _GroupMap against the new DOM so handles handed out
+    /// before the load point at the freshly parsed nodes, not the old document.
+    /// (wasm: bootstrapEarly builds handles against an empty doc before initConfig
+    /// re-points the serializer at the hydrated user.cfg — without this, reloaded
+    /// prefs/recent-files read as unset.)
+    void _RebindGroups();
 
     void _SetAttribute(ParamType Type, const char* Name, const char* Value);
     void _Notify(ParamType Type, const char* Name, const char* Value);

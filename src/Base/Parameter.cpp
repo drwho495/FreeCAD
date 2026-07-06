@@ -1588,6 +1588,22 @@ void ParameterGrp::_Reset()
     }
 }
 
+void ParameterGrp::_RebindGroups()
+{
+    for (auto& v : _GroupMap) {
+        DOMElement* node = nullptr;
+        if (_pGroupNode) {
+            node = FindElement(_pGroupNode, "FCParamGroup", v.first.c_str());
+            if (!node) {
+                node = CreateElement(_pGroupNode, "FCParamGroup", v.first.c_str());
+            }
+        }
+        v.second->_pGroupNode = node;
+        v.second->_Detached = (node == nullptr);
+        v.second->_RebindGroups();
+    }
+}
+
 //**************************************************************************
 //**************************************************************************
 // ParameterSerializer
@@ -1923,6 +1939,13 @@ int ParameterManager::LoadDocument(const XERCES_CPP_NAMESPACE::InputSource& inpu
     if (!_pGroupNode) {
         throw XMLBaseException("Malformed Parameter document: Root group not found");
     }
+
+    // Re-bind sub-group handles created before this (re)load (e.g. wasm
+    // bootstrapEarly built them against an empty document) to the new DOM, so
+    // previously-handed-out ParameterGrp references resolve against the hydrated
+    // user.cfg instead of the stale bootstrap document. No-op on desktop
+    // first-load (_GroupMap empty).
+    _RebindGroups();
 
     return 1;
 }
