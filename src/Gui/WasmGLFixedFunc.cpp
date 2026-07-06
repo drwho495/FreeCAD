@@ -70,6 +70,11 @@ EM_JS(void, ff_init, (void), {
     arrayBuffer: 0,
     prog: null, loc: null,
     posVBO: null, nrmVBO: null, colVBO: null, idxVBO: null,
+    // The set of WebGLBuffers WE created (scratch pos/nrm/col/idx + memo VBOs). A
+    // leftover binding of one of these from a previous draw must NOT be mistaken
+    // for a Coin-supplied client-array VBO (glVertexPointer/glDrawElements would
+    // then read vertices/indices from the wrong buffer -> garbage geometry).
+    _ownBufs: new Set(),
     // GL objects (program, uniform locations, VBOs) belong to a specific WebGL
     // context. Qt-wasm uses several contexts (offscreen FBO, nav-cube, overlays);
     // caching one context's objects and using them under another triggers
@@ -157,6 +162,7 @@ EM_JS(void, ff_init, (void), {
       this.prog=e.prog; this.loc=e.loc;
       this.posVBO=e.posVBO; this.nrmVBO=e.nrmVBO; this.colVBO=e.colVBO; this.idxVBO=e.idxVBO;
       this.memo=e.memo;
+      this._ownBufs.add(e.posVBO); this._ownBufs.add(e.nrmVBO); this._ownBufs.add(e.colVBO); this._ownBufs.add(e.idxVBO);
       this.progCtx=g;
       return this.prog;
     },
@@ -229,6 +235,7 @@ EM_JS(void, ff_setup_and_draw, (GLenum prim, GLsizei count, GLenum idxType, GLin
       for (let v=0; v<maxV; v++){ const o=base+v*stride;
         for (let k=0;k<sz;k++){ const val=heap[(o+k*elem)/bpe]; out[v*sz+k]=norm?val/255:val; } }
       const vbo = ent ? ent.vbo : g.createBuffer();
+      if (!ent) F._ownBufs.add(vbo);
       g.bindBuffer(g.ARRAY_BUFFER, vbo);
       g.bufferData(g.ARRAY_BUFFER, out, g.STATIC_DRAW);
       g.vertexAttribPointer(attrib, sz, g.FLOAT, false, 0, 0);
@@ -247,7 +254,10 @@ EM_JS(void, ff_setup_and_draw, (GLenum prim, GLsizei count, GLenum idxType, GLin
   };
 
   // Is the index data in a bound ELEMENT_ARRAY_BUFFER (VBO path) or client mem?
-  const elemBuf = isElements ? g.getParameter(g.ELEMENT_ARRAY_BUFFER_BINDING) : null;
+  // Ignore our own idxVBO if it is still bound from a previous draw — the client
+  // index pointer must then be read from the wasm heap, not that buffer.
+  let elemBuf = isElements ? g.getParameter(g.ELEMENT_ARRAY_BUFFER_BINDING) : null;
+  if (elemBuf && F._ownBufs.has(elemBuf)) elemBuf = null;
   const vertClient = F.arrays.vertex.on && !F.arrays.vertex.glbuf;
 
   // For client-array element draws, find max index to size the gathers.
@@ -547,8 +557,12 @@ EM_JS(void, ffPointer, (int which, GLint size, GLenum type, GLsizei stride, GLin
   const spec = which===0?A.vertex:which===1?A.normal:A.color;
   spec.size=size; spec.type=type; spec.stride=stride; spec.ptr=ptr;
   // If a real ARRAY_BUFFER is bound, the pointer is an offset into it (VBO
-  // path); otherwise it is client memory. Snapshot the bound WebGLBuffer.
-  spec.glbuf = g ? g.getParameter(g.ARRAY_BUFFER_BINDING) : null;
+  // path); otherwise it is client memory. Snapshot the bound WebGLBuffer — but
+  // NOT one of our own scratch VBOs left bound from a prior draw (that would send
+  // the client-array pointer down the VBO path and read garbage).
+  let gb = g ? g.getParameter(g.ARRAY_BUFFER_BINDING) : null;
+  if (gb && F._ownBufs.has(gb)) gb = null;
+  spec.glbuf = gb;
 })
 
 void glEnableClientState(GLenum a){ ensure(); ffClientState(a,1); }
