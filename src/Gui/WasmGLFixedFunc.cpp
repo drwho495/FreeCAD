@@ -32,6 +32,7 @@ typedef ptrdiff_t GLintptr;
 
 /* One-time JS state + helpers. Attached to globalThis.__ff. */
 EM_JS(void, ff_init, (void), {
+  if (!globalThis.__ffStat) globalThis.__ffStat = {va:0, imm:0, vaV:0, immV:0, memoHit:0, memoMiss:0};
   if (globalThis.__ff) return;
   // Resolve the WebGL2 context robustly: emscripten's current-context global
   // (GLctx), the GL module's current context, or Module.ctx. Qt makes its
@@ -82,6 +83,7 @@ EM_JS(void, ff_init, (void), {
     // replayed display list follows camera changes (correct orbit/pan/zoom).
     emitImm(rec) {
       const g=this.gl(); if(!g||!rec||rec.verts.length===0) return; if(!this.program()) return;
+      globalThis.__ffStat.imm++; globalThis.__ffStat.immV += rec.verts.length/3;
       g.useProgram(this.prog);
       const mvp=this.mul(this.pr[this.pr.length-1], this.mv[this.mv.length-1]);
       g.uniformMatrix4fv(this.loc.mvp,false,new Float32Array(mvp));
@@ -144,12 +146,17 @@ EM_JS(void, ff_init, (void), {
             color:g.getUniformLocation(p,'uColor'), useCol:g.getUniformLocation(p,'uUseColorArray'),
             lit:g.getUniformLocation(p,'uLighting'), ldir:g.getUniformLocation(p,'uLightDir'),
             psize:g.getUniformLocation(p,'uPointSize') },
-          posVBO:g.createBuffer(), nrmVBO:g.createBuffer(), colVBO:g.createBuffer(), idxVBO:g.createBuffer() };
+          posVBO:g.createBuffer(), nrmVBO:g.createBuffer(), colVBO:g.createBuffer(), idxVBO:g.createBuffer(),
+          // memo: cache gathered client-array VBOs so a static scene (orbit/pan) is
+          // NOT re-read from the wasm heap + re-uploaded every frame. Per-context
+          // (WebGL objects are context-bound). Keyed by client ptr+count+type+fp.
+          memo: new Map() };
         this._ctxCache.set(g, e);
       }
       // Point the working fields at this context's objects.
       this.prog=e.prog; this.loc=e.loc;
       this.posVBO=e.posVBO; this.nrmVBO=e.nrmVBO; this.colVBO=e.colVBO; this.idxVBO=e.idxVBO;
+      this.memo=e.memo;
       this.progCtx=g;
       return this.prog;
     },
@@ -163,6 +170,7 @@ EM_JS(void, ff_init, (void), {
 EM_JS(void, ff_setup_and_draw, (GLenum prim, GLsizei count, GLenum idxType, GLintptr idxPtr, GLint first, int isElements), {
   const F = globalThis.__ff; const g = F.gl(); if (!g) return;
   if (!F.program()) return;
+  globalThis.__ffStat.va++; globalThis.__ffStat.vaV += count;
   g.useProgram(F.prog);
 
   const mvp = F.mul(F.pr[F.pr.length-1], F.mv[F.mv.length-1]);
@@ -179,34 +187,62 @@ EM_JS(void, ff_setup_and_draw, (GLenum prim, GLsizei count, GLenum idxType, GLin
 
   // vertex count to read for client arrays
   const nVerts = isElements ? 0 : (first+count);
+  const memoOn = (globalThis.__ffMemo !== false);
   const bind = (spec, attrib, defaultN) => {
     if (!spec.on) { g.disableVertexAttribArray(attrib); return false; }
     g.enableVertexAttribArray(attrib);
     const sz = spec.size;
     if (spec.glbuf) {
+      // already a real GL VBO (Coin SoVBO) — bind directly, no gather.
       g.bindBuffer(g.ARRAY_BUFFER, spec.glbuf);
       g.vertexAttribPointer(attrib, sz, spec.type, spec.type===0x1401, spec.stride, spec.ptr);
-    } else {
-      // client memory: gather into a scratch VBO
-      const stride = spec.stride || sz*typeSize(spec.type);
-      const heap = heapFor(spec.type);
-      const elem = spec.type===0x1406 ? 4 : typeSize(spec.type);
-      const base = spec.ptr;
-      const maxV = isElements ? F._maxIndex+1 : nVerts;
-      const out = new Float32Array(maxV*sz);
-      const norm = spec.type===0x1401; // ubyte color -> /255
-      for (let v=0; v<maxV; v++) {
-        const o = (base + v*stride);
-        for (let k=0;k<sz;k++) {
-          let val = heap[(o + k*elem) / (heap.BYTES_PER_ELEMENT)];
-          out[v*sz+k] = norm ? val/255 : val;
-        }
-      }
-      const vbo = attrib===0?F.posVBO:attrib===1?F.nrmVBO:F.colVBO;
-      g.bindBuffer(g.ARRAY_BUFFER, vbo);
-      g.bufferData(g.ARRAY_BUFFER, out, g.STREAM_DRAW);
-      g.vertexAttribPointer(attrib, sz, g.FLOAT, false, 0, 0);
+      return true;
     }
+    // client memory: must gather wasm-heap data into a GL VBO.
+    const stride = spec.stride || sz*typeSize(spec.type);
+    const heap = heapFor(spec.type);
+    const bpe = heap.BYTES_PER_ELEMENT;
+    const elem = spec.type===0x1406 ? 4 : typeSize(spec.type);
+    const base = spec.ptr;
+    const maxV = isElements ? F._maxIndex+1 : nVerts;
+    const norm = spec.type===0x1401; // ubyte color -> /255
+    if (maxV <= 0) return true;
+    // Memoize: a static scene (orbit/pan/zoom) re-issues the SAME client array
+    // (same ptr+count) every frame. Cache the gathered VBO keyed by ptr/count/type
+    // with a content fingerprint (all components of up to 16 spread vertices), so
+    // unchanged geometry skips both the JS gather loop and bufferData.
+    if (memoOn) {
+      let fp = (maxV*2654435761) >>> 0;
+      const nsamp = Math.min(16, maxV), sstep = Math.max(1,(maxV/nsamp)|0);
+      for (let v=0; v<maxV; v+=sstep){ const o=base+v*stride;
+        for (let k=0;k<sz;k++){ const iv=(heap[(o+k*elem)/bpe]*4093)|0; fp=((fp*31)+iv)>>>0; } }
+      const key = attrib+'|'+base+'|'+maxV+'|'+spec.type+'|'+sz+'|'+stride;
+      const ent = F.memo.get(key);
+      if (ent && ent.fp===fp) {
+        globalThis.__ffStat.memoHit++;
+        g.bindBuffer(g.ARRAY_BUFFER, ent.vbo);
+        g.vertexAttribPointer(attrib, sz, g.FLOAT, false, 0, 0);
+        return true;
+      }
+      globalThis.__ffStat.memoMiss++;
+      const out = new Float32Array(maxV*sz);
+      for (let v=0; v<maxV; v++){ const o=base+v*stride;
+        for (let k=0;k<sz;k++){ const val=heap[(o+k*elem)/bpe]; out[v*sz+k]=norm?val/255:val; } }
+      const vbo = ent ? ent.vbo : g.createBuffer();
+      g.bindBuffer(g.ARRAY_BUFFER, vbo);
+      g.bufferData(g.ARRAY_BUFFER, out, g.STATIC_DRAW);
+      g.vertexAttribPointer(attrib, sz, g.FLOAT, false, 0, 0);
+      if (!ent && F.memo.size > 800) { for (const e2 of F.memo.values()) g.deleteBuffer(e2.vbo); F.memo.clear(); }
+      F.memo.set(key, {vbo, fp});
+      return true;
+    }
+    const out = new Float32Array(maxV*sz);
+    for (let v=0; v<maxV; v++){ const o=base+v*stride;
+      for (let k=0;k<sz;k++){ const val=heap[(o+k*elem)/bpe]; out[v*sz+k]=norm?val/255:val; } }
+    const vbo = attrib===0?F.posVBO:attrib===1?F.nrmVBO:F.colVBO;
+    g.bindBuffer(g.ARRAY_BUFFER, vbo);
+    g.bufferData(g.ARRAY_BUFFER, out, g.STREAM_DRAW);
+    g.vertexAttribPointer(attrib, sz, g.FLOAT, false, 0, 0);
     return true;
   };
 
@@ -522,6 +558,13 @@ void glNormalPointer(GLenum t, GLsizei st, const void* p){ ensure(); ffPointer(1
 void glColorPointer(GLint s, GLenum t, GLsizei st, const void* p){ ensure(); ffPointer(2,s,t,st,(GLintptr)p); }
 void glTexCoordPointer(GLint, GLenum, GLsizei, const void*){ ensure(); }
 void glInterleavedArrays(GLenum, GLsizei, const void*){ ensure(); }
+// glIndexPointer (color-index arrays) and glArrayElement (per-element legacy draw)
+// are unused by our RGBA client-array rendering, but cc_glglue (glue/gl.cpp) nulls
+// glVertexPointer — disabling the whole vertex-array path — unless EVERY legacy
+// client-array entry point resolves non-null. Provide them as no-ops so
+// cc_glglue_has_vertex_array() stays TRUE and the VA path activates.
+void glIndexPointer(GLenum, GLsizei, const void*){ }
+void glArrayElement(GLint){ }
 void glClientActiveTexture(GLenum){ }
 /* Legacy multitexture coord setters (GLES1, gone from WebGL2). No-ops: we do
  * not carry per-texture coordinates through the fixed-function emulation. */
@@ -563,6 +606,27 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices
     int ff = ffFixedFuncActive();
     if (ff) ff_setup_and_draw(mode, count, type, (GLintptr)indices, 0, 1);
     else ffPassDrawElements(mode, count, type, (GLintptr)indices);
+}
+// Coin's SoVertexArrayIndexer resolves these via cc_glglue_getprocaddress and
+// calls them on the vertex-array path. They are NOT in emscripten's GetProcAddress
+// table (glMultiDrawElements is an extension; glDrawRangeElements would bypass our
+// fixed-function shader), so without routing them here the resolved pointer is null
+// -> "null function" trap on the first VA draw. Route both to ff_setup_and_draw.
+void glDrawRangeElements(GLenum mode, GLuint /*start*/, GLuint /*end*/, GLsizei count,
+                         GLenum type, const void* indices){
+    ensure();
+    int ff = ffFixedFuncActive();
+    if (ff) ff_setup_and_draw(mode, count, type, (GLintptr)indices, 0, 1);
+    else ffPassDrawElements(mode, count, type, (GLintptr)indices);
+}
+void glMultiDrawElements(GLenum mode, const GLsizei* count, GLenum type,
+                         const void* const* indices, GLsizei primcount){
+    ensure();
+    int ff = ffFixedFuncActive();
+    for (GLsizei i = 0; i < primcount; i++) {
+        if (ff) ff_setup_and_draw(mode, count[i], type, (GLintptr)indices[i], 0, 1);
+        else ffPassDrawElements(mode, count[i], type, (GLintptr)indices[i]);
+    }
 }
 
 /* ---- immediate mode ---- */
@@ -767,10 +831,12 @@ void* fcWasmResolveGL(const char* name){
         {"glNormalPointer",(void*)glNormalPointer},{"glColorPointer",(void*)glColorPointer},
         {"glEnableClientState",(void*)glEnableClientState},{"glDisableClientState",(void*)glDisableClientState},
         {"glTexCoordPointer",(void*)glTexCoordPointer},{"glInterleavedArrays",(void*)glInterleavedArrays},
+        {"glIndexPointer",(void*)glIndexPointer},{"glArrayElement",(void*)glArrayElement},
         // The main render path: Coin resolves these via getprocaddress. Routing
         // them to our fixed-function wrappers is what makes geometry actually
         // draw (and keeps ff_setup_and_draw from being dead-code-eliminated).
         {"glDrawArrays",(void*)glDrawArrays},{"glDrawElements",(void*)glDrawElements},
+        {"glDrawRangeElements",(void*)glDrawRangeElements},{"glMultiDrawElements",(void*)glMultiDrawElements},
         {"glColor3f",(void*)glColor3f},{"glColor4f",(void*)glColor4f},
         {"glColor3fv",(void*)glColor3fv},{"glColor4fv",(void*)glColor4fv},
         {"glNormal3f",(void*)glNormal3f},{"glNormal3fv",(void*)glNormal3fv},
