@@ -152,18 +152,21 @@ if(EMSCRIPTEN)
         "-sSTACK_SIZE=5MB"
         "-sFORCE_FILESYSTEM=1"
         "-sWASM_BIGINT=1"
+        # Native wasm setjmp/longjmp — required because wasm-EH forbids the legacy
+        # emscripten (JS) longjmp, and OCCT + freetype reference __wasm_longjmp.
+        "-sSUPPORT_LONGJMP=wasm"
         "-sEXIT_RUNTIME=0"
-        # ASYNCIFY + JS-EH build (see research/R10). This is the only combination
-        # that yields a VALID module, a rendering GUI, and working Python->OCCT:
-        #  * wasm-EH is out: LLVM mis-compiles OCCT's try_table/catch_all_ref to an
-        #    invalid br_table (V8 rejects it).
-        #  * JSPI is out: JS-EH's invoke_* frames can't be suspended across; and
-        #    wasm-EH is invalid. ASYNCIFY instruments the whole module so any
-        #    function can suspend — Qt's synchronous exec() works.
-        #  * CPython's wasm-gc trampoline crashes under asyncify, so we force the
-        #    JS trampoline (getPyEMTrampolinePtr->0, applied post-link). It's
-        #    asyncify-safe for non-suspending Python->C calls (verified: makeBox).
-        "-sDISABLE_EXCEPTION_CATCHING=0"
+        # JSPI + native wasm-EH build (migrated from ASYNCIFY+JS-EH). The prior
+        # blockers are now stale: clang-22 fixed the OCCT try_table->br_table
+        # miscompile, and a pure wasm-EH module (built -fwasm-exceptions
+        # -sWASM_LEGACY_EXCEPTIONS=0 everywhere) emits ZERO invoke_* trampolines,
+        # so JSPI can suspend across every frame. Qt 6.11's QWasmSuspendResumeControl
+        # drives QEventLoop::exec() suspend via WebAssembly.promising; timer/posted-
+        # event callbacks are wrapped promising post-link (jspi_postprocess.py).
+        # Native wasm exceptions => no -sDISABLE_EXCEPTION_CATCHING; the whole
+        # module is compiled with -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0.
+        "-fwasm-exceptions"
+        "-sWASM_LEGACY_EXCEPTIONS=0"
         # FS/callMain/ENV/ccall/cwrap for our JS API + CPython glue; the rest
         # (UTF16ToString,stringToUTF16,JSEvents,specialHTMLTargets) are what the
         # Qt wasm platform plugin needs — see Qt6WasmMacros.cmake. A single
@@ -230,12 +233,13 @@ if(BUILD_GUI)
             "-sGL_ENABLE_GET_PROC_ADDRESS=1"
             "-lEGL"   # Coin's context glue references EGL entry points
             # Stack switching for synchronous QEventLoop::exec() (nested event
-            # loops, modal dialogs) — ASYNCIFY (Qt built QT_EMSCRIPTEN_ASYNCIFY=1).
-            # Large asyncify stack: OCCT's boolean/geometry code recurses deeply,
-            # and a Qt event pump mid-operation can unwind with OCCT on the stack;
-            # the default 128 KB overflows -> silent hang. See research/R10.
-            "-sASYNCIFY=1"
-            "-sASYNCIFY_STACK_SIZE=67108864"
+            # loops, modal dialogs) — JSPI (Qt built QT_EMSCRIPTEN_ASYNCIFY=2).
+            # JSPI switches native stacks (no whole-module instrumentation), so
+            # there is no asyncify stack to size and OCCT's deep recursion is fine.
+            # `main` is promising by default; the Qt timer/posted-event glue is
+            # wrapped promising post-link so the /fc-cmd.py command pump (a QTimer
+            # callback) can suspend on dialogs/nested loops.
+            "-sJSPI=1"
             # Vendored Coin bundles its own copy of expat, whose internal
             # symbols collide with the expat inside static libpython. Both are
             # the same upstream library, so tolerate the duplicates here.
@@ -244,17 +248,36 @@ if(BUILD_GUI)
         if(FREECAD_WASM_NODERAWFS)
             target_link_options(FreeCADMain PRIVATE "-sNODERAWFS=1")
         endif()
-        # Force CPython's backwards-compatible JS call-trampoline. The default
-        # wasm-gc trampoline (getPyEMTrampolinePtr) CRASHES under ASYNCIFY
-        # ("unreachable" in _PyEM_TrampolineCall) once the first stack unwind
-        # happens; returning 0 makes CPython fall back to _PyEM_TrampolineCall_JS,
-        # which is asyncify-safe for non-suspending Python->C calls. This MUST be
-        # baked in — a bare relink regenerates FreeCAD.js from the unpatched EM_JS
-        # and silently reintroduces the crash. See research/R10.
+        # Emscripten's internal wasm-opt optimizes exception handling through
+        # Binaryen's legacy-EH representation and emits legacy try/catch for the
+        # functions it touches, leaving the linked module a MIX of legacy and new
+        # EH (V8: "module uses a mix of legacy and new exception handling
+        # instructions"; wasm-opt has no --emit-exnref in emscripten's own call).
+        # Normalize the whole module back to a single new-EH (exnref) encoding,
+        # which is what JSPI + the new-EH archives require. wasm-opt lives next to
+        # the emscripten dir (upstream/bin) — derive it from the compiler path.
+        get_filename_component(_em_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
         add_custom_command(TARGET FreeCADMain POST_BUILD
-            COMMAND sed -i "s/function getPyEMTrampolinePtr(){/function getPyEMTrampolinePtr(){return 0;/"
+            COMMAND "${_em_dir}/../bin/wasm-opt" "$<TARGET_FILE_DIR:FreeCADMain>/FreeCAD.wasm"
+                    --translate-to-exnref --emit-exnref --all-features
+                    -o "$<TARGET_FILE_DIR:FreeCADMain>/FreeCAD.wasm"
+            COMMENT "wasm: normalize mixed legacy/new EH -> exnref (JSPI)"
+            VERBATIM)
+        # JSPI promising-frame wiring: under JSPI a suspend only works if the call
+        # stack was entered through a WebAssembly.promising frame. Emscripten marks
+        # only `main` promising; the timer/posted-event callbacks scheduled via
+        # emscripten_set_timeout/emscripten_async_call (Qt's QEventDispatcherWasm
+        # timer pump, which runs the /fc-cmd.py Python command pump) are plain wasm
+        # function pointers whose return value is ignored, so wrapping them in
+        # WebAssembly.promising is safe and makes them promising too. This MUST be
+        # re-applied on every relink (a bare relink regenerates the unwrapped glue).
+        # Note: we intentionally do NOT force CPython's JS trampoline here — under
+        # JSPI the native wasm-gc trampoline keeps Python->C calls entirely in wasm
+        # so a dialog opened from Python code can suspend across them.
+        add_custom_command(TARGET FreeCADMain POST_BUILD
+            COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/jspi_postprocess.py"
                     "$<TARGET_FILE_DIR:FreeCADMain>/FreeCAD.js"
-            COMMENT "wasm: force CPython JS call-trampoline (asyncify-safe, R10)"
+            COMMENT "wasm: wrap timer/async_call callbacks in WebAssembly.promising (JSPI)"
             VERBATIM)
     endif()
     if(BUILD_TEST)
@@ -326,7 +349,11 @@ target_link_libraries(FreeCADMainCmd
 )
 
 if(EMSCRIPTEN)
-    target_link_options(FreeCADMainCmd PRIVATE ${FREECAD_WASM_COMMON_LINK_OPTIONS})
+    target_link_options(FreeCADMainCmd PRIVATE ${FREECAD_WASM_COMMON_LINK_OPTIONS}
+        # QtCore/QtGui/QtWidgets shiboken bindings each emit the same container
+        # conversion helpers (createQIntList/QPointFList/... ) — tolerate the
+        # duplicates exactly as the GUI target does.
+        "-Wl,--allow-multiple-definition")
     if(FREECAD_WASM_NODERAWFS)
         target_link_options(FreeCADMainCmd PRIVATE "-sNODERAWFS=1")
     endif()
