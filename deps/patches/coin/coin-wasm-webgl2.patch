@@ -1,0 +1,243 @@
+diff --git a/src/elements/GL/SoGLClipPlaneElement.cpp b/src/elements/GL/SoGLClipPlaneElement.cpp
+index de0cabf..c018ed5 100644
+--- a/src/elements/GL/SoGLClipPlaneElement.cpp
++++ b/src/elements/GL/SoGLClipPlaneElement.cpp
+@@ -115,6 +115,11 @@ SoGLClipPlaneElement::getMaxGLPlanes(void)
+                             "this function does not know which context this "
+                             "information is requested for.");
+ 
++#ifdef __EMSCRIPTEN__
++  // GL_MAX_CLIP_PLANES is a fixed-function enum unsupported by WebGL2; the classic
++  // OpenGL minimum is 6. Hardcode it to skip a synchronous glGet + glGetError round-trip.
++  return 6;
++#else
+   GLint val;
+   glGetIntegerv(GL_MAX_CLIP_PLANES, &val);
+ 
+@@ -123,6 +128,7 @@ SoGLClipPlaneElement::getMaxGLPlanes(void)
+          "GL error when calling glGetInteger() -- no current GL context?");
+ 
+   return (int)val;
++#endif
+ }
+ 
+ //! FIXME: write doc.
+diff --git a/src/elements/GL/SoGLLazyElement.cpp b/src/elements/GL/SoGLLazyElement.cpp
+index d901834..d080598 100644
+--- a/src/elements/GL/SoGLLazyElement.cpp
++++ b/src/elements/GL/SoGLLazyElement.cpp
+@@ -424,8 +424,13 @@ SoGLLazyElement::init(SoState * stateptr)
+ 
+   glDisable(GL_POLYGON_STIPPLE);
+ 
++#ifdef __EMSCRIPTEN__
++  // WebGL is always RGBA (no color-index mode); skip the synchronous glGet round-trip.
++  const GLboolean rgba = GL_TRUE;
++#else
+   GLboolean rgba;
+   glGetBooleanv(GL_RGBA_MODE, &rgba);
++#endif
+   if (!rgba) this->colorindex = TRUE;
+   else {
+     this->sendPackedDiffuse(0xccccccff);
+diff --git a/src/elements/GL/SoGLLightIdElement.cpp b/src/elements/GL/SoGLLightIdElement.cpp
+index f2d01be..56419c3 100644
+--- a/src/elements/GL/SoGLLightIdElement.cpp
++++ b/src/elements/GL/SoGLLightIdElement.cpp
+@@ -178,6 +178,12 @@ SoGLLightIdElement::getMaxGLSources(void)
+                             "this function does not know which context this "
+                             "information is requested for.");
+ 
++#ifdef __EMSCRIPTEN__
++  // GL_MAX_LIGHTS is a fixed-function enum unsupported by WebGL2; the classic OpenGL
++  // minimum is 8 (and Coin's fixed-function light shim honors that). Hardcode to skip
++  // a synchronous glGet + glGetError round-trip.
++  return 8;
++#else
+   GLint val;
+   glGetIntegerv(GL_MAX_LIGHTS, &val);
+ 
+@@ -186,6 +192,7 @@ SoGLLightIdElement::getMaxGLSources(void)
+          "GL error when calling glGetInteger() -- no current GL context?");
+ 
+   return (int32_t)val;
++#endif
+ }
+ 
+ //! FIXME: write doc.
+diff --git a/src/glue/gl.cpp b/src/glue/gl.cpp
+index 66273c2..bf77637 100644
+--- a/src/glue/gl.cpp
++++ b/src/glue/gl.cpp
+@@ -610,6 +610,33 @@ cc_glglue_getprocaddress(const cc_glglue * glue, const char * symname)
+ {
+   void * ptr = NULL;
+ 
++#ifdef __EMSCRIPTEN__
++  // On WebAssembly there is no WGL/EGL/GLX/dlsym; resolve GL entry points
++  // (both emscripten's real WebGL2 functions and our fixed-function emulation
++  // in Gui/WasmGLFixedFunc.cpp) through emscripten's own resolver.
++  {
++    /* This file is compiled as C; these are C-linkage symbols.
++       Resolve through our fixed-function emulator (Gui/WasmGLFixedFunc.cpp)
++       FIRST: functions like glDrawArrays/glDrawElements/glVertexPointer exist in
++       emscripten too, but Coin uses them in fixed-function mode which the raw
++       WebGL2 entry points do not implement. Taking ours first routes Coin into
++       the emulator (and keeps those symbols alive against DCE). Modern WebGL2
++       functions (buffers, textures, glActiveTexture, ...) are NOT in our table,
++       so they fall through to emscripten's, which does the GL-name<->WebGLObject
++       handle translation. */
++    {
++      extern void * fcWasmResolveGL(const char *);
++      ptr = fcWasmResolveGL(symname);
++      if (ptr) goto returnpoint;
++    }
++    {
++      extern void * emscripten_GetProcAddress(const char *);
++      ptr = emscripten_GetProcAddress(symname);
++      if (ptr) goto returnpoint;
++    }
++  }
++#endif
++
+   // FIXME: also supply 'glue' to coin_[x]gl_getprocaddress()
+   ptr = coin_wgl_getprocaddress(glue, symname);
+   if (ptr) goto returnpoint;
+@@ -704,8 +731,19 @@ glglue_set_glVersion(cc_glglue * w)
+   w->version.minor = 0;
+   w->version.release = 0;
+ 
++  if (!w->versionstr) { return; }
+   (void)strncpy(buffer, (const char *)w->versionstr, 255);
+   buffer[255] = '\0'; /* strncpy() will not null-terminate if strlen > 255 */
++  {
++    /* OpenGL ES / WebGL report GL_VERSION like "OpenGL ES 3.0 (WebGL 2.0 ...)".
++       The default parser does atoi() from the start and gets 0, so no version-
++       gated entry points are ever resolved. Advance to the first digit so the
++       real "3.0" is parsed (WebGL2 == GLES3, which for Coin's feature gates is
++       treated as a very capable desktop GL). */
++    char * d = buffer;
++    while (*d && (*d < '0' || *d > '9')) { d++; }
++    if (d != buffer) { memmove(buffer, d, strlen(d) + 1); }
++  }
+   dotptr = strchr(buffer, '.');
+   if (dotptr) {
+     char * spaceptr;
+@@ -1386,6 +1424,20 @@ glglue_resolve_symbols(cc_glglue * w)
+ #endif /* GL_ARB_vertex_buffer_object */
+ 
+   if (w->glBindBuffer) {
++#ifdef __EMSCRIPTEN__
++    /* WebGL2 has no glMapBuffer/glUnmapBuffer/glGetBufferSubData/glGetBufferParameteriv/
++       glGetBufferPointerv, but Coin's SoVBO only ever uses glGenBuffers/glBindBuffer/
++       glBufferData/glDeleteBuffers (upload via glBufferData; verified no glMapBuffer call
++       in the render path). Require only the core set so VBOs stay enabled — static
++       geometry is uploaded once instead of re-uploaded every frame as a client array. */
++    if (!w->glDeleteBuffers ||
++        !w->glGenBuffers ||
++        !w->glIsBuffer ||
++        !w->glBufferData ||
++        !w->glBufferSubData) {
++      w->glBindBuffer = NULL;
++    }
++#else
+     if (!w->glDeleteBuffers ||
+         !w->glGenBuffers ||
+         !w->glIsBuffer ||
+@@ -1403,6 +1455,7 @@ glglue_resolve_symbols(cc_glglue * w)
+                                   "vertex buffer object functions were not found");
+       }
+     }
++#endif
+   }
+ 
+   /* GL_NV_register_combiners */
+@@ -2958,6 +3011,12 @@ void
+ cc_glglue_glActiveTexture(const cc_glglue * w,
+                           GLenum texture)
+ {
++#ifdef __EMSCRIPTEN__
++  /* On wasm the glue may have been probed before a GL context was current, so
++     multitexture entry points can be unset. Tolerate that instead of calling
++     a null pointer. */
++  if (!w->glActiveTexture) { return; }
++#endif
+   assert(w->glActiveTexture);
+   w->glActiveTexture(texture);
+ }
+diff --git a/src/glue/gl_egl.cpp b/src/glue/gl_egl.cpp
+index 85c8e89..ad55795 100644
+--- a/src/glue/gl_egl.cpp
++++ b/src/glue/gl_egl.cpp
+@@ -97,6 +97,14 @@ SbBool eglglue_context_pbuffer_max(void * ctx, unsigned int * lims)
+ #include <EGL/egl.h>
+ #include <EGL/eglext.h>
+ 
++/* WebAssembly/WebGL is an OpenGL ES context; bind the ES API, not desktop GL. */
++#ifdef __EMSCRIPTEN__
++#define FC_WASM_EGL_API EGL_OPENGL_ES_API
++#else
++#define FC_WASM_EGL_API EGL_OPENGL_API
++#endif
++
++
+ EGLDisplay eglglue_display = EGL_NO_DISPLAY;
+ struct eglglue_contextdata;
+ 
+@@ -222,9 +230,9 @@ eglglue_init(cc_glglue * w)
+     return;
+   }
+ 
+-  if (eglBindAPI(EGL_OPENGL_API) == EGL_FALSE) {
++  if (eglBindAPI(FC_WASM_EGL_API) == EGL_FALSE) {
+     cc_debugerror_post("eglglue_init",
+-                       "eglBindAPI(EGL_OPENGL_API) failed. %s",
++                       "eglBindAPI(FC_WASM_EGL_API) failed. %s",
+                        eglErrorString(eglGetError()));
+     return;
+   }
+@@ -303,9 +311,9 @@ eglglue_context_create_offscreen(unsigned int width, unsigned int height)
+                            "Creating offscreen context.");
+   }
+ 
+-  if (eglBindAPI(EGL_OPENGL_API) == EGL_FALSE) {
++  if (eglBindAPI(FC_WASM_EGL_API) == EGL_FALSE) {
+     cc_debugerror_post("eglglue_context_create_offscreen",
+-                       "eglBindAPI(EGL_OPENGL_API) failed. %s",
++                       "eglBindAPI(FC_WASM_EGL_API) failed. %s",
+                        eglErrorString(eglGetError()));
+     return NULL;
+   }
+diff --git a/src/shapenodes/SoIndexedFaceSet.cpp b/src/shapenodes/SoIndexedFaceSet.cpp
+index ce2d62d..7456096 100644
+--- a/src/shapenodes/SoIndexedFaceSet.cpp
++++ b/src/shapenodes/SoIndexedFaceSet.cpp
+@@ -543,6 +543,28 @@ SoIndexedFaceSet::GLRender(SoGLRenderAction * action)
+     ((mbind == NONE) || ((mbind == PER_VERTEX_INDEXED) && ((mindices == cindices) || (mindices == NULL)))) &&
+     SoGLDriverDatabase::isSupported(sogl_glue_instance(state), SO_GL_VERTEX_ARRAY);
+ 
++#ifdef __EMSCRIPTEN__
++  // The WebGL2 fixed-function emulator (Gui/WasmGLFixedFunc.cpp) historically did
++  // not reliably service Coin's vertex-array/VBO draw path (a static shape switched
++  // to vertex arrays once its render cache was valid and then vanished until
++  // re-rendered). Immediate mode is the safe default, but it is ~10x slower (a
++  // wasm->JS call per vertex). FC_WASM_VA=1 opts into the vertex-array path.
++  {
++    // Vertex-array rendering (fast path). ON by default on wasm: it draws whole
++    // arrays via glDrawElements instead of a wasm->JS call per vertex (immediate
++    // mode), which was ~10x slower. Requires the full legacy client-array function
++    // set (WasmGLFixedFunc.cpp: glVertexPointer..glIndexPointer/glArrayElement so
++    // cc_glglue marks VA available) + COIN_VBO=0 (WebGL2 has no glMapBuffer, so
++    // client arrays not VBOs) + the ff_setup_and_draw _ownBufs fix (a leftover
++    // scratch-VBO binding must not be mistaken for a Coin VBO). FC_WASM_VA=0 falls
++    // back to immediate mode. Verified: correct faces, hover/preselect + rotate,
++    // no vanishing.
++    static int fc_wasm_va = -1;
++    if (fc_wasm_va < 0) { const char * e = coin_getenv("FC_WASM_VA"); fc_wasm_va = e ? atoi(e) : 1; }
++    if (!fc_wasm_va) dova = FALSE;
++  }
++#endif
++
+   const SoGLVBOElement * vboelem = SoGLVBOElement::getInstance(state);
+   SoVBO * colorvbo = NULL;
+ 

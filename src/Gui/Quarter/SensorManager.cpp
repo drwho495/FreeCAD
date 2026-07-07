@@ -126,7 +126,12 @@ SensorManager::sensorQueueChanged()
   }
 
   if (sensormanager->isDelaySensorPending()) {
-    this->idletimer->start(0);
+    // Only (re)arm the single-shot idle timer if it isn't already pending. Restarting
+    // it on every reschedule spams clearTimeout+setTimeout (a hot pair in the wasm
+    // profile) without changing when it fires. Mirrors the delaytimer guard below.
+    if (!this->idletimer->isActive()) {
+      this->idletimer->start(0);
+    }
 
     if (!this->delaytimer->isActive()) {
       SbTime time = SoDB::getDelaySensorTimeout();

@@ -36,6 +36,23 @@ except ImportError:
 
 class BIMWorkbench(Workbench):
 
+    @staticmethod
+    def _addPreferencePage(path, group):
+        """Add a preference page, tolerating a missing .ui resource.
+
+        On wasm Arch_rc is not packaged, so the ':/ui/preferences-*.ui' Qt
+        resources do not resolve and addPreferencePage raises
+        RuntimeError('UI file does not exist'). Left unguarded that aborts
+        loadPreferences()/Initialize() partway through. Log and skip instead so
+        activation completes. (Defined as a staticmethod, not a module function,
+        because FreeCADGuiInit exec()s InitGui.py with the loader's globals, so a
+        module-level helper would not be in this class's methods' __globals__.)
+        """
+        try:
+            FreeCADGui.addPreferencePage(path, group)
+        except RuntimeError as exc:
+            FreeCAD.Console.PrintLog("BIM: skipping preference page '%s': %s\n" % (path, exc))
+
     def __init__(self):
 
         def QT_TRANSLATE_NOOP(context, text):
@@ -598,20 +615,20 @@ class BIMWorkbench(Workbench):
 
         t1 = QT_TRANSLATE_NOOP("QObject", "BIM")
         t2 = QT_TRANSLATE_NOOP("QObject", "Draft")
-        FreeCADGui.addPreferencePage(":/ui/preferences-arch.ui", t1)
-        FreeCADGui.addPreferencePage(":/ui/preferences-archdefaults.ui", t1)
-        FreeCADGui.addPreferencePage(":/ui/preferencesNativeIFC.ui", t1)
+        self._addPreferencePage(":/ui/preferences-arch.ui", t1)
+        self._addPreferencePage(":/ui/preferences-archdefaults.ui", t1)
+        self._addPreferencePage(":/ui/preferencesNativeIFC.ui", t1)
         if hasattr(FreeCADGui, "draftToolBar"):
             if hasattr(FreeCADGui.draftToolBar, "loadedPreferences"):
                 return
         from draftutils import params
 
         params._param_observer_start()
-        FreeCADGui.addPreferencePage(":/ui/preferences-draft.ui", t2)
-        FreeCADGui.addPreferencePage(":/ui/preferences-draftinterface.ui", t2)
-        FreeCADGui.addPreferencePage(":/ui/preferences-draftsnap.ui", t2)
-        FreeCADGui.addPreferencePage(":/ui/preferences-draftvisual.ui", t2)
-        FreeCADGui.addPreferencePage(":/ui/preferences-drafttexts.ui", t2)
+        self._addPreferencePage(":/ui/preferences-draft.ui", t2)
+        self._addPreferencePage(":/ui/preferences-draftinterface.ui", t2)
+        self._addPreferencePage(":/ui/preferences-draftsnap.ui", t2)
+        self._addPreferencePage(":/ui/preferences-draftvisual.ui", t2)
+        self._addPreferencePage(":/ui/preferences-drafttexts.ui", t2)
         FreeCADGui.draftToolBar.loadedPreferences = True
 
     def setupMultipleObjectSelection(self):
@@ -844,11 +861,11 @@ def QT_TRANSLATE_NOOP(context, text):
 
 
 t = QT_TRANSLATE_NOOP("QObject", "Import-Export")
-FreeCADGui.addPreferencePage(":/ui/preferences-ifc.ui", t)
-FreeCADGui.addPreferencePage(":/ui/preferences-ifc-export.ui", t)
-FreeCADGui.addPreferencePage(":/ui/preferences-dae.ui", t)
-FreeCADGui.addPreferencePage(":/ui/preferences-sh3d-import.ui", t)
-FreeCADGui.addPreferencePage(":/ui/preferences-webgl.ui", t)
+BIMWorkbench._addPreferencePage(":/ui/preferences-ifc.ui", t)
+BIMWorkbench._addPreferencePage(":/ui/preferences-ifc-export.ui", t)
+BIMWorkbench._addPreferencePage(":/ui/preferences-dae.ui", t)
+BIMWorkbench._addPreferencePage(":/ui/preferences-sh3d-import.ui", t)
+BIMWorkbench._addPreferencePage(":/ui/preferences-webgl.ui", t)
 
 # Add unit tests
 FreeCAD.__unit_test__ += ["TestArchGui"]

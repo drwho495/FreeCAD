@@ -22,9 +22,12 @@ endif()
 
 add_subdirectory(App)
 
-if(BUILD_GUI)
+# FemGui is SMESH/VTK-coupled (mesh + post-processing view providers). On wasm it
+# builds only when SMESH+VTK are present (FREECAD_WASM_SMESH); otherwise it is skipped
+# (Stage 1: FEM docs still LOAD, objects restore without view providers).
+if(BUILD_GUI AND (NOT EMSCRIPTEN OR FREECAD_USE_SMESH))
     add_subdirectory(Gui)
-endif(BUILD_GUI)
+endif()
 
 
 

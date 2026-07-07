@@ -22,7 +22,9 @@
  ***************************************************************************/
 
 
+#ifndef FC_NO_SMESH
 #include <SMESH_Version.h>
+#endif
 
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
@@ -59,7 +61,9 @@
 #include "FemSetNodesObject.h"
 #include "FemSolverObject.h"
 #include "FemShapeExtension.h"
+#ifndef FC_NO_SMESH
 #include "HypothesisPy.h"
+#endif
 #include "WorkerExtension.h"
 
 #ifdef FC_USE_VTK
@@ -91,6 +95,10 @@ PyMOD_INIT_FUNC(Fem)
     Base::Console().log("Loading FEM module… done\n");
 
     // clang-format off
+#ifndef FC_NO_SMESH
+    // SMESH meshing hypotheses (StdMeshers_*Py) are unavailable in the wasm build
+    // (SMESH/VTK not compiled). They are only needed to *generate* meshes, never to
+    // restore a document, so skip their type registration entirely.
     Fem::StdMeshers_Arithmetic1DPy              ::init_type(femModule);
     Fem::StdMeshers_AutomaticLengthPy           ::init_type(femModule);
     Fem::StdMeshers_NotConformAllowedPy         ::init_type(femModule);
@@ -125,6 +133,7 @@ PyMOD_INIT_FUNC(Fem)
     Fem::StdMeshers_SegmentLengthAroundVertexPy ::init_type(femModule);
     Fem::StdMeshers_StartEndLengthPy            ::init_type(femModule);
     Fem::StdMeshers_Hexa_3DPy                   ::init_type(femModule);
+#endif // FC_NO_SMESH
 
     // Add Types to module
     Base::Interpreter().addType(&Fem::FemMeshPy::Type,femModule,"FemMesh");

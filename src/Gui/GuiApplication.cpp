@@ -85,6 +85,7 @@ bool GUIApplication::notify(QObject* receiver, QEvent* event)
         return false;
     }
 
+
     // https://github.com/FreeCAD/FreeCAD/issues/16905
     std::string exceptionWarning =
 #if FC_DEBUG

@@ -2037,6 +2037,15 @@ bool Application::activateWorkbench(const char* name)
         }
 
         if (!d->startingUp) {
+#ifdef FC_OS_WASM
+            // On wasm a modal QMessageBox::exec() cannot run during the async
+            // workbench-activation pump: it re-enters the event loop, which on
+            // this platform tears the whole application down (main window gets
+            // destroyed mid-activation). The failure is already reported to the
+            // console above, so degrade gracefully to a logged error instead of
+            // a modal dialog. (Root cause of the CAM/BIM "Target crashed".)
+            Base::Console().error("Workbench failure: %s\n", (const char*)msg.toUtf8());
+#else
             wc.restoreCursor();
             QMessageBox::critical(
                 getMainWindow(),
@@ -2044,6 +2053,7 @@ bool Application::activateWorkbench(const char* name)
                 QObject::tr("%1").arg(msg)
             );
             wc.setWaitCursor();
+#endif
         }
     }
 
@@ -2690,6 +2700,16 @@ void Application::runApplication()
 
     int argc = App::Application::GetARGC();
     GUISingleApplication mainApp(argc, App::Application::GetARGV());
+
+#ifdef FC_OS_WASM
+    // In a browser there is no application "quit". Switching workbench (notably
+    // CAM/BIM, whose Python Activated() rebuilds toolbars/dock widgets and briefly
+    // hides/closes windows) can transiently leave no visible top-level window, which
+    // trips Qt's default quit-on-last-window-closed and tears the main window down
+    // mid-activation — the proven root cause of the CAM/BIM "Target crashed". Keep
+    // the application alive regardless of window visibility.
+    mainApp.setQuitOnLastWindowClosed(false);
+#endif
 
 #if (COIN_MAJOR_VERSION * 100 + COIN_MINOR_VERSION * 10 + COIN_MICRO_VERSION < 406) \
     && (defined(FC_OS_LINUX) || defined(FC_OS_BSD))

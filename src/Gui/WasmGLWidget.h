@@ -22,6 +22,7 @@
 #include <QSurfaceFormat>
 #include <QtGui/qopengl.h>
 #include <memory>
+#include <vector>
 
 class QOpenGLContext;
 class QOffscreenSurface;
@@ -63,6 +64,11 @@ private:
     std::unique_ptr<QOffscreenSurface> surface_;
     std::unique_ptr<QOpenGLFramebufferObject> fbo_;
     QSize fboSize_;
+    // Persistent, format-matched (straight Format_RGBA8888) readback target + scratch
+    // row buffer, reused across frames (realloc only on resize) so readbackImage() does
+    // no per-frame QImage allocation and the QuarterWidget Source-mode blit is a memcpy.
+    QImage readback_;
+    std::vector<unsigned char> rbScratch_;
 };
 
 }  // namespace Gui

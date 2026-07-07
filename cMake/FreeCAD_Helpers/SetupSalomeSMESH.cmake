@@ -90,6 +90,9 @@ macro(SetupSalomeSMESH)
         list(REMOVE_ITEM VTK_LIBRARIES "optimized" "debug")
 
         if(NOT FREECAD_USE_EXTERNAL_SMESH)
+            # wasm: skip MED/HDF5 entirely. FemMesh restore uses UNV (DriverUNV); the MED
+            # driver (MED_*.cpp / DriverMED_*.cpp) is excluded from the salomesmesh build.
+            if(NOT EMSCRIPTEN)
             find_package(MEDFile REQUIRED)
             # See https://www.hdfgroup.org/HDF5/release/cmakebuild.html
             if (MSVC)
@@ -141,6 +144,7 @@ macro(SetupSalomeSMESH)
                     message( WARNING "ompi-cxx was not found. Check for error above.")
                 endif()
             endif()
+            endif() # NOT EMSCRIPTEN (MED/HDF5)
             set(SMESH_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/src/3rdParty/salomesmesh/inc)
 
         else(NOT FREECAD_USE_EXTERNAL_SMESH)

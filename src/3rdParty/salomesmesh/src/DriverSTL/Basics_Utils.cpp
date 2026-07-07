@@ -29,7 +29,9 @@
 #ifndef WIN32
 #include <unistd.h>
 #include <sys/stat.h>
-#include <execinfo.h>
+#ifndef __EMSCRIPTEN__
+#include <execinfo.h>  // glibc backtrace — absent in emscripten/musl
+#endif
 #endif
 
 
@@ -107,6 +109,9 @@ namespace Kernel_Utils
   }
 
 #ifndef WIN32
+#ifdef __EMSCRIPTEN__
+  void print_traceback() {}  // backtrace() unavailable in wasm
+#else
   void print_traceback()
   {
     void *array[50];
@@ -124,6 +129,7 @@ namespace Kernel_Utils
 
     free (strings);
   }
+#endif
 #else
   #if (_MSC_VER >= 1400) // Visual Studio 2005
   #include <sstream>

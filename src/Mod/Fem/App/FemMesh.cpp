@@ -1643,7 +1643,11 @@ void FemMesh::read(const char* FileName)
         myMesh->UNVToMesh(File.filePath().c_str());
     }
     else if (File.hasExtension("med")) {
+#ifndef __EMSCRIPTEN__
         myMesh->MEDToMesh(File.filePath().c_str(), File.fileNamePure().c_str());
+#else
+        throw Base::NotImplementedError("MED format is not supported in the WebAssembly build");
+#endif
     }
     else if (File.hasExtension("inp")) {
         // read Abaqus inp mesh file
@@ -2333,12 +2337,16 @@ void FemMesh::write(const char* FileName) const
     }
     else if (File.hasExtension("med")) {
         Base::Console().log("FEM mesh object will be exported to med format.\n");
+#ifndef __EMSCRIPTEN__
         myMesh->ExportMED(
             File.filePath().c_str(),
             File.fileNamePure().c_str(),
             false,
             2
         );  // 2 means MED_V2_2 version!
+#else
+        throw Base::NotImplementedError("MED export is not supported in the WebAssembly build");
+#endif
     }
     else if (File.hasExtension("stl")) {
         Base::Console().log("FEM mesh object will be exported to stl format.\n");

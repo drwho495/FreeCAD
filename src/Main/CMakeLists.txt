@@ -87,6 +87,15 @@ if(EMSCRIPTEN)
     if(BUILD_START)
         list(APPEND FREECAD_WASM_PY_GUI_MODULES StartGui)
     endif()
+    if(BUILD_FEM)
+        # FEM App module (target Fem -> PyInit_Fem). FemGui is SMESH/VTK-coupled: it
+        # builds only with FREECAD_WASM_SMESH (Stage 2, real mesh + FemPost). Without it
+        # (Stage 1) FEM documents still load (empty-shell meshes) sans workbench GUI.
+        list(APPEND FREECAD_WASM_PY_MODULES Fem)
+        if(FREECAD_USE_SMESH)
+            list(APPEND FREECAD_WASM_PY_GUI_MODULES FemGui)
+        endif()
+    endif()
     if(NOT BUILD_GUI)
         set(FREECAD_WASM_PY_GUI_MODULES "")
     endif()

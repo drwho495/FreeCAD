@@ -772,7 +772,15 @@ void OverlayTabWidget::setEffectBlurRadius(qreal r)
 
 bool OverlayTabWidget::effectEnabled() const
 {
+#ifdef __EMSCRIPTEN__
+    // The overlay drop-shadow QGraphicsEffect (OverlayGraphicsEffect::draw/sourcePixmap)
+    // re-rasterizes the whole panel subtree — including its QSS/SVG chrome — on every
+    // repaint, which on wasm happens each 3D frame. Software raster makes that ~30ms/frame
+    // (the QSvgNode::draw hotspot). Drop the shadow on wasm; panels still paint normally.
+    return false;
+#else
     return _effectEnabled;
+#endif
 }
 
 void OverlayTabWidget::setEffectEnabled(bool enable)

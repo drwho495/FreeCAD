@@ -51,8 +51,10 @@
 #include "DriverDAT_R_SMDS_Mesh.h"
 #include "DriverGMF_Read.hxx"
 #include "DriverGMF_Write.hxx"
+#ifndef __EMSCRIPTEN__
 #include "DriverMED_R_SMESHDS_Mesh.h"
 #include "DriverMED_W_SMESHDS_Mesh.h"
+#endif
 #include "DriverSTL_R_SMDS_Mesh.h"
 #include "DriverSTL_W_SMDS_Mesh.h"
 #include "DriverUNV_R_SMDS_Mesh.h"
@@ -86,6 +88,10 @@
 #include <boost/thread/thread.hpp>
 #include <boost/bind/bind.hpp>
 //#include <pthread.h>
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include <stdexcept>
 #endif
 
 using namespace std;
@@ -224,6 +230,10 @@ SMESH_Mesh::~SMESH_Mesh()
   _myDocument = 0;
 
   if ( _myMeshDS ) {
+#ifdef __EMSCRIPTEN__
+    // wasm is single-threaded (no boost::thread): delete synchronously.
+    deleteMeshDS( _myMeshDS );
+#else
     // delete _myMeshDS, in a thread in order not to block closing a study with large meshes
 #ifndef WIN32
     boost::thread aThread(boost::bind( & deleteMeshDS, _myMeshDS ));
@@ -231,6 +241,7 @@ SMESH_Mesh::~SMESH_Mesh()
     boost::thread aThread(boost::bind( & deleteMeshDS, _myMeshDS ));
 //    pthread_t thread;
 //    int result=pthread_create(&thread, NULL, deleteMeshDS, (void*)_myMeshDS);
+#endif
 #endif
   }
 }
@@ -529,6 +540,12 @@ int SMESH_Mesh::UNVToMesh(const char* theFileName)
 
 int SMESH_Mesh::MEDToMesh(const char* theFileName, const char* theMeshName)
 {
+#ifdef __EMSCRIPTEN__
+  // MED format (medfile/HDF5) is not built for the WebAssembly target.
+  (void)theFileName;
+  (void)theMeshName;
+  return (int) Driver_Mesh::DRS_FAIL;
+#else
   if(MYDEBUG) MESSAGE("MEDToMesh - theFileName = "<<theFileName<<", mesh name = "<<theMeshName);
   if(_isShapeToMesh)
     throw SALOME_Exception(LOCALIZED("a shape to mesh has already been defined"));
@@ -563,6 +580,7 @@ int SMESH_Mesh::MEDToMesh(const char* theFileName, const char* theMeshName)
     }
   }
   return (int) status;
+#endif // __EMSCRIPTEN__
 }
 
 //=======================================================================
@@ -1436,6 +1454,17 @@ void SMESH_Mesh::ExportMED(const char *        file,
                            bool                theAutoDimension,
                            bool                theAddODOnVertices)
 {
+#ifdef __EMSCRIPTEN__
+  // MED format (medfile/HDF5) is not built for the WebAssembly target.
+  (void)file;
+  (void)theMeshName;
+  (void)theAutoGroups;
+  (void)theVersion;
+  (void)meshPart;
+  (void)theAutoDimension;
+  (void)theAddODOnVertices;
+  throw std::runtime_error("MED export is not supported in the WebAssembly build");
+#else
   SMESH_TRY;
 
   DriverMED_W_SMESHDS_Mesh myWriter;
@@ -1486,6 +1515,7 @@ void SMESH_Mesh::ExportMED(const char *        file,
   myWriter.Perform();
 
   SMESH_CATCH( SMESH::throwSalomeEx );
+#endif // __EMSCRIPTEN__
 }
 
 //================================================================================

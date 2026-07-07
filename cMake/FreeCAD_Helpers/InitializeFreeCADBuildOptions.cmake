@@ -215,7 +215,11 @@ macro(InitializeFreeCADBuildOptions)
         option(FREECAD_USE_PCL "Build the features that use PCL libs" OFF)
     endif(NOT MSVC)
 
-    if((BUILD_FEM OR BUILD_MESH_PART) AND NOT EMSCRIPTEN)
+    # wasm: SMESH needs VTK (its data model IS vtkUnstructuredGrid) + would pull MED/HDF5.
+    # FREECAD_WASM_SMESH=ON opts into building SMESH + a VTK data-model subset for wasm
+    # (real FEM/Mesh geometry); default OFF keeps the SMESH-free stub path (Stage 1).
+    option(FREECAD_WASM_SMESH "Build SMESH + VTK subset under Emscripten (real mesh geometry)" OFF)
+    if((BUILD_FEM OR BUILD_MESH_PART) AND (NOT EMSCRIPTEN OR FREECAD_WASM_SMESH))
         set(FREECAD_USE_SMESH ON)
         if(FREECAD_USE_EXTERNAL_SMESH)
             set(BUILD_SMESH OFF)
@@ -225,6 +229,12 @@ macro(InitializeFreeCADBuildOptions)
     else()
         set(FREECAD_USE_SMESH OFF)
         set(BUILD_SMESH OFF)
+    endif()
+    # Define FC_NO_SMESH when the Fem/Mesh modules must compile without SMESH (wasm Stage 1).
+    # The Fem stubs and header guards key off this, NOT __EMSCRIPTEN__, so a wasm build WITH
+    # SMESH (FREECAD_WASM_SMESH=ON) uses the real SMESH-backed code.
+    if(EMSCRIPTEN AND NOT FREECAD_USE_SMESH)
+        add_definitions(-DFC_NO_SMESH)
     endif()
 
     if (BUILD_CAM OR BUILD_FLAT_MESH)

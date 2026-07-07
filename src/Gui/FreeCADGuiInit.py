@@ -326,6 +326,15 @@ class DirModGui(ModGui):
         processed = False
         if "workbench" in content:
             FreeCAD.Gui.addIconPath(str(self.mod.path))
+            # Many modules keep their workbench + command icons under
+            # <M>/Resources/icons or <M>/Gui/Resources/icons rather than at the
+            # module root, so named icons (e.g. "MassPropertiesIcon") are not found
+            # via addIconPath(mod.path) alone. Add those subdirs to the icon search
+            # path too.
+            for _iconsub in ("Resources/icons", "Gui/Resources/icons"):
+                _iconpath = self.mod.path / _iconsub
+                if _iconpath.is_dir():
+                    FreeCAD.Gui.addIconPath(str(_iconpath))
             workbenches = content["workbench"]
             for workbench_metadata in workbenches:
                 if not workbench_metadata.supportsCurrentFreeCAD():

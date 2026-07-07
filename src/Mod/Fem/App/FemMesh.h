@@ -26,8 +26,27 @@
 #include <memory>
 #include <vector>
 
+#ifndef FC_NO_SMESH
 #include <SMDSAbs_ElementType.hxx>
 #include <SMESH_Version.h>
+#else
+// wasm build: SMESH/SMDS are not compiled (no VTK/MED/HDF5). Provide the minimal
+// enum + version macros FemMesh.h references so the class API stays identical.
+// See FemMesh_wasm.cpp for the stubbed implementation.
+enum SMDSAbs_ElementType
+{
+    SMDSAbs_All,
+    SMDSAbs_Node,
+    SMDSAbs_Edge,
+    SMDSAbs_Face,
+    SMDSAbs_Volume,
+    SMDSAbs_0DElement,
+    SMDSAbs_Ball,
+    SMDSAbs_NbElementTypes
+};
+#define SMESH_VERSION_MAJOR 9
+#define SMESH_VERSION_MINOR 7
+#endif
 
 #include <App/ComplexGeoData.h>
 #include <Base/Quantity.h>

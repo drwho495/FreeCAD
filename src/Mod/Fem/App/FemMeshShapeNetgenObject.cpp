@@ -20,11 +20,15 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef FC_NO_SMESH
 #include <SMESH_Version.h>
+#endif
 
 #include <Python.h>
+#ifndef FC_NO_SMESH
 #include <SMESHDS_Mesh.hxx>
 #include <SMESH_Mesh.hxx>
+#endif
 
 #ifdef FCWithNetgen
 # include <NETGENPlugin_Hypothesis.hxx>

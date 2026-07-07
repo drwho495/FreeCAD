@@ -8,9 +8,11 @@
 #include "WasmGLWidget.h"
 
 #include <QOpenGLContext>
+#include <QOpenGLFunctions>
 #include <QOffscreenSurface>
 #include <QOpenGLFramebufferObject>
 #include <QResizeEvent>
+#include <cstring>
 
 using namespace Gui;
 
@@ -110,9 +112,36 @@ QImage WasmGLWidget::readbackImage()
     if (!fbo_) {
         return {};
     }
-    QImage img = fbo_->toImage();  // handles GL readback + vertical flip
-    img.setDevicePixelRatio(devicePixelRatioF());
-    return img;
+    const int w = fbo_->width();
+    const int h = fbo_->height();
+    if (w <= 0 || h <= 0) {
+        return {};
+    }
+    // Reuse a persistent straight-alpha Format_RGBA8888 image (same format as the
+    // wasm backing store) so the QuarterWidget Source-mode blit is a plain copy and
+    // no per-frame QImage is allocated. QOpenGLFramebufferObject::toImage() instead
+    // allocates a premultiplied image every call, which forced Qt's RGBA64 convert.
+    if (readback_.width() != w || readback_.height() != h) {
+        readback_ = QImage(w, h, QImage::Format_RGBA8888);
+    }
+    const int stride = w * 4;
+    if (static_cast<int>(rbScratch_.size()) < stride * h) {
+        rbScratch_.resize(static_cast<size_t>(stride) * h);
+    }
+    fbo_->bind();
+    QOpenGLFunctions* f = context_ ? context_->functions() : nullptr;
+    if (!f) {
+        return {};
+    }
+    f->glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rbScratch_.data());
+    // GL is bottom-up; QImage is top-down. Copy rows in reverse into the reused image.
+    for (int row = 0; row < h; ++row) {
+        std::memcpy(readback_.scanLine(row),
+                    rbScratch_.data() + static_cast<size_t>(h - 1 - row) * stride,
+                    stride);
+    }
+    readback_.setDevicePixelRatio(devicePixelRatioF());
+    return readback_;
 }
 
 QImage WasmGLWidget::grabFramebuffer()

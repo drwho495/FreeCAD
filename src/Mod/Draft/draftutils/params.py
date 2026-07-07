@@ -452,6 +452,36 @@ def _get_shape_string_font_file():
     return ""
 
 
+def _read_ui_from_disk(qrc_path):
+    """Fallback loader for a preferences .ui when its ':/ui/...' Qt resource is
+    unavailable. On wasm the Arch_rc resource module (which carries the Arch/BIM
+    preference pages) is omitted from packaging to save size, so QFile(":/ui/...")
+    fails and every Arch param default would be lost (get_param_arch returns None).
+    The .ui files themselves ARE packaged on disk under <module>/Resources/ui/, so
+    load them from there. Roots are derived from this module's own location so the
+    lookup works regardless of getResourceDir()/symlink layout."""
+    base = os.path.basename(qrc_path)
+    roots = []
+    try:
+        roots.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    except Exception:
+        pass
+    try:
+        roots.append(os.path.join(App.getResourceDir(), "Mod"))
+    except Exception:
+        pass
+    for root in roots:
+        for mod in ("Draft", "BIM", "Arch"):
+            p = os.path.join(root, mod, "Resources", "ui", base)
+            if os.path.isfile(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as fh:
+                        return fh.read()
+                except OSError:
+                    pass
+    return None
+
+
 def _get_param_dictionary():
 
     # print("Creating preferences dictionary...")
@@ -574,6 +604,7 @@ def _get_param_dictionary():
         "ifcAggregateWindows":         ("bool",      False),  # importIFClegacy.py
         "ifcAsMesh":                   ("string",    ""),     # importIFClegacy.py
         "IfcExportList":               ("bool",      False),  # importIFClegacy.py
+        "IfcVersion":                  ("int",       0),      # ArchIFCSchema.py (0=IFC4); only defined in the :/ui Arch_rc pages which are unpackaged on wasm
         "ifcImportLayer":              ("bool",      True),
         "ifcJoinSolids":               ("bool",      False),  # importIFClegacy.py
         "ifcMergeProfiles":            ("bool",      False),
@@ -709,7 +740,9 @@ def _get_param_dictionary():
             text = fd.readAll().data().decode()
             fd.close()
         else:
-            continue
+            text = _read_ui_from_disk(fnm)
+            if text is None:
+                continue
 
         # https://docs.python.org/3/library/xml.etree.elementtree.html
         root = ET.fromstring(text)

@@ -162,11 +162,18 @@ private:
         Base::FileInfo file(name8bit.c_str());
         if (file.hasExtension({"stp", "step"})) {
             PartGui::TaskImportStep dlg(Gui::getMainWindow());
+#ifndef FC_OS_WASM
+            // A modal QDialog::exec() runs a nested event loop, which crashes on
+            // wasm (QEventLoop::exit during dialog teardown -> out of bounds).
+            // Skip the options prompt there and import with the stored/default
+            // settings (dlg.getSettings() below); the dialog is never exec()'d so
+            // it is destroyed cleanly.
             if (dlg.showDialog()) {
                 if (!dlg.exec()) {
                     throw Py::Exception(Base::PyExc_FC_AbortIOException, "User cancelled import");
                 }
             }
+#endif
             auto stepSettings = dlg.getSettings();
             options.setItem("merge", Py::Boolean(stepSettings.merge));
             options.setItem("useLinkGroup", Py::Boolean(stepSettings.useLinkGroup));
@@ -487,7 +494,12 @@ private:
 
         if (file.hasExtension({"stp", "step"})) {
             PartGui::TaskExportStep dlg(Gui::getMainWindow());
+#ifdef FC_OS_WASM
+            // Modal exec() crashes on wasm; export with stored/default settings.
+            {
+#else
             if (!dlg.showDialog() || dlg.exec()) {
+#endif
                 auto stepSettings = dlg.getSettings();
                 options.setItem("exportHidden", Py::Boolean(stepSettings.exportHidden));
                 options.setItem("keepPlacement", Py::Boolean(stepSettings.keepPlacement));

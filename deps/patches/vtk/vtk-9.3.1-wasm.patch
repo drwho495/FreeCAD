@@ -1,0 +1,43 @@
+# VTK 9.3.1 source patches for the FreeCAD -> WebAssembly build.
+# VTK is an extracted tarball (NOT a git checkout) at /opt/toolchains/src/VTK-9.3.1.
+# Reapply from the VTK-9.3.1 source root with either:
+#     patch -p1 < vtk-9.3.1-wasm.patch
+#     git apply  vtk-9.3.1-wasm.patch      # if you turned the tree into a git repo
+# See the per-file .md notes in this directory for the rationale of each hunk.
+--- a/ThirdParty/expat/CMakeLists.txt
++++ b/ThirdParty/expat/CMakeLists.txt
+@@ -26,9 +26,12 @@
+   set(XML_STATIC 1)
+ endif ()
+
+-# match setting of EXPAT_LARGE_SIZE in our build
++# match setting of EXPAT_LARGE_SIZE in our build. EXPAT_LARGE_SIZE defaults OFF, so
++# expat's own xmlparse.c uses 32-bit XML_Size; force the generated vtk_expat.h that
++# consumers include to 0 as well, else XML_GetCurrentLineNumber/Column/ByteIndex
++# mismatch (i64 vs i32) and the wasm indirect call traps parsing .vtu (FemPost restore).
+ if(NOT VTK_MODULE_USE_EXTERNAL_vtkexpat)
+-  set(XML_LARGE_SIZE 1)
++  set(XML_LARGE_SIZE 0)
+ endif()
+
+ configure_file(
+--- a/Filters/Extraction/CMakeLists.txt
++++ b/Filters/Extraction/CMakeLists.txt
+@@ -1,7 +1,6 @@
+ set(classes
+   vtkBlockSelector
+   vtkConvertSelection
+-  vtkExpandMarkedElements
+   vtkExtractBlock
+   vtkExtractBlockUsingDataAssembly
+   vtkExtractCellsByType
+--- a/Filters/Extraction/vtk.module
++++ b/Filters/Extraction/vtk.module
+@@ -28,7 +28,6 @@
+   VTK::FiltersCore
+   VTK::FiltersHyperTree
+   VTK::FiltersStatistics
+-  VTK::ParallelDIY
+ OPTIONAL_DEPENDS
+   VTK::ParallelMPI
+ TEST_DEPENDS

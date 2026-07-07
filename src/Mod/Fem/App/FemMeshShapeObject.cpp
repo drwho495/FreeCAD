@@ -21,7 +21,9 @@
  ***************************************************************************/
 
 
+#ifndef FC_NO_SMESH
 #include <SMESH_Mesh.hxx>
+#endif
 
 
 #include <App/FeaturePythonPyImp.h>
@@ -62,6 +64,12 @@ FemMeshShapeObject::~FemMeshShapeObject() = default;
 
 App::DocumentObjectExecReturn* FemMeshShapeObject::execute()
 {
+#ifdef FC_NO_SMESH
+    // Meshing needs SMESH, which is not compiled in the WebAssembly build.
+    // Restoring a document never calls execute(); a recompute is a no-op so the
+    // (empty-shell) mesh loaded from the file is left untouched.
+    return App::DocumentObject::StdReturn;
+#else
     Fem::FemMesh newMesh;
 
     Part::Feature* feat = Shape.getValue<Part::Feature*>();
@@ -76,6 +84,7 @@ App::DocumentObjectExecReturn* FemMeshShapeObject::execute()
     FemMesh.setValue(newMesh);
 
     return App::DocumentObject::StdReturn;
+#endif
 }
 
 // Python feature ---------------------------------------------------------

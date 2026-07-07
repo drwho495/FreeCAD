@@ -254,6 +254,17 @@ SET_BIN_DIR(SMESHDS SMESHDS)
 # SMESH #
 #########
 FILE(GLOB SMESH_source_files src/SMESH/*.c src/SMESH/*.cpp src/Controls/*.cpp inc/SMESH_*.h*)
+if(EMSCRIPTEN)
+    # wasm: no MED/HDF5 — drop all MED wrapper + MED driver TUs (ImportMED/ExportMED are
+    # guarded out in SMESH_Mesh.cpp; FemMesh restore uses UNV via DriverUNV).
+    file(GLOB _med_srcs ${CMAKE_CURRENT_SOURCE_DIR}/src/SMESH/MED_*.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/src/SMESH/DriverMED*.cpp)
+    list(REMOVE_ITEM SMESH_source_files ${_med_srcs})
+    # SMESH_MeshVSLink bridges SMESH to OCCT's MeshVS (Mesh Visualization), which is
+    # not built in occt-wasm and unused by FreeCAD (it renders meshes via Coin).
+    list(REMOVE_ITEM SMESH_source_files
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/SMESH/SMESH_MeshVSLink.cpp)
+endif()
 ADD_LIBRARY(SMESH SHARED ${SMESH_source_files})
 TARGET_LINK_LIBRARIES(SMESH SMDS SMESHDS  Driver DriverSTL DriverDAT DriverUNV ${SMESH_LIBS} ${OPENCASCADE_LIBRARIES} ${OCC_LIBRARIES} ${OCC_DEBUG_LIBRARIES} ${OCC_OCAF_DEBUG_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${MEDFILE_LIBRARIES} ${VTK_LIBRARIES})
  

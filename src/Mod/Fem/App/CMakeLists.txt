@@ -19,6 +19,9 @@ set(Fem_LIBS
     FreeCADApp
 )
 
+# SMESH/SMDS/VTK link only when SMESH is used. On wasm without FREECAD_WASM_SMESH,
+# FemMesh is stubbed (FemMesh_wasm.cpp) so the module loads docs with empty-shell meshes.
+if (FREECAD_USE_SMESH)
 if (FREECAD_USE_EXTERNAL_SMESH)
    list(APPEND Fem_LIBS ${EXTERNAL_SMESH_LIBS})
 else()
@@ -28,17 +31,27 @@ else()
        list(APPEND Fem_LIBS StdMeshers SMESH SMDS SMESHDS)
    endif()
 endif()
+endif()
 
 
 generate_from_py(FemMesh)
 
 
+if (EMSCRIPTEN AND NOT FREECAD_USE_SMESH)
+    # wasm Stage 1 (no SMESH): keep the .pyi (drives FemMeshPy.h/.cpp generation) but
+    # swap the impl for the SMESH-free stub, and drop the meshing-only HypothesisPy TU.
+    SET(Python_SRCS
+        FemMesh.pyi
+        FemMeshPyImp_wasm.cpp
+    )
+else()
 SET(Python_SRCS
     FemMesh.pyi
     FemMeshPyImp.cpp
     HypothesisPy.cpp
     HypothesisPy.h
 )
+endif()
 
 
 if(BUILD_FEM_VTK)
@@ -133,6 +146,11 @@ SET(FemBase_SRCS
     FemShapeExtension.h
     FemShapeExtension.cpp
     )
+if (EMSCRIPTEN AND NOT FREECAD_USE_SMESH)
+    # wasm Stage 1: swap the SMESH-coupled FemMesh implementation for the wasm stub
+    list(REMOVE_ITEM FemBase_SRCS FemMesh.cpp)
+    list(APPEND FemBase_SRCS FemMesh_wasm.cpp)
+endif()
 SOURCE_GROUP("Base types" FILES ${FemBase_SRCS})
 
 
@@ -218,6 +236,7 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+if (FREECAD_USE_SMESH)
 target_include_directories(
     Fem
     SYSTEM
@@ -229,6 +248,9 @@ target_include_directories(
 
 target_link_directories(Fem PUBLIC ${SMESH_LIB_PATH})
 target_link_libraries(Fem ${Fem_LIBS} ${VTK_LIBRARIES})
+else()
+target_link_libraries(Fem ${Fem_LIBS})
+endif()
 
 if (MSVC)
     target_compile_options(Fem PRIVATE /wd4275)

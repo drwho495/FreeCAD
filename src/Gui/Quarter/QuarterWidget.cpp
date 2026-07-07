@@ -930,7 +930,14 @@ void QuarterWidget::paintEvent(QPaintEvent* event)
         QImage frame = w->readbackImage();
         if (!frame.isNull()) {
             QPainter painter(this->viewport());
-            painter.drawImage(this->viewport()->rect(), frame);
+            // CompositionMode_Source overwrites the destination (no read-back / alpha
+            // blend) and the point overload avoids a scaled textured blit. Together they
+            // bypass Qt's slow RGBA64 SourceOver pipeline (fetchRGBA8888ToRGBA64PM +
+            // comp_func_SourceOver_rgb64 + fetchTransformed64) for the largest image drawn
+            // each frame. The FBO is opaque (WA_OpaquePaintEvent) so overwrite is safe;
+            // the frame carries devicePixelRatio so the point overload still fills the view.
+            painter.setCompositionMode(QPainter::CompositionMode_Source);
+            painter.drawImage(QPoint(0, 0), frame);
         }
     }
     inherited::paintEvent(event);

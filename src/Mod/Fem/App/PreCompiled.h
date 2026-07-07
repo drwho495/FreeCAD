@@ -41,13 +41,18 @@
 #include <vector>
 
 // Boost
+#ifndef FC_NO_SMESH
+// boost/assign is only used by the SMESH-coupled FemMesh.cpp / HypothesisPy.cpp,
+// which are stubbed/dropped on wasm; the reduced boost-wasm omits the assign lib.
 #include <boost/assign/list_of.hpp>
+#endif
 #include <boost/tokenizer.hpp>
 
 #include <Python.h>
 #include <QFileInfo>
 #include <QStandardPaths>
 
+#ifndef FC_NO_SMESH
 // Salomesh
 #include <SMDSAbs_ElementType.hxx>
 #include <SMDS_MeshElement.hxx>
@@ -95,6 +100,7 @@
 #include <StdMeshers_SegmentLengthAroundVertex.hxx>
 #include <StdMeshers_StartEndLength.hxx>
 #include <StdMeshers_UseExisting_1D2D.hxx>
+#endif // FC_NO_SMESH (SMESH not built on wasm)
 
 // Opencascade
 #include <Standard_Version.hxx>
@@ -144,6 +150,7 @@
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 
+#ifndef FC_NO_SMESH
 // VTK
 #include <vtkVersionMacros.h>
 #include <vtkAlgorithmOutput.h>
@@ -201,6 +208,7 @@
 #include <vtkXMLTableWriter.h>
 #include <vtkXMLUnstructuredGridReader.h>
 #include <vtkXMLUnstructuredGridWriter.h>
+#endif // FC_NO_SMESH (VTK not built on wasm)
 
 // Netgen
 #ifdef FCWithNetgen
