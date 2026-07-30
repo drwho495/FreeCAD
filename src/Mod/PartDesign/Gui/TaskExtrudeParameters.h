@@ -25,6 +25,7 @@
 #pragma once
 
 #include <QLabel>
+#include <QListWidgetItem>
 
 #include <Gui/Inventor/Draggers/Gizmo.h>
 
@@ -113,7 +114,8 @@ public:
         SelectFace,
         SelectShape,
         SelectShapeFaces,
-        SelectReferenceAxis
+        SelectReferenceAxis,
+        SelectProfile
     };
 
     TaskExtrudeParameters(
@@ -137,6 +139,8 @@ public:
 
     void setSelectionMode(SelectionMode mode, Side side = Side::First);
 
+    bool event(QEvent* event) override;
+    void keyPressEvent(QKeyEvent* keyEvent) override;
 protected:
     // This struct holds all pointers for one side's UI and properties
     struct SideController
@@ -180,6 +184,8 @@ protected:
 protected Q_SLOTS:
     void onSidesModeChanged(int);
     virtual void onModeChanged(int index, Side side) = 0;
+    void onProfileListButtonRefSel(const bool checked);
+    void onProfileListRefDelete();
 
 private Q_SLOTS:
     void onDirectionCBChanged(int);
@@ -257,12 +263,41 @@ private:
     void updateShapeName(QLineEdit*, App::PropertyLinkSubList&);
     void updateShapeFaces(QListWidget* list, App::PropertyLinkSubList& prop);
 
+    enum class MapPairKeyType {
+        FACE = 0,
+        OBJECT
+    };
+
+    struct ProfileListMapPair {
+        std::string key;
+        std::string label;
+        MapPairKeyType keyType;
+
+        std::unordered_map<std::string, std::pair<std::shared_ptr<ProfileListMapPair>, 
+            QListWidgetItem*>>::iterator keyMapIterator;
+
+        std::unordered_map<std::string, std::pair<std::shared_ptr<ProfileListMapPair>, 
+            QListWidgetItem*>>::iterator labelMapIterator;
+    };
+
+    void updateProfileReferences(const Gui::SelectionChanges& msg);
+    void profileListSetObject(App::DocumentObject* object);
+    void profileListSetElements(App::DocumentObject* object, const std::vector<std::string>& subNames);
+    void clearProfileList();
+
+    const QString PROFILE_BUTTON_SELECT_LABEL = "Select";
+    const QString PROFILE_BUTTON_SELECTING_LABEL = "Selecting...";
+
     std::vector<std::string> getShapeFaces(App::PropertyLinkSubList& prop);
 
     void changeFaceName(QLineEdit* lineEdit, const QString& text);
 
     void createSideControllers();
 
+    std::unordered_map<std::string, std::pair<std::shared_ptr<ProfileListMapPair>, 
+        QListWidgetItem*>> keyProfileListWidgetMap;
+    std::unordered_map<std::string, std::pair<std::shared_ptr<ProfileListMapPair>, 
+        QListWidgetItem*>> labelProfileListWidgetMap;
     std::unique_ptr<Gui::GizmoContainer> gizmoContainer;
     Gui::LinearGizmo* lengthGizmo1 = nullptr;
     Gui::LinearGizmo* lengthGizmo2 = nullptr;
@@ -273,6 +308,7 @@ private:
 
 protected:
     QWidget* proxy;
+    QAction* profileListDeleteAction;
     QAction* unselectShapeFaceAction;
     QAction* unselectShapeFaceAction2;
 

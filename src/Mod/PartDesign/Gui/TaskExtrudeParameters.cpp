@@ -270,6 +270,39 @@ void TaskExtrudeParameters::connectSlots()
 {
     QMetaObject::connectSlotsByName(this);
 
+    PartDesign::ProfileBased* myFeature = getObject<PartDesign::ProfileBased>();
+
+    if (myFeature) {
+        App::DocumentObject* profileObject = myFeature->Profile.getValue();
+
+        if (profileObject) {
+            // sometimes the `SubValues` list can contain empty strings, so remove them
+            // when they are found.
+            std::vector<std::string> formattedReferences;
+
+            for (const std::string& subValue : myFeature->Profile.getSubValues(false)) {
+                if (subValue.empty()) {
+                    continue;
+                }
+
+                formattedReferences.push_back(subValue);
+            }
+
+            if (formattedReferences.size()) {
+                profileListSetElements(profileObject, formattedReferences);
+            } else {
+                profileListSetObject(profileObject);
+            }
+        }
+    }
+
+    profileListDeleteAction = new QAction(tr("Remove"), this);
+    profileListDeleteAction->setShortcut(Gui::QtTools::deleteKeySequence());
+    profileListDeleteAction->setShortcutVisibleInContextMenu(true);
+
+    ui->profileListWidgetReferences->setContextMenuPolicy(Qt::ActionsContextMenu);
+    ui->profileListWidgetReferences->addAction(profileListDeleteAction);
+
     auto connectSideSlots = [this](auto& side, Side sideEnum, auto modeChangedSlot) {
         connect(
             side.lengthEdit,
@@ -331,6 +364,10 @@ void TaskExtrudeParameters::connectSlots()
             this, &TaskExtrudeParameters::onSidesModeChanged);
     connect(ui->checkBoxUpdateView, &QCheckBox::toggled,
             this, &TaskExtrudeParameters::onUpdateView);
+    connect(ui->buttonRefSel, &QToolButton::toggled,
+            this, &TaskExtrudeParameters::onProfileListButtonRefSel);
+    connect(profileListDeleteAction, &QAction::triggered, 
+            this, &TaskExtrudeParameters::onProfileListRefDelete);
     // clang-format on
 }
 
@@ -401,6 +438,14 @@ void TaskExtrudeParameters::setSelectionMode(SelectionMode mode, Side side)
     updateCheckedForSide(Side::First, ui->buttonFace, ui->buttonShape, ui->buttonShapeFace);
     updateCheckedForSide(Side::Second, ui->buttonFace2, ui->buttonShape2, ui->buttonShapeFace2);
 
+    if (mode == SelectionMode::SelectProfile) {
+        ui->buttonRefSel->setChecked(true);
+        ui->buttonRefSel->setText(TaskExtrudeParameters::PROFILE_BUTTON_SELECTING_LABEL);
+    } else {
+        ui->buttonRefSel->setChecked(false);
+        ui->buttonRefSel->setText(TaskExtrudeParameters::PROFILE_BUTTON_SELECT_LABEL);
+    }
+
     selectionMode = mode;
     activeSelectionSide = side;
 
@@ -423,6 +468,17 @@ void TaskExtrudeParameters::setSelectionMode(SelectionMode mode, Side side)
         case SelectReferenceAxis:
             onSelectReference(AllowSelection::EDGE | AllowSelection::PLANAR | AllowSelection::CIRCLE);
             break;
+        case SelectProfile:
+            blockSelection(false);
+
+            Gui::Selection().clearSelection();
+            Gui::Selection().rmvSelectionGate();
+            Gui::Selection().addSelectionGate(
+                new SelectionFilterGate(
+                    "SELECT Sketcher::SketchObject SUBELEMENT InternalFace SELECT Part::Feature SUBELEMENT Face"
+                )
+            );
+            break;
         default:
             getViewObject<ViewProviderExtrude>()->highlightShapeFaces({});
             onSelectReference(AllowSelection::NONE);
@@ -437,6 +493,253 @@ void TaskExtrudeParameters::tryRecomputeFeature()
     }
     catch (const Base::Exception& e) {
         e.reportException();
+    }
+}
+
+void TaskExtrudeParameters::updateProfileReferences(const Gui::SelectionChanges& msg) {
+    PartDesign::FeatureExtrude* myFeature = getObject<PartDesign::FeatureExtrude>();
+
+    if (myFeature) {
+        App::DocumentObject* profileObject = myFeature->Profile.getValue();
+        std::vector<std::string> references = myFeature->Profile.getSubValues();
+
+        if (!profileObject
+            || !profileObject->isAttachedToDocument()
+            || strcmp(profileObject->getNameInDocument(), msg.pObjectName) != 0)
+        {
+            references.clear();
+
+            if (!(profileObject = myFeature->getDocument()->getObject(msg.pObjectName))) {
+                return;
+            }
+
+            if (myFeature->AlongSketchNormal.getValue()) {
+                auto referenceSubs = myFeature->ReferenceAxis.getSubValues();
+                auto referenceShadowSubs = myFeature->ReferenceAxis.getShadowSubs();
+
+                myFeature->ReferenceAxis.setValue(profileObject, std::move(referenceSubs), std::move(referenceShadowSubs));
+            }
+        }
+
+        std::string subName {msg.pSubName};
+
+        if (subName.size()) {
+            auto referenceIterator = std::find(references.begin(), references.end(), subName);
+
+            if (referenceIterator == references.end()) {
+                references.push_back(subName);
+            } else {
+                references.erase(referenceIterator);
+            }
+
+            profileListSetElements(profileObject, references);
+        }
+    }
+
+    tryRecomputeFeature();
+
+    Gui::Selection().clearSelection();
+}
+
+void TaskExtrudeParameters::onProfileListButtonRefSel(const bool checked) {
+    setSelectionMode(checked ? SelectionMode::SelectProfile : SelectionMode::None);
+
+    PartDesign::ProfileBased* myFeature = getObject<PartDesign::ProfileBased>();
+
+    if (myFeature) {
+        App::DocumentObject* profileFeature = myFeature->Profile.getValue();
+
+        if (profileFeature) {
+            profileFeature->Visibility.setValue(checked);
+        }
+    }
+}
+
+void TaskExtrudeParameters::profileListSetElements(App::DocumentObject* object, const std::vector<std::string>& subNames) {
+    PartDesign::ProfileBased* myFeature = getObject<PartDesign::ProfileBased>();
+
+    if (myFeature && object) {
+        App::DocumentObject* oldProfileFeature = myFeature->Profile.getValue();
+        std::vector<std::string> formattedSubNames;
+        std::vector<std::string> oldReferences;
+        std::string objectName {object->getNameInDocument()};
+
+        for (const std::string& subName : subNames) {
+            if (subName.size()) {
+                formattedSubNames.push_back(subName);
+            }
+        }
+
+        if (formattedSubNames.empty()) {
+            clearProfileList();
+            myFeature->Profile.setValue(nullptr, formattedSubNames);
+            return;
+        }
+
+        if (!oldProfileFeature
+            || !oldProfileFeature->isAttachedToDocument()
+            || oldProfileFeature != object)
+        {
+            clearProfileList();
+        } else {
+            for (const std::string& oldReference : myFeature->Profile.getSubValues()) {
+                if (oldReference.size()) {
+                    oldReferences.push_back(oldReference);
+                }
+            }
+
+            if (oldReferences.empty()) { // a sketch object was selected instead of one of its subelements, clear the ui to avoid any issues.
+                clearProfileList();
+            }
+        }
+
+        for (const std::string& subName : formattedSubNames) {
+            if (keyProfileListWidgetMap.find(subName) == keyProfileListWidgetMap.end()) {
+                std::shared_ptr<ProfileListMapPair> mapKey = std::make_shared<ProfileListMapPair>();
+                mapKey->key = subName;
+                mapKey->label = objectName + "." + subName;
+                mapKey->keyType = TaskExtrudeParameters::MapPairKeyType::FACE; // TODO: change to add edge support
+
+                QListWidgetItem* item = new QListWidgetItem(QString::fromStdString(mapKey->label));
+                ui->profileListWidgetReferences->addItem(item);
+
+                std::pair<std::shared_ptr<ProfileListMapPair>, QListWidgetItem*> mapEntry {mapKey, item};
+
+                auto labelItPair = labelProfileListWidgetMap.try_emplace(mapKey->label, mapEntry);
+                auto keyItPair = keyProfileListWidgetMap.try_emplace(mapKey->key, mapEntry);
+
+                mapKey->keyMapIterator = keyItPair.first;
+                mapKey->labelMapIterator = labelItPair.first;
+            }
+        }
+
+        for (const std::string& oldReference : oldReferences) {
+            bool keptInReferencesList = false;
+
+            for (const std::string& newReference : formattedSubNames) {
+                if (oldReference == newReference) {
+                    keptInReferencesList = true;
+                    break;
+                }
+            }
+
+            if (!keptInReferencesList) {
+                auto keyMapIterator = keyProfileListWidgetMap.find(oldReference);
+
+                if (keyMapIterator != keyProfileListWidgetMap.end()) {
+                    QListWidgetItem* widgetEntry = keyMapIterator->second.second;
+
+                    if (widgetEntry) {
+                        delete widgetEntry;
+                    }
+
+                    auto mapPair = keyMapIterator->second.first;
+
+                    if (mapPair) {
+                        if (mapPair->labelMapIterator != nullptr
+                            && mapPair->labelMapIterator != labelProfileListWidgetMap.end()) 
+                        {
+                            labelProfileListWidgetMap.erase(mapPair->labelMapIterator);
+                        }
+                    }
+
+                    keyProfileListWidgetMap.erase(keyMapIterator);
+                }
+            }
+        }
+
+        myFeature->Profile.setValue(object, formattedSubNames);
+    }
+
+    Base::Console().log("labelm size: %zu, keym size: %zu\n", labelProfileListWidgetMap.size(), keyProfileListWidgetMap.size());
+}
+
+void TaskExtrudeParameters::profileListSetObject(App::DocumentObject* object) {
+    PartDesign::ProfileBased* myFeature = getObject<PartDesign::ProfileBased>();
+    
+    if (myFeature && object) {
+        myFeature->Profile.setValue(object, {});
+        clearProfileList();
+
+        std::shared_ptr<ProfileListMapPair> mapKey = std::make_shared<ProfileListMapPair>();
+        mapKey->key = object->getNameInDocument();
+        mapKey->label = mapKey->key + " (Object)";
+        mapKey->keyType = TaskExtrudeParameters::MapPairKeyType::OBJECT;
+
+        QListWidgetItem* item = new QListWidgetItem(QString::fromStdString(mapKey->label));
+        ui->profileListWidgetReferences->addItem(item);
+
+        std::pair<std::shared_ptr<ProfileListMapPair>, QListWidgetItem*> mapEntry {mapKey, item};
+
+        labelProfileListWidgetMap[mapKey->label] = mapEntry;
+        keyProfileListWidgetMap[mapKey->key] = mapEntry;
+    }
+}
+
+void TaskExtrudeParameters::clearProfileList() {
+    keyProfileListWidgetMap.clear();
+    labelProfileListWidgetMap.clear();
+    ui->profileListWidgetReferences->clear();
+}
+
+bool TaskExtrudeParameters::event(QEvent* event)
+{
+    if (event->type() == QEvent::ShortcutOverride) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);  // NOLINT
+        if (keyEvent 
+            && profileListDeleteAction 
+            && Gui::QtTools::matches(keyEvent, profileListDeleteAction->shortcut())) 
+        {
+            keyEvent->accept();
+            return true;
+        }
+    }
+
+    return TaskBox::event(event);
+}
+
+void TaskExtrudeParameters::keyPressEvent(QKeyEvent* keyEvent)
+{
+    if (profileListDeleteAction && profileListDeleteAction->isEnabled()
+        && Gui::QtTools::matches(keyEvent, profileListDeleteAction->shortcut())) 
+    {
+        profileListDeleteAction->trigger();
+
+        return;
+    }
+
+    TaskBox::keyPressEvent(keyEvent);
+}
+
+void TaskExtrudeParameters::onProfileListRefDelete() {
+    PartDesign::ProfileBased* myFeature = getObject<PartDesign::ProfileBased>();
+
+    if (myFeature) {
+        App::DocumentObject* profileObject = myFeature->Profile.getValue();
+
+        if (profileObject) {
+            QList<QListWidgetItem*> itemsToDelete = ui->profileListWidgetReferences->selectedItems();
+            std::vector<std::string> references = myFeature->Profile.getSubValues();
+
+            for (QListWidgetItem* item : itemsToDelete) {
+                auto labelMapIterator = labelProfileListWidgetMap.find(item->text().toStdString());
+
+                if (labelMapIterator != labelProfileListWidgetMap.end()) {
+                    auto mapPair = labelMapIterator->second.first;
+
+                    if (mapPair) {
+                        auto referencesIterator = std::find(references.begin(), references.end(), mapPair->key);
+
+                        if (referencesIterator != references.end()) {
+                            references.erase(referencesIterator);
+                        }
+                    }
+                }
+            }
+
+            profileListSetElements(profileObject, references);
+            tryRecomputeFeature();
+        }
     }
 }
 
@@ -459,6 +762,10 @@ void TaskExtrudeParameters::onSelectionChanged(const Gui::SelectionChanges& msg)
 
             case SelectReferenceAxis:
                 selectedReferenceAxis(msg);
+                break;
+
+            case SelectProfile:
+                updateProfileReferences(msg);
                 break;
 
             default:
