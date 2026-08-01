@@ -185,6 +185,7 @@
 #include "ProgressIndicator.h"
 #include "Tools.h"
 #include "TopoShape.h"
+#include "TopoShapeCache.h"
 #include "TopoShapeCompoundPy.h"
 #include "TopoShapeCompSolidPy.h"
 #include "TopoShapeEdgePy.h"
@@ -3396,6 +3397,8 @@ bool TopoShape::fix()
         return false;
     }
 
+    TopoShape preFixCopy {*this};
+
     // First, we do fix regardless if the current shape is valid or not,
     // because not all problems that are handled by ShapeFix_Shape can be
     // recognized by BRepCheck_Analyzer.
@@ -3440,6 +3443,71 @@ bool TopoShape::fix()
     else {
         makeShapeWithElementMap(fix.Shape(), MapperHistory(fix), {copy});
     }
+
+    TopoShapeCache::Ancestry& preFixCopyFaceAncestors = preFixCopy._cache->getAncestry(TopAbs_FACE);
+    TopoShapeCache::Ancestry& fixedShapeFaceAncestors = _cache->getAncestry(TopAbs_FACE);
+    const TopoDS_Shape& preFixInternalShape = preFixCopy.getShape();
+    const TopoDS_Shape& fixedInternalShape = getShape();
+    TopExp_Explorer preFixEdgeExplorer;
+    TopExp_Explorer fixedShapeEdgeExplorer;
+    int preFixCopyFaceCount = preFixCopyFaceAncestors.count();
+
+    for (int preFixFaceIndex = 0; preFixFaceIndex < preFixCopyFaceCount; preFixFaceIndex++) {
+        const TopoDS_Shape& preFixFace = preFixCopyFaceAncestors.find(preFixInternalShape, preFixFaceIndex);
+
+        preFixEdgeExplorer.Init(preFixFace, TopAbs_EDGE);
+
+        bool foundMatch = false;
+
+        for (int fixedFaceIndex = 0; fixedFaceIndex < fixedShapeFaceAncestors.count(); fixedFaceIndex++) {
+            const TopoDS_Shape& fixedFace = fixedShapeFaceAncestors.find(fixedInternalShape, fixedFaceIndex);
+
+            fixedShapeEdgeExplorer.Init(fixedFace, TopAbs_EDGE);
+
+            for (; preFixEdgeExplorer.More(); preFixEdgeExplorer.Next()) {
+                foundMatch = false;
+
+                for (; fixedShapeEdgeExplorer.More(); fixedShapeEdgeExplorer.Next()) {
+                    if (fixedShapeEdgeExplorer.Current().IsSame(preFixEdgeExplorer.Current()))
+                    {
+                        foundMatch = true;
+                        break;
+                    }
+                }
+
+                if (!foundMatch) {
+                    break;
+                }
+
+                fixedShapeEdgeExplorer.ReInit();
+            }
+
+            if (foundMatch) {
+                std::vector<std::pair<Data::MappedName, Data::ElementIDRefs>> preFixedFaceMappedNames
+                    = preFixCopy.getElementMappedNames(Data::IndexedName::fromConst("Face", preFixFaceIndex + 1));
+                
+                Data::IndexedName fixedFaceIndexedName = Data::IndexedName::fromConst("Face", fixedFaceIndex + 1);
+
+                bool first = true;
+                for (std::pair<Data::MappedName, Data::ElementIDRefs> preFixedFaceName : preFixedFaceMappedNames)
+                {
+                    setElementName(
+                        fixedFaceIndexedName,
+                        preFixedFaceName.first,
+                        Tag,
+                        nullptr,
+                        first // remove any face names made in `TopoShape::makeShapeWithElementMap`.
+                    );
+
+                    first = false;
+                }
+                break;
+            }
+
+            preFixEdgeExplorer.ReInit();
+        }
+    }
+
     return true;
 }
 
