@@ -2434,6 +2434,112 @@ static std::vector<TopoShape> prepareProfiles(const std::vector<TopoShape>& shap
     return ret;
 }
 
+struct MapperPipe: MapperMaker
+{
+    public:
+    MapperPipe(BRepOffsetAPI_MakePipe& maker, const TopoShape& sourceShape)
+        : MapperMaker(maker), mySourceShape(sourceShape), myShape(maker.Shape())
+    {
+        Standard_Real tolerance = Precision::Confusion();
+
+        // map the bottom sketch projection.
+        TopExp_Explorer finalShapeEdgeEx;
+        TopExp_Explorer finalShapeVertexEx;
+        TopExp_Explorer sourceShapeEdgeEx;
+        TopExp_Explorer sourceShapeVertexEx;
+
+        const TopoDS_Shape& rawSourceShape = mySourceShape.getShape();
+        sourceShapeEdgeEx.Init(rawSourceShape, TopAbs_EDGE);
+
+        for (finalShapeEdgeEx.Init(myShape, TopAbs_EDGE); finalShapeEdgeEx.More(); finalShapeEdgeEx.Next()) {
+            const TopoDS_Shape& currentFinalEdge = finalShapeEdgeEx.Current();
+
+            finalShapeVertexEx.Init(currentFinalEdge, TopAbs_VERTEX);
+
+            bool edgesMatch = false;
+            std::unordered_set<gp_Pnt> finalVertexes;
+            // size_t foundMatches = 0;
+
+            for (; sourceShapeEdgeEx.More(); sourceShapeEdgeEx.Next()) {
+                const TopoDS_Shape& currentSourceEdge = sourceShapeEdgeEx.Current();
+                std::unordered_set<gp_Pnt> sourceVertexes;
+
+                
+                edgesMatch = false;
+
+                for (sourceShapeVertexEx.Init(currentSourceEdge, TopAbs_VERTEX); sourceShapeVertexEx.More(); sourceShapeVertexEx.Next()) {
+                    edgesMatch = false;
+                    FC_WARN("run src");
+
+                    const TopoDS_Shape& currentSourceVertex = sourceShapeVertexEx.Current();
+                    gp_Pnt currentSourcePnt = BRep_Tool::Pnt(
+                        TopoDS::Vertex(currentSourceVertex)
+                    );
+
+                    for (; finalShapeVertexEx.More(); finalShapeVertexEx.Next()) {
+                        const TopoDS_Shape& currentFinalVertex = finalShapeVertexEx.Current();
+                        gp_Pnt currentFinalPnt = BRep_Tool::Pnt(
+                            TopoDS::Vertex(currentFinalVertex)
+                        );
+
+                        if (currentFinalPnt.SquareDistance(currentSourcePnt) <= tolerance) {
+                            edgesMatch = true;
+                            bottomProfileMap[currentSourceVertex] = currentFinalVertex;
+                            // foundMatches++;
+                            
+                            // if (countedFinalEdgeVertexes) {
+                            break;
+                            // }
+                        }
+
+                        finalVertexes.insert(currentFinalPnt);
+                    }
+                    
+                    finalShapeVertexEx.ReInit();
+
+                    sourceVertexes.insert(currentSourcePnt);
+
+                    if (!edgesMatch) {
+                        break;
+                    }
+                }
+                FC_WARN(" ");
+
+                if (edgesMatch && sourceVertexes.size() == finalVertexes.size()) {
+                    // FC_WARN("src: " << sourceEdgeVertexes << " fin: " << finalEdgeVertexes << " mtch: " << foundMatches);
+                    bottomProfileMap[currentSourceEdge] = currentFinalEdge;
+                }
+            }
+
+            sourceShapeEdgeEx.ReInit();
+        }
+    }
+
+    const std::vector<TopoDS_Shape>& generated(const TopoDS_Shape& s) const override
+    {
+        MapperMaker::generated(s);
+        // _res.clear();
+        return _res;
+    }
+
+    const std::vector<TopoDS_Shape>& modified(const TopoDS_Shape& /*s*/) const override
+    {
+        _res.clear();
+        // auto bottomProfileMapIterator = bottomProfileMap.find(s);
+
+        // if (bottomProfileMapIterator != bottomProfileMap.end()) {
+        //     _res.push_back(bottomProfileMapIterator->second);
+        // }
+        
+        return _res;
+    }
+
+    private:
+    std::unordered_map<TopoDS_Shape, TopoDS_Shape> bottomProfileMap;
+    const TopoShape& mySourceShape;
+    const TopoDS_Shape& myShape;
+};
+
 TopoShape& TopoShape::makeElementPipe(
     const TopoShape& spine,
     const TopoShape& sweepShape,
@@ -2466,7 +2572,7 @@ TopoShape& TopoShape::makeElementPipe(
         forceApproxC1
     );
 
-    return makeElementShape(mkPipe, {spine, sweepShape}, op, elementMapPolicy);
+    return makeShapeWithElementMap(mkPipe.Shape(), MapperPipe(mkPipe, sweepShape), {spine, sweepShape}, op, elementMapPolicy);
 }
 
 TopoShape& TopoShape::makeElementPipeShell(
