@@ -56,6 +56,8 @@
 #include <BRepBuilderAPI_NurbsConvert.hxx>
 #include <BRepBuilderAPI_Sewing.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
+#include <ShapeFix_ShapeTolerance.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepCheck_ListOfStatus.hxx>
 #include <BRepClass_FaceClassifier.hxx>
@@ -1248,6 +1250,30 @@ bool TopoShape::getCenterOfGravity(Base::Vector3d& center) const
     }
 
     return false;
+}
+
+void TopoShape::setSolidOrientation(TopAbs_State state)
+{
+    BRepClass3d_SolidClassifier classifier {_Shape};
+    classifier.PerformInfinitePoint(Precision::Confusion());
+
+    if (classifier.State() != state) {
+        setShape(_Shape.Reversed(), false);
+    }
+}
+
+bool TopoShape::limitTolerance(Standard_Real minimumTolerance, Standard_Real maximumTolerance)
+{
+    // maybe this should be a stack/heap member variable?
+    // currently we construct it every time we need to do tolerance
+    // limiting.
+    ShapeFix_ShapeTolerance toleranceFixer;
+
+    return toleranceFixer.LimitTolerance(
+        _Shape,
+        minimumTolerance,
+        maximumTolerance
+    );
 }
 
 void TopoShape::Save(Base::Writer& writer) const

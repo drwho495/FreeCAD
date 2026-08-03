@@ -48,7 +48,9 @@
 #include <Base/Exception.h>
 #include <Base/Placement.h>
 #include <Base/Tools.h>
+#include <App/Document.h>
 
+#include <Mod/Part/App/TopoShapeOpCode.h>
 #include <Mod/Part/App/TopoShape.h>
 #include <Mod/Part/App/FaceMakerCheese.h>
 
@@ -304,15 +306,15 @@ App::DocumentObjectExecReturn* Helix::execute()
         );
     }
 
-    TopoDS_Shape sketchshape;  // Fixme: Should this be TopoShape here and below?
+    TopoShape sketchshape;
     try {
-        sketchshape = getVerifiedFace();
+        sketchshape = getTopoShapeVerifiedFace();
     }
     catch (const Base::Exception& e) {
         return new App::DocumentObjectExecReturn(e.what());
     }
 
-    if (sketchshape.IsNull()) {
+    if (sketchshape.isNull()) {
         return new App::DocumentObjectExecReturn(
             QT_TRANSLATE_NOOP("Exception", "Error: No valid sketch or face")
         );
@@ -323,7 +325,7 @@ App::DocumentObjectExecReturn* Helix::execute()
         // from the wires. As the shell begins always at the spine and not the profile, the
         // sketchshape cannot be used directly as front face. We would need a method to translate
         // the front shape to match the shell starting position somehow...
-        TopoDS_Face face = TopoDS::Face(sketchshape);
+        TopoDS_Face face = TopoDS::Face(sketchshape.getShape());
         BRepAdaptor_Surface adapt(face);
         if (adapt.GetType() != GeomAbs_Plane) {
             return new App::DocumentObjectExecReturn(
@@ -339,7 +341,7 @@ App::DocumentObjectExecReturn* Helix::execute()
     }
     catch (const Base::Exception&) {
         // fall back to support (for legacy features)
-        base = TopoShape();
+        base = TopoShape(getID(), getDocument()->getStringHasher());
     }
 
     // update Axis from ReferenceAxis
@@ -356,10 +358,10 @@ App::DocumentObjectExecReturn* Helix::execute()
 
         base.move(invObjLoc);
 
-        TopoDS_Shape result;
+        TopoShape pipeResult {-getID(), getDocument()->getStringHasher()};
 
         // generate the helix path
-        TopoDS_Shape path;
+        TopoShape path;
         if (Angle.getValue() == 0.) {
             // breaking the path at each turn prevents an OCC issue
             path = generateHelixPath();
@@ -369,44 +371,36 @@ App::DocumentObjectExecReturn* Helix::execute()
             path = generateHelixPath(1000.);
         }
 
-        TopoDS_Shape face = sketchshape;
-        face.Move(invObjLoc);
+        TopoShape movedSketch = sketchshape;
+        movedSketch.move(invObjLoc);
 
         Bnd_Box bounds;
-        BRepBndLib::Add(path, bounds);
+        BRepBndLib::Add(path.getShape(), bounds);
         double size = sqrt(bounds.SquareExtent());
-        ShapeFix_ShapeTolerance fix;
-        fix.LimitTolerance(path, Precision::Confusion() * 1e-6 * size);  // needed to produce valid
+        path.limitTolerance(Precision::Confusion() * 1e-6 * size);  // needed to produce valid
                                                                          // Pipe for very big parts
+
+        pipeResult.makeElementPipe(
+            path,
+            movedSketch,
+            GeomFill_Trihedron::GeomFill_IsFrenet,
+            false
+        );
+
         // We introduce final part tolerance with the second call to LimitTolerance below, however
         // OCCT has a bug where the side-walls of the Pipe disappear with very large (km range)
         // pieces increasing a tiny bit of extra tolerance to the path fixes this. This will in any
         // case be less than the tolerance lower limit below, but sufficient to avoid the bug
-
-        BRepOffsetAPI_MakePipe
-            mkPS(TopoDS::Wire(path), face, GeomFill_Trihedron::GeomFill_IsFrenet, Standard_False);
-        result = mkPS.Shape();
-
-        BRepClass3d_SolidClassifier SC(result);
-        SC.PerformInfinitePoint(Precision::Confusion());
-        if (SC.State() == TopAbs_IN) {
-            result.Reverse();
-        }
-
-        fix.LimitTolerance(
-            result,
+        pipeResult.setSolidOrientation(TopAbs_OUT);
+        pipeResult.limitTolerance(
             Precision::Confusion() * size * Tolerance.getValue()
         );  // significant precision reduction due to helical approximation - needed to allow fusion
             // to succeed
 
         // try to auto-fix possible invalid result
-        ShapeFix_Solid fixer;
-        fixer.Init(TopoDS::Solid(result));
-        if (fixer.Perform()) {
-            result = fixer.Solid();
-        }
+        pipeResult.fix();
 
-        AddSubShape.setValue(result);
+        AddSubShape.setValue(pipeResult);
 
         if (base.isNull()) {
 
@@ -416,7 +410,7 @@ App::DocumentObjectExecReturn* Helix::execute()
                 );
             }
 
-            if (!isSingleSolidRuleSatisfied(result)) {
+            if (!isSingleSolidRuleSatisfied(pipeResult.getShape())) {
                 return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                     "Exception",
                     "Result has multiple solids: enable 'Allow Compound' in the active body."
@@ -424,87 +418,79 @@ App::DocumentObjectExecReturn* Helix::execute()
             }
 
             // store shape before refinement
-            this->rawShape = result;
-            Shape.setValue(getSolid(result));
+            this->rawShape = pipeResult;
+            Shape.setValue(getSolid(pipeResult));
             return App::DocumentObject::StdReturn;
         }
 
+        TopoShape booleanResult {getID(), getDocument()->getStringHasher()};
+
         if (getAddSubType() == FeatureAddSub::Additive) {
 
-            FCBRepAlgoAPI_Fuse mkFuse(base.getShape(), result);
-            if (!mkFuse.IsDone()) {
-                return new App::DocumentObjectExecReturn(
-                    QT_TRANSLATE_NOOP("Exception", "Error: Adding the helix failed")
-                );
-            }
+            // FCBRepAlgoAPI_Fuse mkFuse(base.getShape(), pipeResult);
+            // if (!mkFuse.IsDone()) {
+            //     return new App::DocumentObjectExecReturn(
+            //         QT_TRANSLATE_NOOP("Exception", "Error: Adding the helix failed")
+            //     );
+            // }
 
-            if (!isSingleSolidRuleSatisfied(mkFuse.Shape())) {
+            booleanResult.makeElementBoolean(
+                Part::OpCodes::Fuse,
+                {base, pipeResult}
+            );
+
+            if (!isSingleSolidRuleSatisfied(booleanResult.getShape())) {
                 return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                     "Exception",
                     "Result has multiple solids: enable 'Allow Compound' in the active body."
                 ));
             }
 
-            // we have to get the solids (fuse sometimes creates compounds)
-            TopoShape boolOp = this->getSolid(mkFuse.Shape());
+            booleanResult = getSolid(booleanResult);
 
             // lets check if the result is a solid
-            if (boolOp.isNull()) {
+            if (booleanResult.isNull()) {
                 return new App::DocumentObjectExecReturn(
                     QT_TRANSLATE_NOOP("Exception", "Error: Result is not a solid")
                 );
             }
-
-            // store shape before refinement
-            this->rawShape = boolOp;
-            boolOp = refineShapeIfActive(boolOp, RefineErrorPolicy::Warn);
-            Shape.setValue(getSolid(boolOp));
         }
         else if (getAddSubType() == FeatureAddSub::Subtractive) {
 
-            TopoShape boolOp;
-
-            TopoDS_Shape rawBoolOp;
             if (Outside.getValue()) {  // are we subtracting the inside or the outside of the profile.
-                FCBRepAlgoAPI_Common mkCom(result, base.getShape());
-                if (!mkCom.IsDone()) {
-                    return new App::DocumentObjectExecReturn(
-                        QT_TRANSLATE_NOOP("Exception", "Error: Intersecting the helix failed")
-                    );
-                }
-                rawBoolOp = mkCom.Shape();
+                booleanResult.makeElementBoolean(
+                    Part::OpCodes::Common,
+                    {pipeResult, base}
+                );
             }
             else {
-                FCBRepAlgoAPI_Cut mkCut(base.getShape(), result);
-                if (!mkCut.IsDone()) {
-                    return new App::DocumentObjectExecReturn(
-                        QT_TRANSLATE_NOOP("Exception", "Error: Subtracting the helix failed")
-                    );
-                }
-                rawBoolOp = mkCut.Shape();
+                booleanResult.makeElementBoolean(
+                    Part::OpCodes::Cut,
+                    {base, pipeResult}
+                );
             }
 
-            if (!isSingleSolidRuleSatisfied(rawBoolOp)) {
+            if (!isSingleSolidRuleSatisfied(booleanResult.getShape())) {
                 return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
                     "Exception",
                     "Result has multiple solids: enable 'Allow Compound' in the active body."
                 ));
             }
 
-            boolOp = this->getSolid(rawBoolOp);
+            booleanResult = this->getSolid(booleanResult);
 
             // lets check if the result is a solid
-            if (boolOp.isNull()) {
+            if (booleanResult.isNull()) {
                 return new App::DocumentObjectExecReturn(
                     QT_TRANSLATE_NOOP("Exception", "Error: Result is not a solid")
                 );
             }
-
-            // store shape before refinement
-            this->rawShape = boolOp;
-            boolOp = refineShapeIfActive(boolOp, RefineErrorPolicy::Warn);
-            Shape.setValue(getSolid(boolOp));
         }
+
+        // store shape before refinement
+        this->rawShape = booleanResult;
+        booleanResult = refineShapeIfActive(booleanResult, RefineErrorPolicy::Warn);
+        Shape.setValue(getSolid(booleanResult));
 
         return App::DocumentObject::StdReturn;
     }

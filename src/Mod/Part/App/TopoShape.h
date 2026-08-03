@@ -333,6 +333,10 @@ public:
     /// More precise bound box from the CasCade shape
     Base::BoundBox3d getBoundBoxOptimal() const;
     bool getCenterOfGravity(Base::Vector3d& center) const override;
+    /// Set the orientation of the shape.
+    void setSolidOrientation(TopAbs_State state);
+    /// Limit the tolerance of the shape.
+    bool limitTolerance(Standard_Real minimumTolerance, Standard_Real maximumTolerance = 0.0);
     static void convertTogpTrsf(const Base::Matrix4D& mtrx, gp_Trsf& trsf);
     static void convertToMatrix(const gp_Trsf& trsf, Base::Matrix4D& mtrx);
     static Base::Matrix4D convert(const gp_Trsf& trsf);
@@ -1415,6 +1419,26 @@ public:
         );
     }
 
+    /* Make a shape by sweeping profile wire along a spine
+     *
+     * @params spine: The spine to sweep along.
+     * @params sweepShape: The shape to sweep.
+     * @params fillMode: The fill mode (GeomFill_Trihedron) to use.
+     * @params forceApproxC1: Whether to force the output to follow C1 continuity.
+     *
+     * @return The original content of this TopoShape is discarded and replaced
+     *         with the new shape. The function returns the TopoShape itself as
+     *         a self reference so that multiple operations can be carried out
+     *         for the same shape in the same line of code.
+     */
+    TopoShape& makeElementPipe(
+        const TopoShape& spine,
+        const TopoShape& sweepShape,
+        GeomFill_Trihedron fillMode,
+        bool forceApproxC1 = false,
+        const char* op = nullptr,
+        ElementMapPolicy elementMapPolicy = ElementMapPolicy::Propagate
+    );
 
     /* Make a shell or solid by sweeping profile wire along a spine
      *

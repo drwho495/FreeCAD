@@ -2434,6 +2434,41 @@ static std::vector<TopoShape> prepareProfiles(const std::vector<TopoShape>& shap
     return ret;
 }
 
+TopoShape& TopoShape::makeElementPipe(
+    const TopoShape& spine,
+    const TopoShape& sweepShape,
+    GeomFill_Trihedron fillMode,
+    bool forceApproxC1,
+    const char* op,
+    ElementMapPolicy elementMapPolicy
+)
+{
+    if (!op) {
+        op = Part::OpCodes::Pipe;
+    }
+
+    if (spine.isNull()) {
+        FC_THROWM(Base::CADKernelError, "Cannot sweep with empty spine.");
+    }
+
+    if (sweepShape.isNull()) {
+        FC_THROWM(Base::CADKernelError, "Cannot sweep with empty shape.");
+    }
+
+    if (spine.shapeType() != TopAbs_WIRE) {
+        FC_THROWM(Base::CADKernelError, "Spine shape is not a wire.");
+    }
+
+    BRepOffsetAPI_MakePipe mkPipe(
+        TopoDS::Wire(spine.getShape()),
+        sweepShape.getShape(),
+        fillMode,
+        forceApproxC1
+    );
+
+    return makeElementShape(mkPipe, {spine, sweepShape}, op, elementMapPolicy);
+}
+
 TopoShape& TopoShape::makeElementPipeShell(
     const std::vector<TopoShape>& shapes,
     const MakeSolid make_solid,
