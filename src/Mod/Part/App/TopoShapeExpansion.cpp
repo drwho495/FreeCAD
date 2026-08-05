@@ -2441,78 +2441,11 @@ struct MapperPipe: MapperMaker
         : MapperMaker(maker), mySourceShape(sourceShape), myShape(maker.Shape())
     {
         Standard_Real tolerance = Precision::Confusion();
+        // first we need to collect all of the piped faces and sort them from closest to the `sourceShape` to furthest from the `sourceShape`
+        // we use the piped faces closest to the `sourceShape` to find the copy of the `sourceShape` included in the model
 
-        // map the bottom sketch projection.
-        TopExp_Explorer finalShapeEdgeEx;
-        TopExp_Explorer finalShapeVertexEx;
-        TopExp_Explorer sourceShapeEdgeEx;
-        TopExp_Explorer sourceShapeVertexEx;
-
-        const TopoDS_Shape& rawSourceShape = mySourceShape.getShape();
-        sourceShapeEdgeEx.Init(rawSourceShape, TopAbs_EDGE);
-
-        for (finalShapeEdgeEx.Init(myShape, TopAbs_EDGE); finalShapeEdgeEx.More(); finalShapeEdgeEx.Next()) {
-            const TopoDS_Shape& currentFinalEdge = finalShapeEdgeEx.Current();
-
-            finalShapeVertexEx.Init(currentFinalEdge, TopAbs_VERTEX);
-
-            bool edgesMatch = false;
-            std::unordered_set<gp_Pnt> finalVertexes;
-            // size_t foundMatches = 0;
-
-            for (; sourceShapeEdgeEx.More(); sourceShapeEdgeEx.Next()) {
-                const TopoDS_Shape& currentSourceEdge = sourceShapeEdgeEx.Current();
-                std::unordered_set<gp_Pnt> sourceVertexes;
-
-                
-                edgesMatch = false;
-
-                for (sourceShapeVertexEx.Init(currentSourceEdge, TopAbs_VERTEX); sourceShapeVertexEx.More(); sourceShapeVertexEx.Next()) {
-                    edgesMatch = false;
-                    FC_WARN("run src");
-
-                    const TopoDS_Shape& currentSourceVertex = sourceShapeVertexEx.Current();
-                    gp_Pnt currentSourcePnt = BRep_Tool::Pnt(
-                        TopoDS::Vertex(currentSourceVertex)
-                    );
-
-                    for (; finalShapeVertexEx.More(); finalShapeVertexEx.Next()) {
-                        const TopoDS_Shape& currentFinalVertex = finalShapeVertexEx.Current();
-                        gp_Pnt currentFinalPnt = BRep_Tool::Pnt(
-                            TopoDS::Vertex(currentFinalVertex)
-                        );
-
-                        if (currentFinalPnt.SquareDistance(currentSourcePnt) <= tolerance) {
-                            edgesMatch = true;
-                            bottomProfileMap[currentSourceVertex] = currentFinalVertex;
-                            // foundMatches++;
-                            
-                            // if (countedFinalEdgeVertexes) {
-                            break;
-                            // }
-                        }
-
-                        finalVertexes.insert(currentFinalPnt);
-                    }
-                    
-                    finalShapeVertexEx.ReInit();
-
-                    sourceVertexes.insert(currentSourcePnt);
-
-                    if (!edgesMatch) {
-                        break;
-                    }
-                }
-                FC_WARN(" ");
-
-                if (edgesMatch && sourceVertexes.size() == finalVertexes.size()) {
-                    // FC_WARN("src: " << sourceEdgeVertexes << " fin: " << finalEdgeVertexes << " mtch: " << foundMatches);
-                    bottomProfileMap[currentSourceEdge] = currentFinalEdge;
-                }
-            }
-
-            sourceShapeEdgeEx.ReInit();
-        }
+        // now use the piped faces furthest from the `sourceShape` to find the projection of the `sourceShape` included in the model
+        
     }
 
     const std::vector<TopoDS_Shape>& generated(const TopoDS_Shape& s) const override
