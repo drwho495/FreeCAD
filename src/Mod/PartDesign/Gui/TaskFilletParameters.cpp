@@ -26,7 +26,16 @@
 #include <QAction>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QSignalBlocker>
 
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <string_view>
+
+#include <BRepCheck_Analyzer.hxx>
+#include <Precision.hxx>
 
 #include <Base/Interpreter.h>
 #include <Base/Converter.h>
@@ -64,10 +73,11 @@ TaskFilletParameters::TaskFilletParameters(ViewProviderDressUp* DressUpView, QWi
     ui->buttonRefSel->setEnabled(!useAllEdges);
     ui->listWidgetReferences->setEnabled(!useAllEdges);
     double r = pcFillet->Radius.getValue();
+    lastValidRadius = r;
 
     ui->filletRadius->setUnit(Base::Unit::Length);
     ui->filletRadius->setValue(r);
-    ui->filletRadius->setMinimum(0);
+    ui->filletRadius->setMinimum(Precision::Confusion());
     ui->filletRadius->selectNumber();
     ui->filletRadius->bind(pcFillet->Radius);
     QMetaObject::invokeMethod(ui->filletRadius, "setFocus", Qt::QueuedConnection);
@@ -119,12 +129,14 @@ void TaskFilletParameters::onSelectionChanged(const Gui::SelectionChanges& msg)
     if (msg.Type == Gui::SelectionChanges::AddSelection) {
         if (selectionMode == refSel) {
             referenceSelected(msg, ui->listWidgetReferences);
+            clearRadiusError();
         }
     }
     else if (msg.Type == Gui::SelectionChanges::ClrSelection) {
         // TODO: the gizmo position should be only recalculated when the feature associated
         // with the gizmo is removed from the list
         setGizmoPositions();
+        clearRadiusError();
     }
 }
 
@@ -139,6 +151,7 @@ void TaskFilletParameters::onCheckBoxUseAllEdgesToggled(bool checked)
         ui->listWidgetReferences->setEnabled(!checked);
         fillet->UseAllEdges.setValue(checked);
         fillet->recomputeFeature();
+        clearRadiusError();
     }
 }
 
@@ -152,11 +165,13 @@ void TaskFilletParameters::onRefDeleted()
 {
     TaskDressUpParameters::deleteRef(ui->listWidgetReferences);
     setGizmoPositions();
+    clearRadiusError();
 }
 
 void TaskFilletParameters::onAddAllEdges()
 {
     TaskDressUpParameters::addAllEdges(ui->listWidgetReferences);
+    clearRadiusError();
 }
 
 void TaskFilletParameters::onLengthChanged(double len)
@@ -164,11 +179,151 @@ void TaskFilletParameters::onLengthChanged(double len)
     if (auto fillet = getObject<PartDesign::Fillet>()) {
         setSelectionMode(none);
         setupTransaction();
+
+        double suggestedMaximum = 0.0;
+        if (!isRadiusAllowed(len, &suggestedMaximum)) {
+            QSignalBlocker blocker(ui->filletRadius);
+            std::optional<double> maximumRadius;
+            if (suggestedMaximum > lastValidRadius && suggestedMaximum < len) {
+                const double tolerance = std::max(Precision::Confusion(), std::abs(len) * 1.0e-9);
+                const double rounded = std::round(suggestedMaximum / tolerance) * tolerance;
+                if (rounded <= len && isRadiusAllowed(rounded)) {
+                    maximumRadius = rounded;
+                }
+                else if (isRadiusAllowed(suggestedMaximum)) {
+                    maximumRadius = suggestedMaximum;
+                }
+            }
+            if (!maximumRadius) {
+                maximumRadius = findMaximumAllowedRadius(len);
+            }
+            const double restoredRadius = maximumRadius.value_or(lastValidRadius);
+            lastValidRadius = restoredRadius;
+            fillet->Radius.setValue(restoredRadius);
+            ui->filletRadius->setValue(restoredRadius);
+            fillet->recomputeFeature();
+            if (maximumRadius) {
+                const QString maximumText = QString::fromStdString(
+                    Base::Quantity(*maximumRadius, Base::Unit::Length).getUserString()
+                );
+                ui->radiusErrorLabel->setText(
+                    tr("The requested radius exceeds the maximum permitted radius of %1. "
+                       "The radius has been set to this maximum.")
+                        .arg(maximumText)
+                );
+            }
+            else {
+                ui->radiusErrorLabel->setText(
+                    tr("This radius is not permitted by the selected geometry. The previous "
+                       "valid value has been restored.")
+                );
+            }
+            ui->radiusErrorLabel->show();
+            hideOnError();
+            return;
+        }
+
+        lastValidRadius = len;
+        clearRadiusError();
         fillet->Radius.setValue(len);
         fillet->recomputeFeature();
         // hide the fillet if there was a computation error
         hideOnError();
     }
+}
+
+std::optional<double> TaskFilletParameters::findMaximumAllowedRadius(double requestedRadius) const
+{
+    // Only infer an upper bound when the user increased a currently valid
+    // radius. Other failures need not be monotonic and retain the previous
+    // value instead.
+    if (requestedRadius <= lastValidRadius || !isRadiusAllowed(lastValidRadius)) {
+        return std::nullopt;
+    }
+
+    double lower = lastValidRadius;
+    double upper = requestedRadius;
+    const double tolerance = std::max(Precision::Confusion(), std::abs(requestedRadius) * 1.0e-9);
+    for (int iteration = 0; iteration < 50 && upper - lower > tolerance; ++iteration) {
+        const double trial = (lower + upper) * 0.5;
+        if (isRadiusAllowed(trial)) {
+            lower = trial;
+        }
+        else {
+            upper = trial;
+        }
+    }
+
+    // Prefer the exact tolerance-rounded limit where it is supported. This
+    // preserves exact face-consuming cases such as 5 mm instead of retaining
+    // an artificial 4.999999... radius.
+    const double rounded = std::round(lower / tolerance) * tolerance;
+    if (rounded > lower && rounded <= requestedRadius && isRadiusAllowed(rounded)) {
+        lower = rounded;
+    }
+    return lower;
+}
+
+bool TaskFilletParameters::isRadiusAllowed(double radius, double* maximumRadius) const
+{
+    if (radius <= Precision::Confusion()) {
+        return false;
+    }
+
+    auto fillet = getObject<PartDesign::Fillet>();
+    if (!fillet) {
+        return false;
+    }
+
+    try {
+        Part::TopoShape baseShape = fillet->getBaseTopoShape(true);
+        if (baseShape.isNull()) {
+            return true;
+        }
+        baseShape.setTransform(Base::Matrix4D());
+
+        const auto edges = fillet->UseAllEdges.getValue() ? baseShape.getSubTopoShapes(TopAbs_EDGE)
+                                                          : fillet->getContinuousEdges(baseShape);
+        if (edges.empty()) {
+            return true;
+        }
+
+        // Radius probing does not need element-name history. Avoid repeatedly
+        // constructing that history during the upper-bound search.
+        Part::TopoShape geometry(baseShape.getShape());
+        std::vector<Part::TopoShape> geometryEdges;
+        geometryEdges.reserve(edges.size());
+        for (const auto& edge : edges) {
+            geometryEdges.emplace_back(edge.getShape());
+        }
+        Part::TopoShape result;
+        result.makeElementFillet(geometry, geometryEdges, radius, radius);
+        return !result.isNull() && BRepCheck_Analyzer(result.getShape()).IsValid();
+    }
+    catch (const Base::CADKernelError& error) {
+        if (maximumRadius) {
+            constexpr std::string_view marker = "exceeds the approximately ";
+            const std::string_view message(error.what());
+            const std::size_t markerPosition = message.find(marker);
+            if (markerPosition != std::string_view::npos) {
+                const std::string numberText(message.substr(markerPosition + marker.size()));
+                char* end = nullptr;
+                const double parsedMaximum = std::strtod(numberText.c_str(), &end);
+                if (end != numberText.c_str() && parsedMaximum > 0.0) {
+                    *maximumRadius = parsedMaximum;
+                }
+            }
+        }
+        return false;
+    }
+    catch (...) {
+        return false;
+    }
+}
+
+void TaskFilletParameters::clearRadiusError()
+{
+    ui->radiusErrorLabel->hide();
 }
 
 double TaskFilletParameters::getLength() const

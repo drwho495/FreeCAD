@@ -22,6 +22,7 @@
  *                                                                          *
  ***************************************************************************/
 
+#include <array>
 #include <cmath>
 #include <limits>
 #include <sstream>
@@ -55,30 +56,38 @@
 #include <BRepBuilderAPI_GTransform.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepBuilderAPI_NurbsConvert.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepFilletAPI_MakeChamfer.hxx>
 #include <BRepFilletAPI_MakeFillet.hxx>
+#include <BRepFilletAPI_MakeFillet2d.hxx>
+#include <BRepGProp.hxx>
 #include <BRepLib.hxx>
 #include <BRepOffsetAPI_DraftAngle.hxx>
 #include <BRepOffsetAPI_MakeFilling.hxx>
 #include <BRepOffsetAPI_MakePipe.hxx>
 #include <BRepOffsetAPI_MakeEvolved.hxx>
 #include <BRepOffsetAPI_MakeThickSolid.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
+#include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRepProj_Projection.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <GeomConvert.hxx>
 #include <GeomFill_BezierCurves.hxx>
 #include <GeomFill_BSplineCurves.hxx>
+#include <GProp_GProps.hxx>
 #include <Precision.hxx>
 #include <ShapeAnalysis_FreeBounds.hxx>
 #include <ShapeBuild_ReShape.hxx>
 #include <ShapeConstruct_Curve.hxx>
 #include <ShapeUpgrade_ShellSewing.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <gp_Pln.hxx>
@@ -4172,7 +4181,704 @@ TopoShape& TopoShape::makeElementFillet(
         }
         mkFillet.Add(radius1, radius2, TopoDS::Edge(edge));
     }
-    return makeElementShape(mkFillet, shape, op);
+
+    std::string kernelError;
+    try {
+        mkFillet.Build();
+        if (mkFillet.IsDone()) {
+            return makeElementShape(mkFillet, shape, op);
+        }
+    }
+    catch (const Standard_Failure& failure) {
+        kernelError = failure.GetMessageString();
+    }
+
+    // A 3D fillet cannot currently consume an adjacent face in OCCT.  For a
+    // verified prism, reconstruct the limiting geometry instead of reducing
+    // the radius and leaving a sliver face.  Longitudinal edges can be handled
+    // by filleting and sweeping the end profile.  Opposing end edges require a
+    // full-radius pipe around the profile at the prism mid-plane.
+    const double radiusTolerance
+        = std::max(Precision::Confusion(), std::max(std::abs(radius1), std::abs(radius2)) * 1.0e-12);
+    const TopAbs_ShapeEnum sourceShapeType = shape.getShape().ShapeType();
+    const bool isSingleSolid = sourceShapeType == TopAbs_SOLID
+        || (sourceShapeType == TopAbs_COMPOUND && shape.countSubShapes(TopAbs_SOLID) == 1);
+    if (isSingleSolid && std::abs(radius1 - radius2) <= radiusTolerance) {
+        const auto sourceEdges = shape.getSubTopoShapes(TopAbs_EDGE);
+        TopTools_IndexedMapOfShape selectedEdgeMap;
+        for (const auto& edge : edges) {
+            selectedEdgeMap.Add(edge.getShape());
+        }
+        const bool allEdgesSelected = selectedEdgeMap.Extent()
+            == static_cast<int>(sourceEdges.size());
+
+        auto shapeVolume = [](const TopoDS_Shape& value) {
+            GProp_GProps properties;
+            BRepGProp::VolumeProperties(value, properties);
+            return std::abs(properties.Mass());
+        };
+
+        auto sameSolid = [&shapeVolume](const TopoDS_Shape& first, const TopoDS_Shape& second) {
+            try {
+                FCBRepAlgoAPI_Common common(first, second);
+                common.Build();
+                if (!common.IsDone() || common.Shape().IsNull()) {
+                    return false;
+                }
+
+                const double firstVolume = shapeVolume(first);
+                const double secondVolume = shapeVolume(second);
+                const double commonVolume = shapeVolume(common.Shape());
+                const double tolerance = std::max({1.0, firstVolume, secondVolume}) * 1.0e-9;
+                return std::abs(firstVolume - secondVolume) <= tolerance
+                    && std::abs(firstVolume - commonVolume) <= tolerance;
+            }
+            catch (const Standard_Failure&) {
+                return false;
+            }
+        };
+
+        auto containsSolid =
+            [&shapeVolume](const TopoDS_Shape& container, const TopoDS_Shape& contained) {
+                try {
+                    FCBRepAlgoAPI_Common common(container, contained);
+                    common.Build();
+                    if (!common.IsDone() || common.Shape().IsNull()) {
+                        return false;
+                    }
+                    const double containedVolume = shapeVolume(contained);
+                    const double commonVolume = shapeVolume(common.Shape());
+                    const double tolerance = std::max(1.0, containedVolume) * 1.0e-9;
+                    return std::abs(containedVolume - commonVolume) <= tolerance;
+                }
+                catch (const Standard_Failure&) {
+                    return false;
+                }
+            };
+
+        struct EndCap
+        {
+            TopoShape shape;
+            gp_Pln plane;
+            std::vector<TopoShape> selectedEdges;
+        };
+        std::vector<EndCap> endCaps;
+        std::size_t mostSelectedEdges = 0;
+        for (const auto& face : shape.getSubTopoShapes(TopAbs_FACE)) {
+            gp_Pln plane;
+            if (!face.findPlane(plane)) {
+                continue;
+            }
+            TopTools_IndexedMapOfShape faceEdges;
+            TopExp::MapShapes(face.getShape(), TopAbs_EDGE, faceEdges);
+            std::vector<TopoShape> selectedOnFace;
+            for (const auto& selected : edges) {
+                if (faceEdges.Contains(selected.getShape())) {
+                    selectedOnFace.push_back(selected);
+                }
+            }
+            if (selectedOnFace.empty()) {
+                continue;
+            }
+            if (selectedOnFace.size() > mostSelectedEdges) {
+                endCaps.clear();
+                mostSelectedEdges = selectedOnFace.size();
+            }
+            if (selectedOnFace.size() == mostSelectedEdges) {
+                endCaps.push_back({face, plane, std::move(selectedOnFace)});
+            }
+        }
+
+        // A single circular outer edge consumes both the end face and its
+        // cylindrical wall when the radius equals both the cylinder radius
+        // and wall height.  Replace that verified local cylinder with an exact
+        // hemisphere while preserving any solid joined at its opposite end.
+        if (endCaps.size() == 1 && mostSelectedEdges == 1 && edges.size() == 1) {
+            const TopoDS_Edge selectedEdge = TopoDS::Edge(endCaps[0].selectedEdges[0].getShape());
+            BRepAdaptor_Curve selectedCurve(selectedEdge);
+            TopTools_IndexedMapOfShape outerWireEdges;
+            TopExp::MapShapes(
+                BRepTools::OuterWire(TopoDS::Face(endCaps[0].shape.getShape())),
+                TopAbs_EDGE,
+                outerWireEdges
+            );
+            if (selectedCurve.GetType() == GeomAbs_Circle && outerWireEdges.Contains(selectedEdge)) {
+                const double edgeRadius = selectedCurve.Circle().Radius();
+                for (const auto& wallFace : shape.getSubTopoShapes(TopAbs_FACE)) {
+                    const TopoDS_Face face = TopoDS::Face(wallFace.getShape());
+                    BRepAdaptor_Surface wallSurface(face);
+                    if (wallSurface.GetType() != GeomAbs_Cylinder
+                        || std::abs(wallSurface.Cylinder().Radius() - edgeRadius) > radiusTolerance) {
+                        continue;
+                    }
+                    TopTools_IndexedMapOfShape wallEdges;
+                    TopExp::MapShapes(face, TopAbs_EDGE, wallEdges);
+                    if (!wallEdges.Contains(selectedEdge)) {
+                        continue;
+                    }
+
+                    for (int index = 1; index <= wallEdges.Extent(); ++index) {
+                        const TopoDS_Edge oppositeEdge = TopoDS::Edge(wallEdges(index));
+                        if (oppositeEdge.IsSame(selectedEdge)) {
+                            continue;
+                        }
+                        BRepAdaptor_Curve oppositeCurve(oppositeEdge);
+                        if (oppositeCurve.GetType() != GeomAbs_Circle
+                            || std::abs(oppositeCurve.Circle().Radius() - edgeRadius)
+                                > radiusTolerance) {
+                            continue;
+                        }
+
+                        const gp_Vec wallVector(
+                            selectedCurve.Circle().Location(),
+                            oppositeCurve.Circle().Location()
+                        );
+                        const double wallLength = wallVector.Magnitude();
+                        const double lengthTolerance
+                            = std::max(Precision::Confusion(), wallLength * 1.0e-9);
+                        if (wallLength <= Precision::Confusion()
+                            || std::abs(wallLength - radius1) > lengthTolerance
+                            || std::abs(edgeRadius - radius1) > lengthTolerance
+                            || !wallSurface.Cylinder().Axis().Direction().IsParallel(
+                                gp_Dir(wallVector),
+                                Precision::Angular()
+                            )) {
+                            continue;
+                        }
+
+                        const gp_Ax2 cylinderAxis(selectedCurve.Circle().Location(), gp_Dir(wallVector));
+                        const TopoDS_Shape localCylinder
+                            = BRepPrimAPI_MakeCylinder(cylinderAxis, edgeRadius, wallLength).Shape();
+                        if (!containsSolid(shape.getShape(), localCylinder)) {
+                            continue;
+                        }
+
+                        try {
+                            const gp_Pnt sphereCenter = oppositeCurve.Circle().Location();
+                            BRepPrimAPI_MakeSphere hemisphereBuilder(
+                                gp_Ax2(sphereCenter, gp_Dir(-wallVector)),
+                                radius1,
+                                0.0,
+                                std::acos(-1.0) / 2.0
+                            );
+                            hemisphereBuilder.Build();
+                            if (!hemisphereBuilder.IsDone()) {
+                                continue;
+                            }
+                            FCBRepAlgoAPI_Cut baseBuilder(shape.getShape(), localCylinder);
+                            baseBuilder.Build();
+                            if (!baseBuilder.IsDone()) {
+                                continue;
+                            }
+
+                            const double expectedVolume = shapeVolume(shape.getShape())
+                                - shapeVolume(localCylinder) + shapeVolume(hemisphereBuilder.Shape());
+                            const double volumeTolerance = std::max(1.0, expectedVolume) * 1.0e-9;
+                            const double baseVolume = baseBuilder.Shape().IsNull()
+                                ? 0.0
+                                : shapeVolume(baseBuilder.Shape());
+                            if (baseVolume <= volumeTolerance) {
+                                if (BRepCheck_Analyzer(hemisphereBuilder.Shape()).IsValid()
+                                    && std::abs(shapeVolume(hemisphereBuilder.Shape()) - expectedVolume)
+                                        <= volumeTolerance) {
+                                    return makeElementShape(hemisphereBuilder, shape, op);
+                                }
+                                continue;
+                            }
+
+                            FCBRepAlgoAPI_Fuse exactFillet(
+                                baseBuilder.Shape(),
+                                hemisphereBuilder.Shape()
+                            );
+                            exactFillet.Build();
+                            if (exactFillet.IsDone() && !exactFillet.Shape().IsNull()
+                                && BRepCheck_Analyzer(exactFillet.Shape()).IsValid()
+                                && std::abs(shapeVolume(exactFillet.Shape()) - expectedVolume)
+                                    <= volumeTolerance) {
+                                return makeElementShape(exactFillet, shape, op);
+                            }
+                        }
+                        catch (const Standard_Failure&) {
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        // The selected contours lie on both ends of the extrusion.  This is
+        // distinct from the longitudinal-edge profile fallback below.
+        if (endCaps.size() == 2 && mostSelectedEdges * 2 == edges.size()
+            && endCaps[0].plane.Axis().Direction().IsParallel(
+                endCaps[1].plane.Axis().Direction(),
+                Precision::Angular()
+            )) {
+            gp_Dir prismDirection = endCaps[0].plane.Axis().Direction();
+            const gp_Vec planeOffset(endCaps[0].plane.Location(), endCaps[1].plane.Location());
+            double prismLength = planeOffset.Dot(prismDirection);
+            if (prismLength < 0.0) {
+                prismDirection.Reverse();
+                prismLength = -prismLength;
+            }
+            const gp_Vec prismVector(prismDirection.XYZ() * prismLength);
+            const double lengthTolerance = std::max(Precision::Confusion(), prismLength * 1.0e-9);
+
+            TopTools_IndexedMapOfShape capSelection;
+            for (const auto& cap : endCaps) {
+                for (const auto& selected : cap.selectedEdges) {
+                    capSelection.Add(selected.getShape());
+                }
+            }
+
+            BRepPrimAPI_MakePrism originalPrism(endCaps[0].shape.getShape(), prismVector);
+            originalPrism.Build();
+            if (capSelection.Extent() == static_cast<int>(edges.size())
+                && std::abs(prismLength - 2.0 * radius1) <= lengthTolerance
+                && originalPrism.IsDone() && sameSolid(shape.getShape(), originalPrism.Shape())) {
+                try {
+                    TopoDS_Shape removalTool;
+
+                    if (mostSelectedEdges == 1) {
+                        BRepAdaptor_Curve firstCurve(
+                            TopoDS::Edge(endCaps[0].selectedEdges[0].getShape())
+                        );
+                        BRepAdaptor_Curve secondCurve(
+                            TopoDS::Edge(endCaps[1].selectedEdges[0].getShape())
+                        );
+                        if (firstCurve.GetType() == GeomAbs_Circle
+                            && secondCurve.GetType() == GeomAbs_Circle
+                            && std::abs(firstCurve.Circle().Radius() - secondCurve.Circle().Radius())
+                                <= lengthTolerance) {
+                            const gp_Pnt firstCenter = firstCurve.Circle().Location();
+                            const gp_Pnt secondCenter = secondCurve.Circle().Location();
+                            const gp_Vec centerVector(firstCenter, secondCenter);
+                            const double centerDistance = centerVector.Magnitude();
+                            if (centerDistance > Precision::Confusion()
+                                && std::abs(centerDistance - prismLength) <= lengthTolerance) {
+                                const gp_Dir axis(centerVector);
+                                const gp_Pnt middle = firstCenter.Translated(centerVector * 0.5);
+                                const double edgeRadius = firstCurve.Circle().Radius();
+
+                                TopTools_IndexedMapOfShape outerWireEdges;
+                                TopExp::MapShapes(
+                                    BRepTools::OuterWire(TopoDS::Face(endCaps[0].shape.getShape())),
+                                    TopAbs_EDGE,
+                                    outerWireEdges
+                                );
+                                const bool isOuterEdge = outerWireEdges.Contains(
+                                    endCaps[0].selectedEdges[0].getShape()
+                                );
+
+                                if (isOuterEdge && edgeRadius > radius1 + lengthTolerance) {
+                                    const double spineRadius = edgeRadius - radius1;
+                                    const TopoDS_Shape core = BRepPrimAPI_MakeCylinder(
+                                                                  gp_Ax2(firstCenter, axis),
+                                                                  spineRadius,
+                                                                  prismLength
+                                    )
+                                                                  .Shape();
+                                    const TopoDS_Shape pipe = BRepPrimAPI_MakeTorus(
+                                                                  gp_Ax2(middle, axis),
+                                                                  spineRadius,
+                                                                  radius1
+                                    )
+                                                                  .Shape();
+                                    FCBRepAlgoAPI_Fuse envelopeBuilder(core, pipe);
+                                    envelopeBuilder.Build();
+                                    const TopoDS_Shape localCylinder = BRepPrimAPI_MakeCylinder(
+                                                                           gp_Ax2(firstCenter, axis),
+                                                                           edgeRadius,
+                                                                           prismLength
+                                    )
+                                                                           .Shape();
+                                    if (envelopeBuilder.IsDone()) {
+                                        FCBRepAlgoAPI_Cut removalBuilder(
+                                            localCylinder,
+                                            envelopeBuilder.Shape()
+                                        );
+                                        removalBuilder.Build();
+                                        if (removalBuilder.IsDone()) {
+                                            removalTool = removalBuilder.Shape();
+                                        }
+                                    }
+                                }
+                                else if (!isOuterEdge) {
+                                    const double spineRadius = edgeRadius + radius1;
+                                    const TopoDS_Shape expandedCylinder = BRepPrimAPI_MakeCylinder(
+                                                                              gp_Ax2(firstCenter, axis),
+                                                                              spineRadius,
+                                                                              prismLength
+                                    )
+                                                                              .Shape();
+                                    const TopoDS_Shape pipe = BRepPrimAPI_MakeTorus(
+                                                                  gp_Ax2(middle, axis),
+                                                                  spineRadius,
+                                                                  radius1
+                                    )
+                                                                  .Shape();
+                                    FCBRepAlgoAPI_Cut removalBuilder(expandedCylinder, pipe);
+                                    removalBuilder.Build();
+                                    if (removalBuilder.IsDone()) {
+                                        removalTool = removalBuilder.Shape();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if (mostSelectedEdges == 4) {
+                        TopTools_IndexedMapOfShape outerWireEdges;
+                        TopExp::MapShapes(
+                            BRepTools::OuterWire(TopoDS::Face(endCaps[0].shape.getShape())),
+                            TopAbs_EDGE,
+                            outerWireEdges
+                        );
+                        bool isRectangularPocket = true;
+                        TopTools_IndexedMapOfShape rectangleVertices;
+                        std::vector<gp_Dir> rectangleDirections;
+                        for (const auto& selected : endCaps[0].selectedEdges) {
+                            const TopoDS_Edge edge = TopoDS::Edge(selected.getShape());
+                            if (outerWireEdges.Contains(edge)
+                                || BRepAdaptor_Curve(edge).GetType() != GeomAbs_Line) {
+                                isRectangularPocket = false;
+                                break;
+                            }
+                            TopExp::MapShapes(edge, TopAbs_VERTEX, rectangleVertices);
+                            TopoDS_Vertex firstVertex;
+                            TopoDS_Vertex lastVertex;
+                            TopExp::Vertices(edge, firstVertex, lastVertex);
+                            const gp_Vec edgeVector(
+                                BRep_Tool::Pnt(firstVertex),
+                                BRep_Tool::Pnt(lastVertex)
+                            );
+                            if (edgeVector.Magnitude() <= Precision::Confusion()) {
+                                isRectangularPocket = false;
+                                break;
+                            }
+                            rectangleDirections.emplace_back(edgeVector);
+                        }
+                        if (isRectangularPocket && rectangleDirections.size() == 4) {
+                            int parallelEdges = 0;
+                            int normalEdges = 0;
+                            for (const auto& direction : rectangleDirections) {
+                                if (direction.IsParallel(rectangleDirections[0], Precision::Angular())) {
+                                    ++parallelEdges;
+                                }
+                                else if (
+                                    direction.IsNormal(rectangleDirections[0], Precision::Angular())
+                                ) {
+                                    ++normalEdges;
+                                }
+                                else {
+                                    isRectangularPocket = false;
+                                    break;
+                                }
+                            }
+                            isRectangularPocket = isRectangularPocket && parallelEdges == 2
+                                && normalEdges == 2;
+                        }
+                        else {
+                            isRectangularPocket = false;
+                        }
+
+                        if (isRectangularPocket && rectangleVertices.Extent() == 4) {
+                            gp_XYZ centerCoordinates(0.0, 0.0, 0.0);
+                            for (int index = 1; index <= rectangleVertices.Extent(); ++index) {
+                                const gp_Pnt vertexPoint = BRep_Tool::Pnt(
+                                    TopoDS::Vertex(rectangleVertices(index))
+                                );
+                                centerCoordinates += vertexPoint.XYZ();
+                            }
+                            const gp_Pnt center(centerCoordinates / 4.0);
+                            const TopoDS_Edge firstEdge = TopoDS::Edge(
+                                endCaps[0].selectedEdges[0].getShape()
+                            );
+                            TopoDS_Vertex firstVertex;
+                            TopoDS_Vertex lastVertex;
+                            TopExp::Vertices(firstEdge, firstVertex, lastVertex);
+                            const gp_Dir firstDirection(
+                                gp_Vec(BRep_Tool::Pnt(firstVertex), BRep_Tool::Pnt(lastVertex))
+                            );
+                            const gp_Dir secondDirection(prismDirection.Crossed(firstDirection));
+
+                            double firstMinimum = std::numeric_limits<double>::max();
+                            double firstMaximum = std::numeric_limits<double>::lowest();
+                            double secondMinimum = std::numeric_limits<double>::max();
+                            double secondMaximum = std::numeric_limits<double>::lowest();
+                            for (int index = 1; index <= rectangleVertices.Extent(); ++index) {
+                                const gp_Vec offset(
+                                    center,
+                                    BRep_Tool::Pnt(TopoDS::Vertex(rectangleVertices(index)))
+                                );
+                                const double firstCoordinate = offset.Dot(firstDirection);
+                                const double secondCoordinate = offset.Dot(secondDirection);
+                                firstMinimum = std::min(firstMinimum, firstCoordinate);
+                                firstMaximum = std::max(firstMaximum, firstCoordinate);
+                                secondMinimum = std::min(secondMinimum, secondCoordinate);
+                                secondMaximum = std::max(secondMaximum, secondCoordinate);
+                            }
+                            firstMinimum -= radius1;
+                            firstMaximum += radius1;
+                            secondMinimum -= radius1;
+                            secondMaximum += radius1;
+
+                            auto profilePoint = [&](double first, double second) {
+                                return center.Translated(
+                                    gp_Vec(firstDirection.XYZ() * first)
+                                    + gp_Vec(secondDirection.XYZ() * second)
+                                );
+                            };
+                            std::array<gp_Pnt, 4> corners {
+                                profilePoint(firstMinimum, secondMinimum),
+                                profilePoint(firstMaximum, secondMinimum),
+                                profilePoint(firstMaximum, secondMaximum),
+                                profilePoint(firstMinimum, secondMaximum)
+                            };
+                            BRepBuilderAPI_MakePolygon expandedPolygon;
+                            for (const auto& corner : corners) {
+                                expandedPolygon.Add(corner);
+                            }
+                            expandedPolygon.Close();
+                            const TopoDS_Face expandedProfile
+                                = BRepBuilderAPI_MakeFace(expandedPolygon.Wire()).Face();
+                            const TopoDS_Shape expandedPocket
+                                = BRepPrimAPI_MakePrism(expandedProfile, prismVector).Shape();
+
+                            TopoDS_Shape pipes;
+                            bool pipesDone = true;
+                            for (std::size_t index = 0; index < corners.size(); ++index) {
+                                const gp_Pnt start = corners[index].Translated(prismVector * 0.5);
+                                const gp_Vec edgeVector(
+                                    corners[index],
+                                    corners[(index + 1) % corners.size()]
+                                );
+                                const TopoDS_Shape pipe = BRepPrimAPI_MakeCylinder(
+                                                              gp_Ax2(start, gp_Dir(edgeVector)),
+                                                              radius1,
+                                                              edgeVector.Magnitude()
+                                )
+                                                              .Shape();
+                                if (pipes.IsNull()) {
+                                    pipes = pipe;
+                                }
+                                else {
+                                    FCBRepAlgoAPI_Fuse pipeBuilder(pipes, pipe);
+                                    pipeBuilder.Build();
+                                    if (!pipeBuilder.IsDone()) {
+                                        pipesDone = false;
+                                        break;
+                                    }
+                                    pipes = pipeBuilder.Shape();
+                                }
+                            }
+                            if (pipesDone && !pipes.IsNull()) {
+                                FCBRepAlgoAPI_Cut removalBuilder(expandedPocket, pipes);
+                                removalBuilder.Build();
+                                if (removalBuilder.IsDone()) {
+                                    removalTool = removalBuilder.Shape();
+                                }
+                            }
+                        }
+                    }
+
+                    if (!removalTool.IsNull()) {
+                        FCBRepAlgoAPI_Cut exactFillet(shape.getShape(), removalTool);
+                        exactFillet.Build();
+                        if (exactFillet.IsDone() && !exactFillet.Shape().IsNull()
+                            && BRepCheck_Analyzer(exactFillet.Shape()).IsValid()) {
+                            return makeElementShape(exactFillet, shape, op);
+                        }
+                    }
+                }
+                catch (const Standard_Failure&) {
+                    // Continue with the longitudinal-edge fallback or report
+                    // the original kernel error below.
+                }
+            }
+        }
+
+        for (auto& cap : shape.getSubTopoShapes(TopAbs_FACE)) {
+            gp_Pln capPlane;
+            if (!cap.findPlane(capPlane)) {
+                continue;
+            }
+
+            TopTools_IndexedMapOfShape capVertices;
+            TopExp::MapShapes(cap.getShape(), TopAbs_VERTEX, capVertices);
+            TopTools_IndexedMapOfShape filletVertices;
+            gp_Vec prismVector;
+            bool haveVector = false;
+            bool matchesSelectedEdges = true;
+
+            for (const auto& selected : edges) {
+                const TopoDS_Edge selectedEdge = TopoDS::Edge(selected.getShape());
+                TopoDS_Vertex firstVertex;
+                TopoDS_Vertex lastVertex;
+                TopExp::Vertices(selectedEdge, firstVertex, lastVertex);
+                const bool firstOnCap = capVertices.Contains(firstVertex);
+                const bool lastOnCap = capVertices.Contains(lastVertex);
+                if (firstOnCap == lastOnCap) {
+                    if (allEdgesSelected) {
+                        continue;
+                    }
+                    matchesSelectedEdges = false;
+                    break;
+                }
+
+                BRepAdaptor_Curve curve(selectedEdge);
+                if (curve.GetType() != GeomAbs_Line) {
+                    matchesSelectedEdges = false;
+                    break;
+                }
+
+                const TopoDS_Vertex capVertex = firstOnCap ? firstVertex : lastVertex;
+                const TopoDS_Vertex otherVertex = firstOnCap ? lastVertex : firstVertex;
+                const gp_Vec edgeVector(BRep_Tool::Pnt(capVertex), BRep_Tool::Pnt(otherVertex));
+                if (edgeVector.Magnitude() <= Precision::Confusion()) {
+                    matchesSelectedEdges = false;
+                    break;
+                }
+
+                if (!haveVector) {
+                    prismVector = edgeVector;
+                    haveVector = true;
+                }
+                else {
+                    const double linearTolerance
+                        = std::max(Precision::Confusion(), prismVector.Magnitude() * 1.0e-9);
+                    if ((edgeVector - prismVector).Magnitude() > linearTolerance) {
+                        matchesSelectedEdges = false;
+                        break;
+                    }
+                }
+                filletVertices.Add(capVertex);
+            }
+
+            const int expectedFilletVertices = allEdgesSelected ? capVertices.Extent()
+                                                                : static_cast<int>(edges.size());
+            if (!matchesSelectedEdges || !haveVector
+                || filletVertices.Extent() != expectedFilletVertices
+                || !capPlane.Axis().Direction().IsParallel(gp_Dir(prismVector), Precision::Angular())) {
+                continue;
+            }
+
+            BRepPrimAPI_MakePrism originalPrism(cap.getShape(), prismVector);
+            originalPrism.Build();
+            if (!originalPrism.IsDone() || !sameSolid(shape.getShape(), originalPrism.Shape())) {
+                continue;
+            }
+
+            auto profileWorks = [&cap, &filletVertices](double radius) {
+                try {
+                    BRepFilletAPI_MakeFillet2d profileFillet(TopoDS::Face(cap.getShape()));
+                    for (int index = 1; index <= filletVertices.Extent(); ++index) {
+                        if (profileFillet.AddFillet(TopoDS::Vertex(filletVertices(index)), radius)
+                                .IsNull()) {
+                            return false;
+                        }
+                    }
+                    profileFillet.Build();
+                    return profileFillet.IsDone() && !profileFillet.Shape().IsNull();
+                }
+                catch (const Standard_Failure&) {
+                    return false;
+                }
+            };
+
+            BRepFilletAPI_MakeFillet2d profileFillet(TopoDS::Face(cap.getShape()));
+            bool profileDone = true;
+            for (int index = 1; index <= filletVertices.Extent(); ++index) {
+                if (profileFillet.AddFillet(TopoDS::Vertex(filletVertices(index)), radius1).IsNull()) {
+                    profileDone = false;
+                    break;
+                }
+            }
+            if (!profileDone) {
+                double lower = 0.0;
+                double upper = radius1;
+                for (int iteration = 0; iteration < 50; ++iteration) {
+                    const double trial = (lower + upper) * 0.5;
+                    if (profileWorks(trial)) {
+                        lower = trial;
+                    }
+                    else {
+                        upper = trial;
+                    }
+                }
+                FC_THROWM(
+                    Base::CADKernelError,
+                    "Requested fillet radius " << radius1 << " exceeds the approximately " << lower
+                                               << " maximum for this prismatic profile"
+                );
+            }
+
+            profileFillet.Build();
+            if (!profileFillet.IsDone()) {
+                continue;
+            }
+
+            TopoShape profile(0, Hasher);
+            profile.makeElementShape(profileFillet, cap, op);
+            TopoShape swept(0, Hasher);
+            swept.makeElementPrism(profile, prismVector, op);
+            if (!BRepCheck_Analyzer(swept.getShape()).IsValid()) {
+                continue;
+            }
+
+            // Selecting every edge also requests fillets around both ends of
+            // the prism.  Once the exact-limit profile has been swept, those
+            // end-cap edges form a regular 3D fillet problem that OCCT can
+            // solve without the zero-length profile faces that caused the
+            // original all-at-once operation to fail.
+            if (allEdgesSelected) {
+                TopTools_IndexedMapOfShape endCapEdgeMap;
+                int endCapCount = 0;
+                for (const auto& face : swept.getSubTopoShapes(TopAbs_FACE)) {
+                    gp_Pln plane;
+                    if (!face.findPlane(plane)
+                        || !plane.Axis().Direction().IsParallel(
+                            gp_Dir(prismVector),
+                            Precision::Angular()
+                        )) {
+                        continue;
+                    }
+                    ++endCapCount;
+                    TopExp::MapShapes(face.getShape(), TopAbs_EDGE, endCapEdgeMap);
+                }
+                if (endCapCount != 2 || endCapEdgeMap.IsEmpty()) {
+                    continue;
+                }
+
+                std::vector<TopoShape> endCapEdges;
+                endCapEdges.reserve(endCapEdgeMap.Extent());
+                for (int index = 1; index <= endCapEdgeMap.Extent(); ++index) {
+                    endCapEdges.emplace_back(endCapEdgeMap(index), 0, Hasher);
+                }
+
+                try {
+                    TopoShape fullyRounded(0, Hasher);
+                    fullyRounded.makeElementFillet(swept, endCapEdges, radius1, radius2, op);
+                    if (!BRepCheck_Analyzer(fullyRounded.getShape()).IsValid()) {
+                        continue;
+                    }
+                    swept = fullyRounded;
+                }
+                catch (const Base::Exception&) {
+                    continue;
+                }
+                catch (const Standard_Failure&) {
+                    continue;
+                }
+            }
+
+            *this = swept;
+            return *this;
+        }
+    }
+
+    if (!kernelError.empty()) {
+        FC_THROWM(Base::CADKernelError, kernelError);
+    }
+    FC_THROWM(Base::CADKernelError, "Fillet operation failed");
 }
 
 TopoShape& TopoShape::makeElementChamfer(
