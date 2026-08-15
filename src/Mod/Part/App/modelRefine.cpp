@@ -24,6 +24,7 @@
 
 
 #include <algorithm>
+#include <cmath>
 #include <numbers>
 #include <iterator>
 #include <Bnd_Box.hxx>
@@ -601,7 +602,9 @@ bool wireEncirclesAxis(const TopoDS_Wire& wire, const Handle(Geom_CylindricalSur
 
                     if (dist > 0) {
                         // Check orientation of this piece in relation to cylinder axis
-                        if ((bv - cv).Crossed(dv).IsOpposite(av, Precision::Confusion())) {
+                        gp_Vec crossed = (bv - cv).Crossed(dv);
+
+                        if (std::fabs(crossed.Magnitude()) > Precision::Confusion() && crossed.IsOpposite(av, Precision::Confusion())) {
                             dist = -dist;
                         }
 
