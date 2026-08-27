@@ -263,6 +263,29 @@
         ]
       },
       {
+        "name": "conda-linux-release-local-occt",
+        "displayName": "Conda Release (Local OCCT)",
+        "description": "Conda release profile using the locally-built OCCT fork installed to /usr/local",
+        "inherits": [
+          "conda-linux-release"
+        ],
+        "binaryDir": "${sourceDir}/build/release-local-occt",
+        "cacheVariables": {
+          "OCCT_CMAKE_FALLBACK": {
+            "type": "BOOL",
+            "value": "OFF"
+          },
+          "OpenCASCADE_DIR": {
+            "type": "PATH",
+            "value": "/home/hypocritical/OCCT_Fork/OCCT_IR/OCCT/build/install/lib/cmake/opencascade"
+          },
+          "FREECAD_WARN_ERROR": {
+            "type": "BOOL",
+            "value": "OFF"
+          }
+        }
+      },
+      {
         "name": "conda-macos-debug",
         "displayName": "Conda Debug",
         "description": "Conda debug profile",

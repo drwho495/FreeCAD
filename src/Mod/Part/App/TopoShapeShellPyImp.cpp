@@ -31,7 +31,6 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Shell.hxx>
 #include <ShapeAnalysis_Shell.hxx>
-#include <ShapeUpgrade_ShellSewing.hxx>
 
 
 #include <Base/GeometryPyCXX.h>
@@ -39,6 +38,7 @@
 
 #include "OCCError.h"
 #include "PartPyCXX.h"
+#include "ShapeUpgrade_ShellSewing.h"
 #include "Tools.h"
 #include "TopoShapeCompoundPy.h"
 #include "TopoShapeCompoundPy.h"

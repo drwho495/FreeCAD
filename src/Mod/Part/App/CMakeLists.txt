@@ -553,6 +553,12 @@ SET(Part_SRCS
     BRepOffsetAPI_MakeOffsetFix.h
     ShapeAnalysis_FreeBoundsFix.cpp
     ShapeAnalysis_FreeBoundsFix.h
+    ShapeFix_EdgeConnect.cpp
+    ShapeFix_EdgeConnect.hxx
+    ShapeFix_FaceConnect.cpp
+    ShapeFix_FaceConnect.hxx
+    ShapeUpgrade_ShellSewing.cpp
+    ShapeUpgrade_ShellSewing.h
     BSplineCurveBiArcs.cpp
     BSplineCurveBiArcs.h
     CrossSection.cpp

@@ -27,7 +27,6 @@
 #include <BRep_Builder.hxx>
 #include <Message_ProgressRange.hxx>
 #include <Quantity_ColorRGBA.hxx>
-#include <RWGltf_CafReader.hxx>
 #include <TDF_Label.hxx>
 #include <TDF_TagSource.hxx>
 #include <XCAFDoc_DocumentTool.hxx>
@@ -53,17 +52,17 @@ ReaderGltf::ReaderGltf(const Base::FileInfo& file)
 void ReaderGltf::read(Handle(TDocStd_Document) hDoc, const Message_ProgressRange& theProgress)
 {
     const double unit = 0.001;  // mm
-    RWGltf_CafReader aReader;
-    aReader.SetSystemLengthUnit(unit);
-    aReader.SetSystemCoordinateSystem(RWMesh_CoordinateSystem_Zup);
-    aReader.SetDocument(hDoc);
-    aReader.SetParallel(true);
+    // RWGltf_CafReader aReader;
+    // aReader.SetSystemLengthUnit(unit);
+    // aReader.SetSystemCoordinateSystem(RWMesh_CoordinateSystem_Zup);
+    // aReader.SetDocument(hDoc);
+    // aReader.SetParallel(true);
 
-    TCollection_AsciiString filename(file.filePath().c_str());
-    Standard_Boolean ret = aReader.Perform(filename, theProgress);
-    if (!ret) {
+    // TCollection_AsciiString filename(file.filePath().c_str());
+    // Standard_Boolean ret = aReader.Perform(filename, theProgress);
+    // if (!ret) {
         throw Base::FileException("Cannot read from file: ", file);
-    }
+    // }
 
     processDocument(hDoc);
 }

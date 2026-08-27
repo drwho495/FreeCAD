@@ -26,7 +26,6 @@
 #include <Standard_Version.hxx>
 #include <TColStd_IndexedDataMapOfStringString.hxx>
 #include <Message_ProgressRange.hxx>
-#include <RWGltf_CafWriter.hxx>
 
 #include "WriterGltf.h"
 #include <Base/Exception.h>
@@ -38,22 +37,22 @@ WriterGltf::WriterGltf(const Base::FileInfo& file)  // NOLINT
     : file {file}
 {}
 
-void WriterGltf::write(Handle(TDocStd_Document) hDoc) const  // NOLINT
+void WriterGltf::write(Handle(TDocStd_Document) /*hDoc*/) const  // NOLINT
 {
     std::string utf8Name = file.filePath();
     std::string name8bit = Part::encodeFilename(utf8Name);
 
     TColStd_IndexedDataMapOfStringString aMetadata;
-    RWGltf_CafWriter aWriter(name8bit.c_str(), file.hasExtension("glb"));
-    aWriter.SetTransformationFormat(RWGltf_WriterTrsfFormat_Compact);
+    // RWGltf_CafWriter aWriter(name8bit.c_str(), file.hasExtension("glb"));
+    // aWriter.SetTransformationFormat(RWGltf_WriterTrsfFormat_Compact);
     // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#coordinate-system-and-units
-    aWriter.ChangeCoordinateSystemConverter().SetInputLengthUnit(0.001);  // NOLINT
-    aWriter.ChangeCoordinateSystemConverter().SetInputCoordinateSystem(RWMesh_CoordinateSystem_Zup);
+    // aWriter.ChangeCoordinateSystemConverter().SetInputLengthUnit(0.001);  // NOLINT
+    // aWriter.ChangeCoordinateSystemConverter().SetInputCoordinateSystem(RWMesh_CoordinateSystem_Zup);
 #if OCC_VERSION_HEX >= 0x070700
-    aWriter.SetParallel(true);
+    // aWriter.SetParallel(true);
 #endif
-    Standard_Boolean ret = aWriter.Perform(hDoc, aMetadata, Message_ProgressRange());
-    if (!ret) {
+    // Standard_Boolean ret = aWriter.Perform(hDoc, aMetadata, Message_ProgressRange());
+    // if (!ret) {
         throw Base::FileException("Cannot save to file: ", file);
-    }
+    // }
 }

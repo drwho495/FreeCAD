@@ -127,7 +127,6 @@
 #include <ShapeExtend_Explorer.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <ShapeUpgrade_RemoveInternalWires.hxx>
-#include <ShapeUpgrade_ShellSewing.hxx>
 #include <Standard_Failure.hxx>
 #include <Standard_Version.hxx>
 #include <STEPControl_Reader.hxx>
@@ -183,6 +182,7 @@
 #include "modelRefine.h"
 #include "PartPyCXX.h"
 #include "ProgressIndicator.h"
+#include "ShapeUpgrade_ShellSewing.h"
 #include "Tools.h"
 #include "TopoShape.h"
 #include "TopoShapeCompoundPy.h"

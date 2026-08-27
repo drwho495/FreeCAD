@@ -33,7 +33,6 @@
 # include <Standard_Address.hxx>
 #endif
 #include <Standard_Boolean.hxx>
-#include <Standard_Byte.hxx>
 #include <Standard_Character.hxx>
 #include <Standard_ConstructionError.hxx>
 #include <Standard_CString.hxx>
@@ -454,7 +453,6 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Wire.hxx>
 #include <ShapeFix_Wireframe.hxx>
-#include <ShapeUpgrade_ShellSewing.hxx>
 #include <ShapeUpgrade_RemoveInternalWires.hxx>
 
 // Step*

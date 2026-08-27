@@ -77,7 +77,6 @@
 #include <ShapeAnalysis_FreeBounds.hxx>
 #include <ShapeBuild_ReShape.hxx>
 #include <ShapeConstruct_Curve.hxx>
-#include <ShapeUpgrade_ShellSewing.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
@@ -101,6 +100,7 @@
 #include "Geometry.h"
 #include "BRepOffsetAPI_MakeOffsetFix.h"
 #include "ProgressIndicator.h"
+#include "ShapeUpgrade_ShellSewing.h"
 #include "ShapeAnalysis_FreeBoundsFix.h"
 
 #include <App/ElementMap.h>
