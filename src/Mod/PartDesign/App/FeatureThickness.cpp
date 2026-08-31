@@ -147,8 +147,12 @@ App::DocumentObjectExecReturn* Thickness::execute()
                 faces = &mapIterator->second;
                 solid = TopShape.getSubTopoShape(TopAbs_SOLID, mapIterator->first);
             }
-            TopoShape res(0);
+            TopoShape res = makeTopoShape(false);
             try {
+                if (getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V2) {
+                    solid.Tag = getID();
+                }
+
                 res = solid.makeElementThickSolid(
                     *faces,
                     thickness,
@@ -170,7 +174,7 @@ App::DocumentObjectExecReturn* Thickness::execute()
         }
     }
 
-    TopoShape result(0);
+    TopoShape result = makeTopoShape(false);
     if (shapes.size() > 1) {
         result.makeElementFuse(shapes);
     }
