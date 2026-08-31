@@ -26,6 +26,7 @@
 import FreeCAD as App
 
 from .cage import update_object_shape
+from .feedback import MODELING_ERRORS, report_modeling_error
 from .topology import box_control_cage, cage_edges
 
 FORMS_WORKBENCH = "FormsWorkbench"
@@ -584,6 +585,18 @@ class ViewProviderFormBox:
             if select_whole_form:
                 self._edit_session.select_whole_form()
             return True
+        except MODELING_ERRORS as error:
+            self._restore_body_feature_visibility()
+            active_view.setActiveObject(ACTIVE_FORM_KEY, self._active_form_before_edit)
+            previous = self._workbench_before_edit
+            if previous != FORMS_WORKBENCH:
+                Gui.activateWorkbench(previous)
+            self._edit_session = None
+            self._active_form_before_edit = None
+            self._workbench_before_edit = ""
+            return report_modeling_error(
+                App.Qt.translate("Forms_Edit", "Edit Form"), error
+            )
         except Exception:
             self._restore_body_feature_visibility()
             active_view.setActiveObject(ACTIVE_FORM_KEY, self._active_form_before_edit)

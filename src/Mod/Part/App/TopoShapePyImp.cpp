@@ -502,11 +502,13 @@ PyObject* TopoShapePy::dumpToString(PyObject* args) const
         PyErr_SetString(PartExceptionOCCError, e.what());
         return nullptr;
     }
+#if OCC_VERSION_HEX < 0x080000
     catch (Standard_Failure& e) {
 
         PyErr_SetString(PartExceptionOCCError, e.GetMessageString());
         return nullptr;
     }
+#endif
 }
 
 PyObject* TopoShapePy::exportBrepToString(PyObject* args) const
@@ -529,10 +531,12 @@ PyObject* TopoShapePy::exportBrepToString(PyObject* args) const
         PyErr_SetString(PartExceptionOCCError, e.what());
         return nullptr;
     }
+#if OCC_VERSION_HEX < 0x080000
     catch (Standard_Failure& e) {
         PyErr_SetString(PartExceptionOCCError, e.GetMessageString());
         return nullptr;
     }
+#endif
 }
 
 PyObject* TopoShapePy::importBrep(PyObject* args)
@@ -619,10 +623,12 @@ PyObject* TopoShapePy::importBrepFromString(PyObject* args)
         PyErr_SetString(PartExceptionOCCError, e.what());
         return nullptr;
     }
+#if OCC_VERSION_HEX < 0x080000
     catch (Standard_Failure& e) {
         PyErr_SetString(PartExceptionOCCError, e.GetMessageString());
         return nullptr;
     }
+#endif
 
     Py_Return;
 }
@@ -902,14 +908,12 @@ PyObject* TopoShapePy::sewShape(PyObject* args)
         return nullptr;
     }
 
-    try {
-        getTopoShapePtr()->sewShape();
+    PY_TRY
+    {
+        getTopoShapePtr()->sewShape(tolerance);
         Py_Return;
     }
-    catch (Standard_Failure& e) {
-        PyErr_SetString(PartExceptionOCCError, e.GetMessageString());
-        return nullptr;
-    }
+    PY_CATCH_OCC
 }
 
 PyObject* TopoShapePy::childShapes(PyObject* args) const

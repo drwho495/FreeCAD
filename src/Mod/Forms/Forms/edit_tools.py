@@ -32,6 +32,7 @@ from PySide import QtCore, QtWidgets
 from pivy import coin
 
 from .cage import ControlCage, ControlElementMapper, canonical_subelement_name
+from .feedback import MODELING_ERRORS, report_modeling_error
 from .operations import (
     flatten_control_points,
     insert_edge_loop,
@@ -348,6 +349,13 @@ class FormEditToolsMixin:
             straighten_control_points(self.obj, indices, line, surface_points)
             self.obj.Document.recompute()
             self.topology_changed()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            return report_modeling_error(
+                App.Qt.translate("Forms_Straighten", "Straighten"),
+                error,
+                self.straighten_preview_status,
+            )
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -604,6 +612,13 @@ class FormEditToolsMixin:
             flatten_control_points(self.obj, self.flatten_indices, plane)
             self.obj.Document.recompute()
             self.topology_changed()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            return report_modeling_error(
+                App.Qt.translate("Forms_Flatten", "Flatten"),
+                error,
+                self.flatten_preview_status,
+            )
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -788,10 +803,11 @@ class FormEditToolsMixin:
             self.cached_control_mapper = None
             self.cached_control_mapper_signature = None
             self.topology_changed()
-        except ValueError as error:
+        except MODELING_ERRORS as error:
             self._finish_action(transaction, commit=False)
-            self.weld_status.setText(str(error))
-            return False
+            return report_modeling_error(
+                App.Qt.translate("Forms_Weld", "Weld Forms"), error, self.weld_status
+            )
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -967,6 +983,13 @@ class FormEditToolsMixin:
             match_boundary(obj, edges, support, continuity, tangent_mode)
             obj.Document.recompute()
             self.topology_changed()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            return report_modeling_error(
+                App.Qt.translate("Forms_Match", "Match"),
+                error,
+                self.match_preview_status,
+            )
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -1061,13 +1084,19 @@ class FormEditToolsMixin:
         self.thicken_apply_button.setEnabled(abs(distance) > 1.0e-9)
         if abs(distance) <= 1.0e-9:
             return False
-        cage = self.thicken_original_cage.thickened(distance, sharp=True)
-        cage.write(self.obj)
-        self.obj.CageMode = "Editable"
-        self.obj.touch()
-        self.obj.Document.recompute()
-        self._set_parametric_state(False)
-        self._sync_dimension_properties()
+        try:
+            cage = self.thicken_original_cage.thickened(distance, sharp=True)
+            cage.write(self.obj)
+            self.obj.CageMode = "Editable"
+            self.obj.touch()
+            self.obj.Document.recompute()
+            self._set_parametric_state(False)
+            self._sync_dimension_properties()
+        except MODELING_ERRORS as error:
+            self.thicken_apply_button.setEnabled(False)
+            return report_modeling_error(
+                App.Qt.translate("Forms_Thicken", "Thicken"), error
+            )
         return True
 
     def stop_thicken_tool(self, apply=False):
@@ -1949,10 +1978,11 @@ class FormEditToolsMixin:
             self.topology_changed()
             self._clear_surface_preview()
             self.view.redraw()
-        except ValueError as error:
+        except MODELING_ERRORS as error:
             self._finish_action(transaction, commit=False)
-            App.Console.PrintWarning(f"Forms Unweld: {error}\n")
-            return False
+            return report_modeling_error(
+                App.Qt.translate("Forms_Unweld", "Unweld Form"), error
+            )
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -2009,10 +2039,11 @@ class FormEditToolsMixin:
             self._clear_surface_preview()
             self._queue_tool_selection_clear()
             self.view.redraw()
-        except ValueError as error:
+        except MODELING_ERRORS as error:
             self._finish_action(transaction, commit=False)
-            App.Console.PrintWarning(f"Forms Insert Point: {error}\n")
-            return False
+            return report_modeling_error(
+                App.Qt.translate("Forms_InsertPoint", "Insert points"), error
+            )
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -2386,9 +2417,9 @@ class FormEditToolsMixin:
             self._clear_surface_preview()
             self._queue_tool_selection_clear()
             self.view.redraw()
-        except ValueError as error:
+        except MODELING_ERRORS as error:
             self._finish_action(transaction, commit=False)
-            App.Console.PrintWarning(f"Forms Insert Edge: {error}\n")
+            report_modeling_error(App.Qt.translate("Forms_InsertEdge", "Insert Edge"), error)
             self._clear_surface_preview()
             self.view.redraw()
             return False
@@ -2425,9 +2456,9 @@ class FormEditToolsMixin:
             self._clear_surface_preview()
             self._queue_tool_selection_clear()
             self.view.redraw()
-        except ValueError as error:
+        except MODELING_ERRORS as error:
             self._finish_action(transaction, commit=False)
-            App.Console.PrintWarning(f"Forms Subdivide: {error}\n")
+            report_modeling_error(App.Qt.translate("Forms_Subdivide", "Subdivide"), error)
             self._clear_surface_preview()
             self.view.redraw()
             return False

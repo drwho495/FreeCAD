@@ -9,12 +9,14 @@ import FreeCAD as App
 import Part
 
 from Forms import (
+    create_additive_form,
     create_box,
     create_cylinder,
     create_face,
     create_pipe,
     create_quadball,
     create_sphere,
+    create_subtractive_form,
     create_torus,
     create_tube,
     delete_faces,
@@ -73,6 +75,46 @@ class BRepConversionTest(unittest.TestCase):
         placement = global_placement(obj)
 
         self.assertTrue(placement.Base.isEqual(App.Vector(11, 2, 3), 1.0e-9))
+
+    def test_partdesign_boolean_history_uses_the_new_feature_tag(self):
+        cases = (
+            (
+                "Additive",
+                create_additive_form,
+                App.Placement(App.Vector(15, 10, 5), App.Rotation()),
+                12.0,
+                "FUS",
+            ),
+            (
+                "Subtractive",
+                create_subtractive_form,
+                App.Placement(App.Vector(10, 10, 5), App.Rotation()),
+                10.0,
+                "CUT",
+            ),
+        )
+        for operation, factory, placement, size, opcode in cases:
+            with self.subTest(operation=operation):
+                document = App.newDocument(f"FormsTest{operation}HistoryTag")
+                body = document.addObject("PartDesign::Body", "Body")
+                source = body.newObject("PartDesign::Feature", "Source")
+                source.Shape = Part.makeBox(20, 20, 10)
+                form = factory(body, source, "Box", placement=placement)
+                form.Length = size
+                form.Width = size
+                form.Height = size
+                document.recompute()
+
+                mapped_names = [
+                    str(name) for name in form.Shape.ElementMap if opcode in str(name)
+                ]
+                form_tag = f":H{form.ID:x}"
+                source_tag = f":H{source.ID:x}"
+                self.assertTrue(mapped_names)
+                self.assertTrue(all(form_tag in name for name in mapped_names))
+                self.assertTrue(all(source_tag not in name for name in mapped_names))
+                self.assertEqual(form.Shape.Tag, form.ID)
+                self.assertEqual(source.Shape.Tag, source.ID)
 
     def test_default_cage_produces_valid_solid(self):
         vertices, faces = box_control_cage(20, 20, 20)
@@ -1336,6 +1378,25 @@ class BRepConversionTest(unittest.TestCase):
         self.assertEqual(len(edited.vertex_sharpness), 4)
         self.assertTrue(set(edited.edge_sharpness).issubset(set(cage_edges(edited.faces))))
 
+    def test_invalid_second_face_deletion_leaves_the_form_unchanged(self):
+        document = App.newDocument("FormsTestRejectedFaceDeletion")
+        obj = create_face(document)
+        obj.XSegments = 5
+        obj.YSegments = 5
+        document.recompute()
+        delete_faces(obj, [0])
+        document.recompute()
+        points_before = list(obj.ControlPoints)
+        faces_before = list(obj.ControlFaces)
+        shape_hash_before = obj.Shape.hashCode()
+
+        with self.assertRaisesRegex(ValueError, "boundaries meeting at a vertex"):
+            delete_faces(obj, [5])
+
+        self.assertEqual(list(obj.ControlPoints), points_before)
+        self.assertEqual(list(obj.ControlFaces), faces_before)
+        self.assertEqual(obj.Shape.hashCode(), shape_hash_before)
+
     def test_generated_faces_map_back_to_unique_control_faces(self):
         document = App.newDocument("FormsTestFaceMapping")
         obj = create_box(document)
@@ -1759,6 +1820,93 @@ class BRepConversionTest(unittest.TestCase):
         self.assertTrue(obj.Shape.isValid())
         mapper = ControlElementMapper(obj)
         self.assertTrue(all(mapper.indices(face) for face in obj.Shape.Faces))
+
+    def _attach_lcs_to_form_faces(self, obj):
+        mapper = ControlElementMapper(obj)
+        attachments = {}
+        for index, face in enumerate(obj.Shape.Faces, 1):
+            logical_id = mapper.cage.face_index(mapper.indices(face))
+            lcs = obj.Document.addObject("PartDesign::CoordinateSystem", "LCS")
+            lcs.AttachmentSupport = [(obj, (f"Face{index}",))]
+            # Form patches are curved; FlatFace would make the attachment invalid.
+            lcs.MapMode = "InertialCS"
+            attachments[logical_id] = lcs.Name
+        obj.Document.recompute()
+        return attachments
+
+    def _assert_lcs_logical_faces(self, obj, attachments):
+        mapper = ControlElementMapper(obj)
+        for logical_id, name in attachments.items():
+            with self.subTest(logical_face=logical_id):
+                lcs = obj.Document.getObject(name)
+                self.assertNotIn("Invalid", lcs.State)
+                support, subelements = lcs.AttachmentSupport[0]
+                self.assertEqual(support, obj)
+                self.assertEqual(len(subelements), 1)
+                face = obj.Shape.getElement(subelements[0])
+                controls = set(mapper.indices(face))
+                expected = (
+                    mapper.mesh.faces[logical_id].boundary
+                    if mapper.mesh is not None
+                    else mapper.cage.faces[logical_id]
+                )
+                self.assertEqual(controls, set(expected))
+
+    def test_subdivision_preserves_lcs_face_identity(self):
+        document = App.newDocument("FormsTestSubdivisionLCS")
+        obj = create_box(document)
+        document.recompute()
+        attachments = self._attach_lcs_to_form_faces(obj)
+        self._assert_lcs_logical_faces(obj, attachments)
+
+        # Include the split faces: one child deliberately inherits the parent's
+        # ID. Unrelated faces must keep their identities even if OCC reorders them.
+        for face_id, u_count, v_count in ((0, 2, 2), (2, 4, 2), (0, 2, 1)):
+            subdivide_faces(obj, [face_id], u_count, v_count)
+            document.recompute()
+            self._assert_lcs_logical_faces(obj, attachments)
+
+    def test_subdivision_lcs_support_survives_undo_redo(self):
+        document = App.newDocument("FormsTestSubdivisionLCSUndo")
+        obj = create_box(document)
+        document.recompute()
+        attachments = self._attach_lcs_to_form_faces(obj)
+        document.openTransaction("Subdivide form")
+        subdivide_faces(obj, [0])
+        document.recompute()
+        document.commitTransaction()
+        self._assert_lcs_logical_faces(obj, attachments)
+
+        document.undo()
+        document.recompute()
+        self.assertFalse(obj.TMeshData)
+        self._assert_lcs_logical_faces(obj, attachments)
+        document.redo()
+        document.recompute()
+        self.assertTrue(obj.TMeshData)
+        self._assert_lcs_logical_faces(obj, attachments)
+
+    def test_subdivision_lcs_support_survives_save_restore(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "form.FCStd")
+            document = App.newDocument("FormsTestSubdivisionLCSSave")
+            obj = create_box(document)
+            document.recompute()
+            attachments = self._attach_lcs_to_form_faces(obj)
+            name = obj.Name
+
+            for face_id in (0, 2):
+                document.saveAs(path)
+                App.closeDocument(document.Name)
+                document = App.openDocument(path)
+                obj = document.getObject(name)
+                obj.touch()
+                document.recompute()
+                self._assert_lcs_logical_faces(obj, attachments)
+                subdivide_faces(obj, [face_id])
+                document.recompute()
+                self._assert_lcs_logical_faces(obj, attachments)
+            App.closeDocument(document.Name)
 
     def test_subdivide_supports_independent_dyadic_counts(self):
         document = App.newDocument("FormsTestRectangularSubdivide")

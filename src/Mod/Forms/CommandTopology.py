@@ -28,6 +28,7 @@ import FreeCADGui as Gui
 import Part
 from PySide import QtCore
 
+from Forms.feedback import MODELING_ERRORS, report_modeling_error
 from Forms.operations import (
     bridge_boundaries,
     delete_faces,
@@ -329,10 +330,15 @@ def _run_topology_operation(selections, transaction_name, operation):
                 session.topology_changed()
         for document in own_transactions:
             document.commitTransaction()
+    except MODELING_ERRORS as error:
+        for document in own_transactions:
+            document.abortTransaction()
+        return report_modeling_error(transaction_name, error)
     except Exception:
         for document in own_transactions:
             document.abortTransaction()
         raise
+    return True
 
 
 class CommandDeleteFaces:

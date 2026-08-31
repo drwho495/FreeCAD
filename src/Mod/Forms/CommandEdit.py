@@ -26,6 +26,8 @@
 import FreeCAD as App
 import FreeCADGui as Gui
 
+from Forms.feedback import MODELING_ERRORS, report_modeling_error
+
 
 def selected_form():
     selection = Gui.Selection.getSelection()
@@ -81,7 +83,10 @@ class CommandEditForm:
         )
 
     def Activated(self):
-        show_form_task(selected_form())
+        try:
+            show_form_task(selected_form())
+        except MODELING_ERRORS as error:
+            report_modeling_error(App.Qt.translate("Forms_Edit", "Edit Form"), error)
 
 
 Gui.addCommand("Forms_Edit", CommandEditForm())

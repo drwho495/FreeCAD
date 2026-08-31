@@ -29,6 +29,7 @@ import FreeCAD as App
 import Part
 
 from .box import FormBoxProxy, FormFeatureProxy, ViewProviderFormBox
+from .brep import ConversionError
 from .cage import ControlCage, update_object_shape
 from .placement import global_placement
 from .primitives import (
@@ -110,7 +111,7 @@ def _closest_point(target, point):
     probe = Part.Vertex(point.x, point.y, point.z)
     distance, closest, _info = probe.distToShape(target)
     if not closest:
-        raise RuntimeError("Could not project the Form boundary onto the support face")
+        raise ConversionError("Could not project the Form boundary onto the support face")
     return App.Vector(closest[0][1]), float(distance)
 
 
@@ -189,7 +190,7 @@ def _wire_fraction(wire, point):
             best = candidate
         elapsed += edge.Length
     if best is None:
-        raise RuntimeError("Could not parameterize the Match support wire")
+        raise ConversionError("Could not parameterize the Match support wire")
     return best[1]
 
 
@@ -337,7 +338,7 @@ def _surface_tangent_plane(face, point):
     u_value, v_value = face.Surface.parameter(point)
     normal = face.normalAt(u_value, v_value)
     if normal.Length <= 1.0e-12:
-        raise RuntimeError("Could not determine a Match tangent plane")
+        raise ConversionError("Could not determine a Match tangent plane")
     normal.normalize()
     return normal, normal.dot(point)
 
@@ -493,7 +494,7 @@ def apply_match_constraints(obj):
                         point + selected_normal * (direction * handle), planes
                     )
                 if target.sub(point).Length <= 1.0e-9:
-                    raise RuntimeError("Could not determine a tangent Match direction")
+                    raise ConversionError("Could not determine a tangent Match direction")
             candidates.setdefault(interior_index, []).append(target)
         for index, points in candidates.items():
             vertices[index] = sum(points, App.Vector()) / len(points)
@@ -568,7 +569,7 @@ def preview_match_shape(
     apply_match_constraints(preview)
     update_object_shape(preview)
     if preview.Shape.isNull():
-        raise RuntimeError(preview.ConversionStatus or "Could not build Match preview")
+        raise ConversionError(preview.ConversionStatus or "Could not build Match preview")
     return preview.Shape
 
 
@@ -625,7 +626,7 @@ def _cap_matched_form(obj, shape):
         filling.add(edge, 0)
     filling.build()
     if not filling.isDone():
-        raise RuntimeError("Could not cap the matched Form opening")
+        raise ConversionError("Could not cap the matched Form opening")
     cap = filling.shape()
     for candidate in (cap, cap.reversed()):
         sewed = Part.makeCompound(list(shape.Faces) + list(candidate.Faces))
@@ -634,7 +635,7 @@ def _cap_matched_form(obj, shape):
             solid = Part.makeSolid(sewed.Shells[0])
             if not solid.isNull() and solid.isValid():
                 return solid
-    raise RuntimeError("The matched Form opening did not produce a closed solid")
+    raise ConversionError("The matched Form opening did not produce a closed solid")
 
 
 def _partdesign_operation(obj):
@@ -755,7 +756,14 @@ class PartDesignFormProxy(FormFeatureProxy):
         obj.FormShape = form_shape
         if "AddSubShape" in obj.PropertiesList:
             obj.AddSubShape = form_shape
-        base = obj.BaseFeature.Shape if obj.BaseFeature is not None else Part.Shape()
+        if obj.BaseFeature is not None:
+            # Boolean history created below belongs to this Part Design
+            # feature. Retag a private copy so generated/modified element
+            # names record this object's ID without changing BaseFeature.
+            base = obj.BaseFeature.Shape.copy()
+            base.Tag = obj.ID
+        else:
+            base = Part.Shape()
         operation = _partdesign_operation(obj)
         if base.isNull():
             obj.CombinationStatus = App.Qt.translate(

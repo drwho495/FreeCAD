@@ -31,6 +31,7 @@ import FreeCAD as App
 from .cage import ControlCage
 from .placement import global_placement
 from .brep import (
+    ConversionError,
     LocalEdgeInsert,
     dissolved_control_faces,
     seed_tmesh_vertices,
@@ -162,7 +163,7 @@ def _preview_form_from_points(obj, points):
     preview = _form_preview_object(obj, points)
     update_object_shape(preview)
     if preview.Shape.isNull():
-        raise RuntimeError(preview.ConversionStatus or "Could not build Form preview")
+        raise ConversionError(preview.ConversionStatus or "Could not build Form preview")
     return preview
 
 
@@ -803,7 +804,7 @@ def unweld_segment(obj, segment_edges, separate_forms=True):
     document = obj.Document
     second_obj = document.copyObject(obj, False)
     if second_obj is None:
-        raise RuntimeError("Could not create the second unwelded Form")
+        raise ConversionError("Could not create the second unwelded Form")
     second_obj.Label = App.Qt.translate("Forms_Unweld", "%1 (Unwelded)").replace(
         "%1", obj.Label
     )

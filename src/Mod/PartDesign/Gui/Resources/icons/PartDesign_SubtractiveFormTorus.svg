@@ -39,15 +39,15 @@
        y2="54"
        gradientUnits="userSpaceOnUse">
       <stop
-         stop-color="#729fcf"
+         stop-color="#ef2929"
          id="stop1" />
       <stop
          offset=".55"
-         stop-color="#3465a4"
+         stop-color="#cc0000"
          id="stop2" />
       <stop
          offset="1"
-         stop-color="#204a87"
+         stop-color="#a40000"
          id="stop3" />
     </linearGradient>
     <linearGradient
@@ -59,25 +59,25 @@
        gradientUnits="userSpaceOnUse"
        gradientTransform="translate(0.8115942,18.434783)">
       <stop
-         stop-color="#3465a4"
+         stop-color="#cc0000"
          id="stop4" />
       <stop
          offset="1"
-         stop-color="#204a87"
+         stop-color="#a40000"
          id="stop5" />
     </linearGradient>
   </defs>
   <path
      fill="url(#ring)"
      fill-rule="evenodd"
-     stroke="#0b1521"
+     stroke="#280000"
      stroke-width="2"
      stroke-linejoin="round"
      d="M32 7C48 7 59 17 59 31c1 15-11 25-27 26C16 57 5 47 5 32 4 18 16 8 32 7Zm0 13c-8 0-14 4-14 11s6 11 14 11 14-4 14-11-6-11-14-11Z"
      id="path5" />
   <g
      fill="none"
-     stroke="#0b1521"
+     stroke="#280000"
      stroke-width="1.3"
      id="g10">
     <path
@@ -95,43 +95,43 @@
   </g>
   <path
      d="M 6.699252,31.647863 C 6.0211278,35.413042 8.403717,44.38163 11.403717,46.38163"
-     stroke="#729fcf"
+     stroke="#ef2929"
      id="path11"
      sodipodi:nodetypes="cc"
      style="fill:none;stroke-width:1" />
   <path
      d="M 31.144109,8.8061848 C 27.472204,8.3891604 18.378647,11.313361 16.071449,14.084072"
-     stroke="#729fcf"
+     stroke="#ef2929"
      id="path11-1"
      sodipodi:nodetypes="cc"
      style="fill:none;stroke-width:1" />
   <path
      d="M 50.044816,14.763473 C 47.635255,11.961543 36.272752,8.0792039 32.697144,8.5429153"
-     stroke="#729fcf"
+     stroke="#ef2929"
      id="path11-1-5"
      sodipodi:nodetypes="cc"
      style="fill:none;stroke-width:1" />
   <path
      d="m 33.313262,55.444036 c 8.642513,-0.647343 17.207729,-6.125604 19.207729,-9.125604 m -14,5"
-     stroke="#3465a4"
+     stroke="#cc0000"
      id="path12"
      sodipodi:nodetypes="cc"
      style="fill:none;stroke-width:1" />
   <path
      d="m 54.12087,44.393971 c 4.749676,-7.249322 4.306464,-11.234349 3.454056,-15.536553"
-     stroke="#3465a4"
+     stroke="#cc0000"
      id="path12-1"
      sodipodi:nodetypes="cc"
      style="fill:none;stroke-width:1" />
   <path
      d="m 12.646382,48.370304 c 6.454982,5.783187 14.716574,7.58369 18.265494,6.947161"
-     stroke="#3465a4"
+     stroke="#cc0000"
      id="path12-5"
      sodipodi:nodetypes="cc"
      style="fill:none;stroke-width:1" />
   <path
      d="M 14.174622,15.182463 C 10.295652,17.179627 6.005115,25.88807 6.6396951,29.493429"
-     stroke="#729fcf"
+     stroke="#ef2929"
      id="path11-1-2"
      sodipodi:nodetypes="cc"
      style="fill:none;stroke-width:1" />

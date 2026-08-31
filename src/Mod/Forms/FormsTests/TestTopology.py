@@ -3,7 +3,9 @@
 import math
 import unittest
 
+from Forms.brep import ConversionError
 from Forms.cage import ControlCage, canonical_subelement_name
+from Forms.feedback import MODELING_ERRORS, report_modeling_error
 from Forms.symmetry import control_pairs
 from Forms.tmesh import DyadicTMesh
 from Forms.topology import (
@@ -29,6 +31,25 @@ from Forms.topology import (
     torus_control_cage,
     tube_control_cage,
 )
+
+
+class FeedbackTest(unittest.TestCase):
+    def test_modeling_errors_exclude_unexpected_runtime_failures(self):
+        self.assertIsInstance(ConversionError("invalid cage"), MODELING_ERRORS)
+        self.assertIsInstance(ValueError("invalid input"), MODELING_ERRORS)
+        self.assertNotIsInstance(RuntimeError("programming failure"), MODELING_ERRORS)
+
+    def test_modeling_error_reports_to_tool_status_without_raising(self):
+        class Status:
+            text = ""
+
+            def setText(self, value):
+                self.text = value
+
+        status = Status()
+        result = report_modeling_error("Forms test", ValueError("invalid selection"), status)
+        self.assertFalse(result)
+        self.assertEqual(status.text, "invalid selection")
 
 
 class GeometryEditingTest(unittest.TestCase):
@@ -126,6 +147,77 @@ class GeometryEditingTest(unittest.TestCase):
             cage_edge_selection_range(faces, (0, 1), (2, 3)),
             {(0, 1), (1, 2), (2, 3)},
         )
+
+    def test_shift_ranges_follow_rows_on_a_five_by_five_surface(self):
+        _vertices, faces = face_control_cage(10, 10, 5, 5)
+
+        self.assertEqual(cage_vertex_selection_range(faces, 0, 5), set(range(6)))
+        self.assertEqual(
+            cage_edge_selection_range(faces, (0, 1), (4, 5)),
+            {(index, index + 1) for index in range(5)},
+        )
+        self.assertEqual(cage_face_selection_range(faces, 0, 4), set(range(5)))
+
+    def test_shift_range_reselection_is_deferred_outside_the_observer(self):
+        from types import SimpleNamespace
+
+        from Forms.edit import FormEditSession
+
+        _vertices, faces = face_control_cage(10, 10, 5, 5)
+        mapper = SimpleNamespace(mesh=None, logical_faces=faces)
+        restored = []
+        pending = []
+        session = object.__new__(FormEditSession)
+        session.cleaned = False
+        session.last_added_edge = None
+        session.selection_sync_generation = 0
+        session.range_selection_generation = 0
+        session.range_selection_anchors = {"Face": 0}
+        session._range_selection_target = lambda _subelement: ("Face", 4, mapper)
+        session._selected_control_targets = lambda respect_symmetry=False: [
+            ("Face", faces[0], None)
+        ]
+        session._restore_control_selection = (
+            lambda vertices, edges, selected_faces, defer_dragger=False: restored.append(
+                (vertices, edges, selected_faces, defer_dragger)
+            )
+        )
+        session._schedule_shift_range = (
+            lambda vertices, edges, selected_faces, generation: pending.append(
+                (vertices, edges, selected_faces, generation)
+            )
+        )
+
+        self.assertTrue(session._extend_shift_range("Face5"))
+        self.assertEqual(restored, [])
+        self.assertEqual(len(pending), 1)
+        session._apply_shift_range(*pending[0])
+        self.assertEqual(len(restored), 1)
+        self.assertEqual(restored[0][2], {frozenset(faces[index]) for index in range(5)})
+        self.assertTrue(restored[0][3])
+
+    def test_shift_range_scheduler_captures_all_arguments(self):
+        from Forms.edit import FormEditSession
+
+        applied = []
+        pending = []
+        session = object.__new__(FormEditSession)
+        session._defer_shift_range = pending.append
+        session._apply_shift_range = lambda *arguments: applied.append(arguments)
+        expected = ({1, 2}, {(1, 2)}, {frozenset((0, 1, 2, 3))}, 7)
+
+        session._schedule_shift_range(*expected)
+        self.assertEqual(applied, [])
+        self.assertEqual(len(pending), 1)
+        pending[0]()
+        self.assertEqual(applied, [expected])
+
+    def test_face_deletion_rejects_boundaries_touching_at_one_vertex(self):
+        vertices, faces = face_control_cage(10, 10, 5, 5)
+        cage = ControlCage(vertices, faces).delete_faces([0])
+
+        with self.assertRaisesRegex(ValueError, "boundaries meeting at a vertex"):
+            cage.delete_faces([5])
 
     def test_flatten_projects_to_best_fit_plane(self):
         vertices = [(0, 0, 0.0), (2, 0, 0.3), (2, 2, -0.2), (0, 2, 0.1)]
@@ -692,6 +784,7 @@ class CatmullClarkTest(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
+    suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(FeedbackTest))
     suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(GeometryEditingTest))
     suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(SymmetryTest))
     suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(BoxTopologyTest))

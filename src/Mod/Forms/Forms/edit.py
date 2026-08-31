@@ -38,6 +38,7 @@ from .cage import (
     control_surface_points,
 )
 from .edit_tools import FormEditToolsMixin
+from .feedback import MODELING_ERRORS, report_modeling_error
 from .interaction import FormKeyFilter, FormSelectionGate
 from .symmetry import control_pairs, reflected
 from .taskpanels import bind_edit_panel, bind_tool_panel
@@ -57,6 +58,7 @@ from .topology import (
 )
 
 PRIMITIVE_PARAMETERS = {
+    "Forms::Form": (),
     "Forms::Box": (
         ("Length", "Length", "length"),
         ("Width", "Width", "length"),
@@ -154,6 +156,7 @@ class FormEditSession(FormEditToolsMixin):
         self.dragger_callbacks = []
         self.last_added_edge = None
         self.range_selection_anchors = {}
+        self.range_selection_generation = 0
         self.dimension_gizmos = {}
         self.dimension_gizmo_switches = {}
         self.dimension_gizmo_callbacks = []
@@ -423,6 +426,10 @@ class FormEditSession(FormEditToolsMixin):
         try:
             set_segment_diameter(self.obj, key, spin.value())
             self.obj.Document.recompute()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            report_modeling_error(App.Qt.translate("Forms_Pipe", "Change diameter"), error)
+            return
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -438,6 +445,10 @@ class FormEditSession(FormEditToolsMixin):
         try:
             set_segment_samples(self.obj, key, spin.value())
             self.obj.Document.recompute()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            report_modeling_error(App.Qt.translate("Forms_Pipe", "Change samples"), error)
+            return
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -662,6 +673,11 @@ class FormEditSession(FormEditToolsMixin):
         try:
             for property_name, value in changes.items():
                 self._apply_primitive_parameter_change(property_name, value)
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            self._sync_dimension_properties()
+            report_modeling_error(App.Qt.translate("Forms_Edit", "Change parameters"), error)
+            return
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -1194,6 +1210,13 @@ class FormEditSession(FormEditToolsMixin):
             self._configure_symmetry(apply=bool(self.obj.Symmetric))
             self._sync_dimension_properties()
             self._update_dimension_gizmos()
+        except MODELING_ERRORS as error:
+            self._finish_action(self.dimension_transaction_open, commit=False)
+            self.dimension_transaction_open = False
+            self._sync_dimension_properties()
+            self._update_dimension_gizmos()
+            report_modeling_error(App.Qt.translate("Forms_Edit", "Change dimension"), error)
+            return
         except Exception:
             self._finish_action(self.dimension_transaction_open, commit=False)
             self.dimension_transaction_open = False
@@ -1413,6 +1436,12 @@ class FormEditSession(FormEditToolsMixin):
             self._clear_editor_selection()
             self._sync_dimension_properties()
             self._update_dimension_gizmos()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            self._sync_dimension_properties()
+            self._update_dimension_gizmos()
+            report_modeling_error(App.Qt.translate("Forms_Edit", "Change symmetry"), error)
+            return
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -1429,6 +1458,10 @@ class FormEditSession(FormEditToolsMixin):
             self.obj.Document.recompute()
             self._clear_editor_selection()
             self.view.redraw()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            report_modeling_error(App.Qt.translate("Forms_Edit", "Change continuity"), error)
+            return
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -1444,6 +1477,12 @@ class FormEditSession(FormEditToolsMixin):
             self._clear_editor_selection()
             self._sync_dimension_properties()
             self._update_dimension_gizmos()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            self._sync_dimension_properties()
+            self._update_dimension_gizmos()
+            report_modeling_error(App.Qt.translate("Forms_Edit", "Change symmetry plane"), error)
+            return
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -1571,13 +1610,35 @@ class FormEditSession(FormEditToolsMixin):
             by_id = dict(zip(face_ids, faces))
             selected_faces.update(frozenset(by_id[face_id]) for face_id in selected_range)
         self.last_added_edge = None
-        self._restore_control_selection(
-            vertices,
-            edges,
-            selected_faces,
-            defer_dragger=True,
-        )
+        # Selection observers run while FreeCAD is still publishing the click
+        # that triggered them. Clearing and rebuilding the selection from this
+        # callback can re-enter the selection machinery and deadlock the GUI.
+        # Apply the completed range after the current selection event returns.
+        self.range_selection_generation += 1
+        generation = self.range_selection_generation
+        self._schedule_shift_range(vertices, edges, selected_faces, generation)
         return True
+
+    def _schedule_shift_range(self, vertices, edges, faces, generation):
+        """Apply a completed range on the next Qt event-loop turn."""
+        self._defer_shift_range(
+            lambda: self._apply_shift_range(
+                vertices,
+                edges,
+                faces,
+                generation,
+            ),
+        )
+
+    @staticmethod
+    def _defer_shift_range(callback):
+        QtCore.QTimer.singleShot(0, callback)
+
+    def _apply_shift_range(self, vertices, edges, faces, generation):
+        """Replace a Shift-click selection outside the observer callback."""
+        if self.cleaned or generation != self.range_selection_generation:
+            return
+        self._restore_control_selection(vertices, edges, faces, defer_dragger=True)
 
     def addSelection(self, document, object_name, subelement, _position):
         if self.suppress_selection_observer or self.cleaned:
@@ -1605,6 +1666,7 @@ class FormEditSession(FormEditToolsMixin):
         ):
             return
         if form_subelement is not None and not modifiers & QtCore.Qt.ShiftModifier:
+            self.range_selection_generation += 1
             target = self._range_selection_target(form_subelement)
             if target is not None:
                 kind, stable_id, _mapper = target
@@ -1667,6 +1729,7 @@ class FormEditSession(FormEditToolsMixin):
             return
         self.last_added_edge = None
         if not QtWidgets.QApplication.keyboardModifiers() & QtCore.Qt.ShiftModifier:
+            self.range_selection_generation += 1
             self.range_selection_anchors = {}
         self._queue_selection_sync()
 
@@ -1739,6 +1802,7 @@ class FormEditSession(FormEditToolsMixin):
             not self.suppress_selection_observer
             and not QtWidgets.QApplication.keyboardModifiers() & QtCore.Qt.ShiftModifier
         ):
+            self.range_selection_generation += 1
             self.range_selection_anchors = {}
         if not self.suppress_selection_observer and self.last_added_edge is not None:
             (
@@ -2033,7 +2097,10 @@ class FormEditSession(FormEditToolsMixin):
         return vertices, edges
 
     def _selected_sharpness_context(self):
-        mapper = self._control_element_mapper()
+        try:
+            mapper = self._control_element_mapper()
+        except (Part.OCCError, RuntimeError, ValueError):
+            return set(), set(), set(), set()
         cage_faces = (
             [face.boundary for face in mapper.mesh.faces.values()]
             if mapper.mesh is not None
@@ -2234,6 +2301,11 @@ class FormEditSession(FormEditToolsMixin):
             self._sync_sharpness_ui()
             self._sync_dimension_properties()
             self._update_dimension_gizmos()
+        except MODELING_ERRORS as error:
+            self._finish_action(transaction, commit=False)
+            self._sync_sharpness_ui()
+            report_modeling_error(App.Qt.translate("Forms_Edit", "Change sharpness"), error)
+            return
         except Exception:
             self._finish_action(transaction, commit=False)
             raise
@@ -2513,6 +2585,16 @@ class FormEditSession(FormEditToolsMixin):
                 self.extruded_outer_edges = set()
                 self.alt_extrude_boundary_edges = set()
                 self._restore_control_selection(set(), edges)
+        except MODELING_ERRORS as error:
+            if self.whole_form_motion_preview:
+                self.obj.Placement = self.base_object_placement
+                self.whole_form_motion_preview = False
+            self._finish_action(self.dragger_transaction_open, commit=False)
+            self.dragger_transaction_open = False
+            self._sync_dimension_properties()
+            self._update_dimension_gizmos()
+            report_modeling_error(App.Qt.translate("Forms_Edit", "Transform Form"), error)
+            return
         except Exception:
             if self.whole_form_motion_preview:
                 self.obj.Placement = self.base_object_placement
@@ -2646,6 +2728,7 @@ class FormEditSession(FormEditToolsMixin):
             setattr(self, attribute, False)
         self._cancel_pending_updates()
         self.selection_sync_generation += 1
+        self.range_selection_generation += 1
         if self.selection_observer_added:
             safely(lambda: Gui.Selection.removeObserver(self), "selection observer")
             self.selection_observer_added = False

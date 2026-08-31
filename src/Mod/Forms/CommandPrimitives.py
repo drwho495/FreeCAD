@@ -28,6 +28,27 @@ import FreeCADGui as Gui
 from PySide import QtCore
 
 import Forms
+from Forms.feedback import MODELING_ERRORS, report_modeling_error
+
+
+def _run_creation(document, label, factory):
+    """Create a Form and open its task panel as one guarded transaction."""
+    document.openTransaction(label)
+    try:
+        obj = factory()
+        from CommandEdit import show_form_task
+
+        if not show_form_task(obj, creating=True):
+            raise RuntimeError("Could not open the Forms creation task")
+    except MODELING_ERRORS as error:
+        if document.getBookedTransactionID() != 0:
+            document.abortTransaction()
+        return report_modeling_error(label, error)
+    except Exception:
+        if document.getBookedTransactionID() != 0:
+            document.abortTransaction()
+        raise
+    return True
 
 
 class _CreatePrimitiveCommand:
@@ -57,17 +78,11 @@ class _CreatePrimitiveCommand:
         document = App.ActiveDocument
         if document is None or document.getBookedTransactionID() != 0:
             return
-        document.openTransaction(App.Qt.translate("Forms_Create", self.MenuText))
-        try:
-            obj = self.Factory(document)
-            from CommandEdit import show_form_task
-
-            if not show_form_task(obj, creating=True):
-                raise RuntimeError("Could not open the Forms creation task")
-        except Exception:
-            if document.getBookedTransactionID() != 0:
-                document.abortTransaction()
-            raise
+        _run_creation(
+            document,
+            App.Qt.translate("Forms_Create", self.MenuText),
+            lambda: self.Factory(document),
+        )
 
 
 class CommandCreateBox(_CreatePrimitiveCommand):
@@ -150,17 +165,16 @@ class CommandCreatePipe(_CreatePrimitiveCommand):
         if path is None:
             return
         document = App.ActiveDocument
-        document.openTransaction(App.Qt.translate("Forms_Create", self.MenuText))
-        try:
+        def create():
             obj = Forms.create_pipe(document, path)
             path.Visibility = False
-            from CommandEdit import show_form_task
-            if not show_form_task(obj, creating=True):
-                raise RuntimeError("Could not open the Forms creation task")
-        except Exception:
-            if document.getBookedTransactionID() != 0:
-                document.abortTransaction()
-            raise
+            return obj
+
+        _run_creation(
+            document,
+            App.Qt.translate("Forms_Create", self.MenuText),
+            create,
+        )
 
 
 class CommandCreateFace(_CreatePrimitiveCommand):
@@ -176,17 +190,11 @@ class CommandCreateFace(_CreatePrimitiveCommand):
         if document is None or document.getBookedTransactionID() != 0:
             return
         profile = _selected_face_profile()
-        document.openTransaction(App.Qt.translate("Forms_Create", self.MenuText))
-        try:
-            obj = Forms.create_face(document, profile=profile)
-            from CommandEdit import show_form_task
-
-            if not show_form_task(obj, creating=True):
-                raise RuntimeError("Could not open the Forms creation task")
-        except Exception:
-            if document.getBookedTransactionID() != 0:
-                document.abortTransaction()
-            raise
+        _run_creation(
+            document,
+            App.Qt.translate("Forms_Create", self.MenuText),
+            lambda: Forms.create_face(document, profile=profile),
+        )
 
 
 class CommandCreateTorus(_CreatePrimitiveCommand):
